@@ -1,0 +1,35 @@
+<h2 mat-dialog-title>Atualizar arquivo</h2>
+<form [formGroup]="updatePatientRequestAttachmentForm" (ngSubmit)="onUpdatePatientReportAttachmentSubmit()">
+    <mat-dialog-content>
+        <div class="line" style="grid-template-columns: 1fr;">
+            <mat-form-field appearance="outline">
+                <mat-label>Nome</mat-label>
+                <input matInput type="text" formControlName="name">
+                @for (item of errorMessages['name']; track $index) {
+                    <mat-error *ngIf="updatePatientRequestAttachmentForm.get('name')?.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+            <div style="display: flex;">
+                <button matFab type="button" style="margin-right: 20px;" [disabled]="data.patient_request_attachment.archive_id == null" (click)="download(data.patient_request_attachment.archive_id, data.patient_request_attachment.name)">
+                    <mat-icon>download</mat-icon>
+                </button>
+                <input type="file" class="file-input" (change)="onFileSelected($event)" #file style="display: none;">
+                <button matFab extended type="button" (click)="file.click()" [matTooltip]="labelFile()">
+                    <mat-icon>attach_file</mat-icon>
+                    Anexar arquivo
+                </button>
+            </div>
+        </div>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+        <button matButton="filled" type="submit" [disabled]="updatePatientRequestAttachmentForm.invalid || updatePatientRequestAttachmentForm.pristine || wSubmit()">
+            <div class="waiting">
+                @if (wSubmit()) {
+                    <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+                }
+                Atualizar
+            </div>
+        </button>
+      <button matButton [mat-dialog-close]="false">Fechar</button>
+    </mat-dialog-actions>
+</form>

@@ -1,0 +1,225 @@
+<mat-drawer-container>
+  <mat-drawer mode="side" opened>
+    <mat-action-list>
+        <!-- Usuários -->
+        @if (checkPermission(['usuário listar','usuário criar'])) {
+          <div mat-subheader>Usuários</div>
+        }
+        @if (checkPermission(['usuário listar'])) {
+          <button mat-list-item [routerLink]="['usuarios']">
+            <div class="link">
+              <mat-icon>groups</mat-icon>
+              <div>Usuários</div>
+            </div>
+          </button>
+        }
+        @if (checkPermission(['usuário criar'])) {
+          <button mat-list-item (click)="createUser()">
+            <div class="link">
+              <mat-icon>person_add</mat-icon>
+              <div>Novo usuário</div>
+            </div>
+          </button>
+        }
+        <!-- Regras -->
+        @if (checkPermission(['regra listar','regra criar'])) {
+          <div mat-subheader>Regras</div>
+        }
+        @if (checkPermission(['regra listar'])) {
+          <button mat-list-item [routerLink]="['regras']">
+            <div class="link">
+              <mat-icon>security</mat-icon>
+              <div>Regras</div>
+            </div>
+          </button>
+        }
+        @if (checkPermission(['regra criar'])) {
+          <button mat-list-item (click)="createRole()">
+            <div class="link">
+              <mat-icon>add_moderator</mat-icon>
+              <div>Nova regra</div>
+            </div>
+          </button>
+        }
+        <!-- Unidades hospitalares -->
+         @if (checkPermission(['unidade hospitalar listar'])) {
+          <div mat-subheader>Unidades hospitalares</div>
+        }
+        @if (checkPermission(['unidade hospitalar listar'])) {
+          <button mat-list-item [routerLink]="['unidades-hospitalares']">
+            <div class="link">
+              <mat-icon>domain</mat-icon>
+              <div>Unidades hospitalares</div>
+            </div>
+          </button>
+        }
+        @if (checkPermission(['unidade hospitalar criar'])) {
+          <button mat-list-item (click)="createHospitalUnity()">
+              <div class="link">
+                  <mat-icon>domain_add</mat-icon>
+                  <div>Nova unidade hospitalar</div>
+              </div>
+          </button>
+        }
+        <!-- Datasus -->
+         @if (checkPermission(['datasus listar'])) {
+          <div mat-subheader>Datasus</div>
+        }
+        @if (checkPermission(['datasus listar'])) {
+          <button mat-list-item [routerLink]="['sigtap']">
+            <div class="link">
+              <mat-icon>medical_services</mat-icon>
+              <div>Sigtap</div>
+            </div>
+          </button>
+        }
+        @if (checkPermission(['datasus importar'])) {
+          <input type="file" name="competence" #competence style="display: none;" accept=".zip" (change)="onFileChange($event)" />
+          <button mat-list-item (click)="importCompetence()">
+              <div class="link">
+                  <mat-icon>upload</mat-icon>
+                  <div>Importar competência</div>
+              </div>
+          </button>
+        }
+        <!-- Configurações -->
+        @if (checkPermission(['configuração listar'])) {
+          <div mat-subheader>Configurações</div>
+        }
+        @if (checkPermission(['configuração listar'])) {
+          <button mat-list-item [routerLink]="['configuracoes']">
+            <div class="link">
+              <mat-icon>settings</mat-icon>
+              <div>Configurações</div>
+            </div>
+          </button>
+        }
+        <!-- Pacientes -->
+        @if (checkPermission(['paciente listar','paciente criar'])) {
+          <div mat-subheader>Pacientes</div>
+        }
+        @if (checkPermission(['paciente listar'])) {
+          <button mat-list-item [routerLink]="['pacientes']">
+            <div class="link">
+              <mat-icon>personal_injury</mat-icon>
+              <div>Pacientes</div>
+            </div>
+          </button>
+        }
+        @if (checkPermission(['paciente criar'])) {
+          <button mat-list-item (click)="createPatient()">
+            <div class="link">
+              <mat-icon>person_add</mat-icon>
+              <div>Novo paciente</div>
+            </div>
+          </button>
+        }
+        <!-- Solicitações -->
+        @if (checkPermission(['solicitação listar','solicitação criar'])) {
+          <div mat-subheader>Solicitações</div>
+        }
+        @if (checkPermission(['solicitação listar'])) {
+          <button mat-list-item [routerLink]="['solicitacoes']">
+            <div class="link">
+              <mat-icon>assignment</mat-icon>
+              <div>Solicitações</div>
+            </div>
+          </button>
+        }
+        @if (checkPermission(['solicitação criar'])) {
+          <button mat-list-item (click)="createPatientRequest()">
+            <div class="link">
+              <mat-icon>post_add</mat-icon>
+              <div>Nova solicitação</div>
+            </div>
+          </button>
+        }
+        <!-- Pareceres -->
+        @if (checkPermission(['parecer listar'])) {
+          <div mat-subheader>Pareceres</div>
+        }
+        @if (checkPermission(['parecer listar'])) {
+          <button mat-list-item [routerLink]="['pareceres']">
+            <div class="link">
+              <mat-icon>grading</mat-icon>
+              <div>Pareceres técnicos</div>
+            </div>
+          </button>
+        }
+        <!-- passagens -->
+        @if (checkPermission(['passagem listar','passagem criar'])) {
+          <div mat-subheader>Passagens</div>
+        }
+        @if (checkPermission(['passagem criar'])) {
+          <button mat-list-item (click)="importTravels()">
+            <div class="link">
+              <mat-icon>connecting_airports</mat-icon>
+              <div>Importar passagens</div>
+            </div>
+          </button>
+        }
+        @if (checkPermission(['passagem listar'])) {
+          <button mat-list-item [routerLink]="['passagens']">
+            <div class="link">
+              <mat-icon>luggage</mat-icon>
+              <div>Viagens</div>
+            </div>
+          </button>
+        }
+        <!-- ajuda de custo -->
+        @if (checkPermission(['ajuda de custo listar'])) {
+          <div mat-subheader>Ajuda de custo</div>
+        }
+        @if (checkPermission(['ajuda de custo listar'])) {
+          <button mat-list-item [routerLink]="['ajudas-de-custo']">
+            <div class="link">
+              <mat-icon>price_check</mat-icon>
+              <div>Ajuda de custo</div>
+            </div>
+          </button>
+          <button mat-list-item [routerLink]="['prestacoes-de-conta']">
+            <div class="link">
+              <mat-icon>receipt_long</mat-icon>
+              <div>Prestação de contas</div>
+            </div>
+          </button>
+        }
+        <!-- pagamentos -->
+        @if (checkPermission(['pagamento listar'])) {
+          <div mat-subheader>Pagamentos</div>
+        }
+        @if (checkPermission(['pagamento listar'])) {
+          <button mat-list-item [routerLink]="['pagamentos']">
+            <div class="link">
+              <mat-icon>payments</mat-icon>
+              <div>Pagamentos</div>
+            </div>
+          </button>
+        }
+        <!-- Consultar -->
+        @if (checkPermission(['consultar paciente','consultar arquivo'])) {
+          <div mat-subheader>Consultar</div>
+        }
+        @if (checkPermission(['consultar paciente'])) {
+          <button mat-list-item [routerLink]="['consultar-paciente']">
+            <div class="link">
+              <mat-icon>person_search</mat-icon>
+              <div>Paciente</div>
+            </div>
+          </button>
+        }
+        @if (checkPermission(['consultar arquivo'])) {
+          <button mat-list-item [routerLink]="['consultar-arquivo']">
+            <div class="link">
+              <mat-icon>inventory_2</mat-icon>
+              <div>Arquivo</div>
+            </div>
+          </button>
+        }
+      </mat-action-list>
+  </mat-drawer>
+  <mat-drawer-content>
+    <router-outlet></router-outlet>
+  </mat-drawer-content>
+</mat-drawer-container>
+

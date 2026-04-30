@@ -1,0 +1,52 @@
+<h2 mat-dialog-title>Detalhes do laudo</h2>
+<mat-dialog-content>
+    <mat-card appearance="outlined">
+        <mat-card-header>
+            <mat-card-title>Informações do laudo</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <div class="line" style="grid-template-columns: 1fr 1fr;">
+                <div>
+                    <strong>Protocolo:</strong>{{data.report.protocol}}
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <strong>Ação judicial:</strong>{{data.report.lawsuit ? 'Sim' : 'Não' }}
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 1fr;">
+                <div>
+                    <strong>CID:</strong>{{data.report.cid.code}} - {{data.report.cid.name}}
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 1fr;">
+                <div>
+                    <strong>Diagnóstico:</strong>{{data.report.diagnosis}}
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+    <mat-card appearance="outlined" style="margin-top: 30px;">
+        <mat-card-header>
+            <mat-card-title>Arquivos</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            @for (item of data.report.attachments; track $index) {
+                <div class="line" style="grid-template-columns: 1fr 1fr;">
+                    <div>
+                        {{item.name}}
+                        <button matIconButton matTooltip="Download do arquivo" (click)="download(item.archive_id, item.name)">
+                            <mat-icon>download</mat-icon>
+                        </button>
+                    </div>
+                </div>
+            } @empty {
+                <div class="line" style="grid-template-columns: 1fr; text-align: center;">
+                    Nenhum arquivo anexado ao laudo.
+                </div>
+            }
+        </mat-card-content>
+    </mat-card>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+    <button matButton [mat-dialog-close]="false">Fechar</button>
+</mat-dialog-actions>

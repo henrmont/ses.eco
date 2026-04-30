@@ -1,0 +1,54 @@
+<h2 mat-dialog-title>Laudos do paciente</h2>
+<mat-dialog-content>
+    @if (isLoading()) {
+        <div class="loading-container">
+            <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+        </div>
+    } @else {
+        <table mat-table [dataSource]="dataSource()">
+            <ng-container matColumnDef="protocol">
+                <th mat-header-cell *matHeaderCellDef style="width: 20%;"> Protocolo </th>
+                <td mat-cell *matCellDef="let element"> {{element.protocol}} </td>
+            </ng-container>
+    
+            <ng-container matColumnDef="cid">
+                <th mat-header-cell *matHeaderCellDef style="width: 65%;"> CID </th>
+                <td mat-cell *matCellDef="let element"> {{element.cid.code}} - {{element.cid.name}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef class="center" style="width: 20%;"> Ações </th>
+                <td mat-cell *matCellDef="let element" class="center">
+                    <div>
+                        <button matIconButton matTooltip="Detalhes do laudo" (click)="showPatientReport(element)">
+                            <mat-icon>visibility</mat-icon>
+                        </button>
+                        <button matIconButton matTooltip="Atualizar laudo" (click)="updatePatientReport(element)">
+                            <mat-icon>drive_file_rename_outline</mat-icon>
+                        </button>
+                        <button matIconButton matTooltip="Anexos" (click)="reportAttachments(element)">
+                            <mat-icon>attach_file</mat-icon>
+                        </button>
+                        <button matIconButton matTooltip="Deletar laudo" (click)="deletePatientReport(element)">
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </div>
+                </td>
+            </ng-container>
+    
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    
+            <tr class="mat-row" *matNoDataRow>
+                <td class="mat-cell" colspan="4" class="center">Nenhum laudo cadastrado</td>
+            </tr>
+        </table>
+    }
+</mat-dialog-content>
+<mat-dialog-actions>
+  <button matButton="filled" (click)="createPatientReport()">Novo laudo</button>
+  <button matButton [mat-dialog-close]="false">Fechar</button>
+</mat-dialog-actions>
+
+
+

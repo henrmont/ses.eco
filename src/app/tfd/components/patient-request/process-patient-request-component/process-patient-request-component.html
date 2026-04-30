@@ -1,0 +1,36 @@
+<h2 mat-dialog-title>Tramitar solicitação</h2>
+<form [formGroup]="tramitPatientRequestForm" (ngSubmit)="onTramitPatientRequestSubmit()">
+    <mat-dialog-content>
+        <div class="line" style="grid-template-columns: 1fr;">
+            <mat-form-field appearance="outline">
+                <mat-label>Médico</mat-label>
+                <input matInput type="text" [formControl]="medicalProfessionalControl" [matAutocomplete]="medicalProfessional" [readonly]="medicalProfessionalReadOnly()">
+                @if (medicalProfessionalLoading()) {
+                    <mat-spinner matSuffix [diameter]="30" style="margin-right: 10px;"></mat-spinner>
+                }
+                <mat-autocomplete #medicalProfessional="matAutocomplete" [displayWith]="displayMedicalProfessional" (optionSelected)="onMedicalProfessionalSelected($event.option.value)">
+                @for (option of filteredMedicalProfessionalOptions | async; track option) {
+                    <mat-option [value]="option">
+                        <mat-chip style="margin-right: 20px;">{{option.patient_medical_requests_count}}</mat-chip>
+                        <span>{{option.name}}</span>
+                    </mat-option>
+                }
+                </mat-autocomplete>
+                @for (item of errorMessages['medical_professional']; track $index) {
+                    <mat-error *ngIf="medicalProfessionalControl.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+        </div>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+        <button matButton="filled" type="submit" [disabled]="tramitPatientRequestForm.invalid || wSubmit()">
+            <div class="waiting">
+                @if (wSubmit()) {
+                    <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+                }
+                Tramitar
+            </div>
+        </button>
+        <button matButton [mat-dialog-close]="false">Fechar</button>
+    </mat-dialog-actions>
+</form>

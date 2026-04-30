@@ -1,0 +1,40 @@
+<h2 mat-dialog-title>Detalhes do usuário</h2>
+<mat-dialog-content>
+    <mat-card appearance="outlined">
+        <mat-card-content>
+            <div class="line" style="grid-template-columns: 1fr;">
+                <div>
+                    <strong>Nome:</strong>{{data.user.professional.name}}
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 1fr 1fr;">
+                <div>
+                    <strong>Email:</strong>{{data.user.email}}
+                </div>
+                <div>
+                    <strong>Tipo:</strong>{{data.user.professional.type}}
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 1fr 1fr;">
+                <div>
+                    <strong>CNS:</strong>{{data.user.professional.cns | mask:'000 0000 0000 0000'}}
+                </div>
+                <div>
+                    <strong>Matrícula:</strong>{{data.user.professional.registration}}
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 1fr 1fr;">
+                <div>
+                    <strong>Registro profissional:</strong>{{data.user.professional.professional_register ? data.user.professional.professional_register : 'NÃO APLICÁVEL'}}
+                </div>
+                <div>
+                    <strong>CBO:</strong>{{data.user.professional.cbo ? data.user.professional.cbo : 'NÃO APLICÁVEL'}}
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+    <button matButton [mat-dialog-close]="false">Fechar</button>
+</mat-dialog-actions>
+

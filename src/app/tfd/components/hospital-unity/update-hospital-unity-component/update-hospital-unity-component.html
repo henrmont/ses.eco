@@ -1,0 +1,34 @@
+<h2 mat-dialog-title>Atualizar unidade hospitalar</h2>
+<form [formGroup]="updateHospitalUnityForm" (ngSubmit)="onSubmit()">
+    <mat-dialog-content>
+        <div class="line">
+            <mat-form-field appearance="outline">
+                <mat-label>Nome</mat-label>
+                <input matInput type="text" formControlName="name">
+                @for (item of errorMessages['name']; track $index) {
+                    <mat-error *ngIf="updateHospitalUnityForm.get('name')?.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+        </div>
+        <div class="line" style="grid-template-columns: 1fr;">
+            <mat-form-field appearance="outline">
+                <mat-label>CNES</mat-label>
+                <input matInput type="text" formControlName="cnes">
+                @for (item of errorMessages['cnes']; track $index) {
+                    <mat-error *ngIf="updateHospitalUnityForm.get('cnes')?.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+        </div>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button matButton="filled" type="submit" [disabled]="updateHospitalUnityForm.invalid || updateHospitalUnityForm.pending || updateHospitalUnityForm.pristine || wSubmit()">
+            <div class="waiting">
+                @if (wSubmit()) {
+                    <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+                }
+                Atualizar
+            </div>
+      </button>
+      <button matButton [mat-dialog-close]="false">Fechar</button>
+    </mat-dialog-actions>
+</form>

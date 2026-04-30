@@ -1,0 +1,38 @@
+<h2 mat-dialog-title>Atualizar ajuda de custo</h2>
+<form [formGroup]="createCostAssistanceForm" (ngSubmit)="onCreateCostAssistanceSubmit()">
+    <mat-dialog-content>
+        <div class="line" style="grid-template-columns: 1fr;">
+            <mat-form-field appearance="outline">
+                <mat-label>Nome</mat-label>
+                <input matInput type="text" formControlName="name">
+                @for (item of errorMessages['name']; track $index) {
+                    <mat-error *ngIf="createCostAssistanceForm.get('name')?.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+                <mat-label>Tipo</mat-label>
+                <mat-select formControlName="type">
+                    @for (item of types; track $index) {
+                        <mat-option [value]="item">{{item}}</mat-option>
+                    }
+                </mat-select>
+                @for (item of errorMessages['type']; track $index) {
+                    <mat-error *ngIf="createCostAssistanceForm.get('type')?.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+        </div>
+    </mat-dialog-content>
+    <mat-dialog-actions>
+    <button matButton="filled" [disabled]="createCostAssistanceForm.invalid || wSubmit()">
+        <div class="waiting">
+            @if (wSubmit()) {
+                <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+            }
+            Atualizar
+        </div>
+    </button>
+    <button matButton [mat-dialog-close]="false">Fechar</button>
+    </mat-dialog-actions>
+</form>
+
+

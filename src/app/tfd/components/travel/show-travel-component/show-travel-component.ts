@@ -1,0 +1,19 @@
+import { Component, inject } from '@angular/core';
+import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
+import {MatCardModule} from '@angular/material/card';
+import {MatIconModule} from '@angular/material/icon';
+import { CommonModule } from '@angular/common';
+import { NgxMaskPipe } from 'ngx-mask';
+
+@Component({
+  selector: 'app-show-travel-component',
+  imports: [CommonModule, MatDialogModule, MatButtonModule, MatCardModule, MatIconModule, NgxMaskPipe],
+  templateUrl: './show-travel-component.html',
+  styleUrl: './show-travel-component.scss',
+})
+export class ShowTravelComponent {
+
+  data = inject(MAT_DIALOG_DATA)
+
+}

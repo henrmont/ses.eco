@@ -1,0 +1,50 @@
+<h2 mat-dialog-title>Tramitar solicitação</h2>
+<form [formGroup]="processPatientRequestForm" (ngSubmit)="onTramitPatientRequestSubmit()">
+    <mat-dialog-content>
+        <div class="line" style="grid-template-columns: 1fr;">
+            <mat-form-field appearance="outline">
+                <mat-label>Pagamento</mat-label>
+                <input matInput type="text" [formControl]="paymentProfessionalControl" [matAutocomplete]="paymentProfessional" [readonly]="paymentProfessionalReadOnly()">
+                @if (paymentProfessionalLoading()) {
+                    <mat-spinner matSuffix [diameter]="30" style="margin-right: 10px;"></mat-spinner>
+                }
+                <mat-autocomplete #paymentProfessional="matAutocomplete" [displayWith]="displayPaymentProfessional" (optionSelected)="onPaymentProfessionalSelected($event.option.value)">
+                @for (option of filteredPaymentProfessionalOptions | async; track option) {
+                    <mat-option [value]="option">
+                        <mat-chip style="margin-right: 20px;">{{option.patient_payment_requests_count}}</mat-chip>
+                        <span>{{option.name}}</span>
+                    </mat-option>
+                }
+                </mat-autocomplete>
+                @for (item of errorMessages['payment_professional']; track $index) {
+                    <mat-error *ngIf="paymentProfessionalControl.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+        </div>
+        <mat-list>
+            @for (item of data.patient_request.attachments; track item.id) {
+                <mat-list-item>
+                    <div style="display: flex; justify-content: space-between;">
+                        {{item.name}}
+                        <mat-slide-toggle (toggleChange)="toggleArchive(item)"></mat-slide-toggle>
+                    </div>
+                </mat-list-item>
+            } @empty {
+                <div style="text-align: center;">
+                    Nenhum arquivo cadastrado.
+                </div>
+            }
+        </mat-list>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+        <button matButton="filled" type="submit" [disabled]="processPatientRequestForm.invalid || wSubmit()">
+            <div class="waiting">
+                @if (wSubmit()) {
+                    <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+                }
+                Tramitar
+            </div>
+        </button>
+      <button matButton [mat-dialog-close]="false">Fechar</button>
+    </mat-dialog-actions>
+</form>

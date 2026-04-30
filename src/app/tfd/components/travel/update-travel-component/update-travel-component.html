@@ -1,0 +1,75 @@
+<h2 mat-dialog-title>Atualizar viagem</h2>
+<form [formGroup]="createTravelForm" (ngSubmit)="onSubmit()">
+    <mat-dialog-content>
+        <div class="line" style="grid-template-columns: 1fr 1fr;">
+            <mat-form-field appearance="outline">
+                <mat-label>Transporte</mat-label>
+                <mat-select formControlName="transportation">
+                    @for (item of transportations; track $index) {
+                        <mat-option [value]="item">{{item}}</mat-option>
+                    }
+                </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+                <mat-label>OS</mat-label>
+                <input matInput type="text" formControlName="os">
+            </mat-form-field>
+        </div>
+        <div class="line" style="grid-template-columns: 1fr 1fr;">
+            <mat-form-field appearance="outline">
+                <mat-label>Tipo</mat-label>
+                <mat-select formControlName="type" (selectionChange)="onSelection($event)">
+                    @for (item of types; track $index) {
+                        <mat-option [value]="item">{{item}}</mat-option>
+                    }
+                </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+                <mat-label>Localizador</mat-label>
+                <input matInput type="text" formControlName="locator">
+            </mat-form-field>
+        </div>
+        <div class="line" style="grid-template-columns: 1fr 1fr;">
+             <mat-form-field appearance="outline">
+                <mat-label>Data de ida</mat-label>
+                <input matInput [matDatepicker]="pickerDeparture" formControlName="departure_date">
+                <mat-datepicker-toggle matIconSuffix [for]="pickerDeparture"></mat-datepicker-toggle>
+                <mat-datepicker #pickerDeparture></mat-datepicker>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+                <mat-label>Data de volta</mat-label>
+                <input matInput [matDatepicker]="pickerReturn" formControlName="return_date">
+                <mat-datepicker-toggle matIconSuffix [for]="pickerReturn"></mat-datepicker-toggle>
+                <mat-datepicker #pickerReturn></mat-datepicker>
+            </mat-form-field>
+        </div>
+        <div class="line" style="grid-template-columns: 1fr 1fr;">
+            <mat-form-field appearance="outline">
+                <mat-label>Origem</mat-label>
+                <input matInput type="text" formControlName="origin">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+                <mat-label>Destino</mat-label>
+                <input matInput type="text" formControlName="destination">
+            </mat-form-field>
+        </div>
+        
+        <div class="line" style="grid-template-columns: 1fr;">
+            <mat-form-field appearance="outline">
+                <mat-label>Descrição</mat-label>
+                <textarea matInput rows="4" formControlName="description"></textarea>
+            </mat-form-field>
+        </div>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+        <button matButton="filled" type="submit" [disabled]="createTravelForm.invalid || wSubmit()">
+            <div class="waiting">
+                @if (wSubmit()) {
+                    <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+                }
+                Atualizar
+            </div>
+        </button>
+        <button matButton [mat-dialog-close]="false">Fechar</button>
+    </mat-dialog-actions>
+</form>

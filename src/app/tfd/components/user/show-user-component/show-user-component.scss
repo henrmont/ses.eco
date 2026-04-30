@@ -1,0 +1,20 @@
+mat-card-content {
+    display: flex;
+    flex-direction: column;
+    row-gap: 20px;
+}
+
+.line {
+    display: grid; 
+    grid-template-columns: 1fr; 
+    column-gap: 20px; 
+}
+
+.line div {
+    display: flex; 
+    align-items: center;
+}
+
+strong {
+    margin-right: 5px;
+}

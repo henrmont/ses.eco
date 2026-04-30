@@ -1,0 +1,44 @@
+<h2 mat-dialog-title>Arquivos do laudo</h2>
+<mat-dialog-content>
+    @if (isLoading()) {
+        <div class="loading-container">
+            <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+        </div>
+    } @else {
+        <table mat-table [dataSource]="dataSource()">
+            <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef> Nome </th>
+                <td mat-cell *matCellDef="let element"> {{element.name}} </td>
+            </ng-container>
+    
+            <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef class="center" style="width: 15%;"> Ações </th>
+                <td mat-cell *matCellDef="let element" class="center">
+                    <div>
+                        <button matIconButton matTooltip="Download do arquivo" (click)="download(element.archive_id, element.name)">
+                            <mat-icon>download</mat-icon>
+                        </button>
+                        <button matIconButton matTooltip="Atualizar arquivo" (click)="updateReportAttachment(element)">
+                            <mat-icon>drive_file_rename_outline</mat-icon>
+                        </button>
+                        <button matIconButton matTooltip="Deletar arquivo" (click)="deleteReportAttachment(element)">
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </div>
+                </td>
+            </ng-container>
+    
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    
+            <tr class="mat-row" *matNoDataRow>
+                <td class="mat-cell" colspan="4" class="center">Nenhum arquivo encontrado</td>
+            </tr>
+        </table>
+    }
+</mat-dialog-content>
+<mat-dialog-actions>
+  <button matButton="filled" (click)="createReportAttachment()">Novo arquivo</button>
+  <button matButton [mat-dialog-close]="false">Fechar</button>
+</mat-dialog-actions>
+

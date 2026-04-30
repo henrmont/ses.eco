@@ -1,0 +1,150 @@
+<h2 mat-dialog-title>Detalhes do paciente</h2>
+<mat-dialog-content>
+    <mat-card appearance="outlined">
+        <mat-card-header>
+            <mat-card-title>Dados pessoais</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <div class="line" style="grid-template-columns: 4fr 1fr;">
+                <div>
+                    <strong>Nome: </strong>{{data.patient_care.name}}
+                </div>
+                <div>
+                    <strong>Sigadoc:</strong>{{data.patient_care.sigadoc}}
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 2fr 3fr 2fr;">
+                <div>
+                    <strong>Tipo de documento: </strong>{{data.patient_care.document_type}}
+                </div>
+                <div>
+                    <strong>Documento:</strong>{{data.patient_care.document | mask: data.patient_care.document_type === 'CPF' ? '000.000.000-00' : '000000 00 00 0000 0 00000 000 0000000 00'}}
+                    <button matIconButton style="margin-left: 20px;" [disabled]="data.patient_care.file_document_id == null" (click)="download(data.patient_care.file_document_id, 'documento')">
+                        <mat-icon>download</mat-icon>
+                    </button>
+                </div>
+                <div>
+                    <strong>CNS:</strong>{{data.patient_care.cns | mask:'000 0000 0000 0000'}}
+                    <button matIconButton style="margin-left: 20px;" [disabled]="data.patient_care.file_cns_id == null" (click)="download(data.patient_care.file_cns_id, 'cns')">
+                        <mat-icon>download</mat-icon>
+                    </button>
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr;">
+                <div>
+                    <strong>Data de nascimento: </strong>{{data.patient_care.birth_date | date: 'dd/MM/y'}}
+                </div>
+                <div>
+                    <strong>Sexo:</strong>{{data.patient_care.gender}}
+                </div>
+                <div>
+                    <strong>Recém nascido:</strong>{{data.patient_care.newborn ? 'Sim' : 'Não'}}
+                </div>
+                <div>
+                    <strong>Raça:</strong>{{data.patient_care.race}}
+                </div>
+                <div>
+                    <strong>Estado Civil:</strong>{{data.patient_care.marital_status}}
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 1fr 1fr;">
+                <div>
+                    <strong>Nome do pai: </strong>{{data.patient_care.father_name ?? 'Não informado'}}
+                </div>
+                <div>
+                    <strong>Nome da mãe:</strong>{{data.patient_care.mother_name ?? 'Não informado'}}
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 1fr 1fr 1fr;">
+                <div>
+                    <strong>Naturalidade:</strong>{{data.patient_care.naturalness}}
+                </div>
+                <div>
+                    <strong>Profissão:</strong>{{data.patient_care.profession ?? 'Não informado'}}
+                </div>
+                <div>
+                    <strong>Deficiência:</strong>{{data.patient_care.deficiency ?? 'Não informado'}}
+                    <button matIconButton style="margin-left: 20px;" [disabled]="data.patient_care.file_deficiency_id == null" (click)="download(data.patient_care.file_deficiency_id, 'laudo_deficiencia')">
+                        <mat-icon>download</mat-icon>
+                    </button>
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 1fr 1fr 1fr;">
+                <div>
+                    <strong>Telefone: </strong>{{ (data.patient_care.phone ? (data.patient_care.phone | mask: '(00) 00000-0000') : 'Não informado') }}
+                </div>
+                <div>
+                    <strong>Celular: </strong>{{(data.patient_care.cell_phone ? (data.patient_care.cell_phone | mask:'(00) 00000-0000') : 'Não informado' )}}
+                </div>
+                <div>
+                    <strong>Email:</strong>{{data.patient_care.email ?? 'Não informado'}}
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+    <mat-card appearance="outlined" style="margin-top: 30px;">
+        <mat-card-header>
+            <mat-card-title>Dados do endereço</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <div class="line" style="grid-template-columns: 1fr 2fr;">
+                <div>
+                    <strong>CEP: </strong>{{data.patient_care.cep | mask:'00000-000'}}
+                </div>
+                <div>
+                    <strong>Endereço:</strong>{{data.patient_care.address}}
+                    <button matIconButton style="margin-left: 20px;" [disabled]="data.patient_care.file_address_id == null" (click)="download(data.patient_care.file_address_id, 'comprovante_endereco')">
+                        <mat-icon>download</mat-icon>
+                    </button>
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 1fr 2fr;">
+                <div>
+                    <strong>Número: </strong>{{data.patient_care.number}}
+                </div>
+                <div>
+                    <strong>Complemento:</strong>{{data.patient_care.complement ?? 'Não informado'}}
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 2fr 2fr 1fr;">
+                <div>
+                    <strong>Bairro: </strong>{{data.patient_care.neighborhood}}
+                </div>
+                <div>
+                    <strong>Cidade:</strong>{{data.patient_care.city}}
+                </div>
+                <div>
+                    <strong>Estado:</strong>{{data.patient_care.state}}
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+    <mat-card appearance="outlined" style="margin-top: 30px;">
+        <mat-card-header>
+            <mat-card-title>Dados do adicionais</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <div class="line" style="grid-template-columns: 1fr 1fr;">
+                <div>
+                    <strong>Número de controle: </strong>{{data.patient_care.patient_info.control_number ?? 'Não informado'}}
+                </div>
+                <div>
+                    <strong>Laudo</strong>
+                    <button matIconButton style="margin-left: 20px;" [disabled]="data.patient_care.patient_info.file_protocol_id == null" (click)="download(data.patient_care.patient_info.file_protocol_id, 'protocolo_municipal')">
+                        <mat-icon>download</mat-icon>
+                    </button>
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 1fr;">
+                <div>
+                    <strong>Observação: </strong>{{data.patient_care.patient_info.observation ?? 'Não informado'}}
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+    <button matButton [mat-dialog-close]="false">Fechar</button>
+</mat-dialog-actions>
+
+

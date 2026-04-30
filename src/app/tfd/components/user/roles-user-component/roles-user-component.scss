@@ -1,0 +1,22 @@
+mat-list {
+    width: 100%;
+}
+
+mat-list-item div {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.waiting {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}

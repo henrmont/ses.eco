@@ -1,0 +1,13 @@
+<h2 mat-dialog-title>Deletar ajuda de custo</h2>
+<mat-dialog-content>Você deseja deletar a ajuda de custo?</mat-dialog-content>
+<mat-dialog-actions>
+    <button matButton="filled" [disabled]="wSubmit()" (click)="onSubmit()">
+        <div class="waiting">
+            @if (wSubmit()) {
+                <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+            }
+            Excluir
+        </div>
+    </button>
+    <button matButton [mat-dialog-close]="false">Fechar</button>
+</mat-dialog-actions>

@@ -1,0 +1,37 @@
+<h2 mat-dialog-title>Regras do usuário</h2>
+<form [formGroup]="rolesUserForm" (ngSubmit)="onSubmit()">
+    <mat-dialog-content>
+        @if (isLoading()) {
+            <div class="loading-container">
+                <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+            </div>
+        } @else {
+            <mat-list>
+                @for (item of roles(); track item.id) {
+                    <mat-list-item>
+                        <div>
+                            {{item.name.split('/')[1]}}
+                            <mat-slide-toggle (toggleChange)="toggleRole(item)" [checked]="checkRole(item.id)"></mat-slide-toggle>
+                        </div>
+                    </mat-list-item>
+                } @empty {
+                    <div style="text-align: center;">
+                        Nenhuma regra cadastrada.
+                    </div>
+                }
+            </mat-list>
+        }
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+        <button matButton="filled" type="submit" [disabled]="rolesUserForm.invalid || rolesUserForm.pristine || wSubmit()">
+            <div class="waiting">
+                @if (wSubmit()) {
+                    <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+                }
+                Atualizar
+            </div>
+        </button>
+        <button matButton [mat-dialog-close]="false">Fechar</button>
+    </mat-dialog-actions>
+</form>
+

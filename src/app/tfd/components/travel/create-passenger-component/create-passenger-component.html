@@ -1,0 +1,52 @@
+<h2 mat-dialog-title>Novo passageiro</h2>
+<form [formGroup]="createReportForm">
+    <mat-dialog-content>
+        <div class="line" style="grid-template-columns: 1fr 3fr;">
+            <div class="toggle">
+                <mat-slide-toggle formControlName="is_patient" (change)="setPassangerOptions()"><span>É paciente</span></mat-slide-toggle>
+            </div>
+            <mat-form-field appearance="outline">
+                <mat-label>Passageiro</mat-label>
+                <mat-select formControlName="passenger">
+                    @for (item of passengers(); track $index) {
+                        <mat-option [value]="item.id">{{item.name}}</mat-option>
+                    }
+                </mat-select>
+                @for (item of errorMessages['passenger']; track $index) {
+                    <mat-error *ngIf="createReportForm.get('passenger')?.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+        </div>
+        <div class="line" style="grid-template-columns: 1fr 1fr;">
+            <mat-form-field appearance="outline">
+                <mat-label>Tarifa</mat-label>
+                <input matInput type="text" formControlName="tariff">
+                @for (item of errorMessages['tariff']; track $index) {
+                    <mat-error *ngIf="createReportForm.get('tariff')?.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+                <mat-label>Taxa</mat-label>
+                <input matInput type="text" formControlName="tax">
+                @for (item of errorMessages['tax']; track $index) {
+                    <mat-error *ngIf="createReportForm.get('tax')?.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+        </div>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+        <button matButton="filled" type="submit" [disabled]="createReportForm.invalid || wSubmit()" (click)="onSubmit()">
+            <div class="waiting">
+                @if (wSubmit()) {
+                    <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+                }
+                Criar
+            </div>
+        </button>
+        <button matButton [mat-dialog-close]="false">Fechar</button>
+    </mat-dialog-actions>
+</form>
+
+
+
+

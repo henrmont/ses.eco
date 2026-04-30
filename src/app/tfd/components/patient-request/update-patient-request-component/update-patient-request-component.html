@@ -1,0 +1,103 @@
+<h2 mat-dialog-title>Atualizar solicitação</h2>
+<form [formGroup]="updatePatientRequestForm" (ngSubmit)="onUpdatePatientRequestSubmit()">
+    <mat-dialog-content>
+        <div class="line" style="grid-template-columns: 1fr;">
+            <mat-form-field appearance="outline">
+                <mat-label>Paciente</mat-label>
+                <input type="text" matInput [formControl]="patientControl" [matAutocomplete]="patient" [readonly]="patientReadOnly()">
+                @if (patientLoading()) {
+                    <mat-spinner matSuffix [diameter]="30" style="margin-right: 10px;"></mat-spinner>
+                }
+                <mat-autocomplete #patient="matAutocomplete" [displayWith]="displayPatient" (optionSelected)="onPatientSelected($event.option.value)">
+                @for (option of filteredPatientOptions | async; track option) {
+                    <mat-option [value]="option">{{option.name}}</mat-option>
+                }
+                </mat-autocomplete>
+                @for (item of errorMessages['patient']; track $index) {
+                    <mat-error *ngIf="patientControl.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+        </div>
+        <div class="line" style="grid-template-columns: 1fr;">
+            <mat-form-field appearance="outline">
+                <mat-label>CID</mat-label>
+                <input type="text" matInput [formControl]="cidControl" [matAutocomplete]="cid" [readonly]="cidReadOnly()">
+                @if (cidLoading()) {
+                    <mat-spinner matSuffix [diameter]="30" style="margin-right: 10px;"></mat-spinner>
+                }
+                <mat-autocomplete #cid="matAutocomplete" [displayWith]="displayCid" (optionSelected)="onCidSelected($event.option.value)">
+                @for (option of filteredCidOptions | async; track option.id) {
+                    <mat-option [value]="option">{{option.code}} - {{option.name}}</mat-option>
+                }
+                </mat-autocomplete>
+                @for (item of errorMessages['cid']; track $index) {
+                    <mat-error *ngIf="cidControl.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+        </div>
+        <div class="line" style="grid-template-columns: 1fr;">
+            <mat-form-field appearance="outline">
+                <mat-label>Unidade hospitalar</mat-label>
+                <input matInput [matAutocomplete]="hospitalUnities" [formControl]="hospitalUnitiesControl" [readonly]="hospitalUnitiesReadOnly()">
+                @if (hospitalUnitiesLoading()) {
+                    <mat-spinner matSuffix [diameter]="30" style="margin-right: 10px;"></mat-spinner>
+                }
+                <mat-autocomplete #hospitalUnities="matAutocomplete" [displayWith]="displayHospitalUnity" (optionSelected)="onHospitalUnitySelected($event.option.value)">
+                @for (option of filteredHospitalUnitiesOptions | async; track option) {
+                    <mat-option [value]="option">
+                        <span>{{option.name}}</span>
+                    </mat-option>
+                }
+                </mat-autocomplete>
+                @for (item of errorMessages['hospital_unity']; track $index) {
+                    <mat-error *ngIf="hospitalUnitiesControl.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+        </div>
+        <div class="line" style="grid-template-columns: 1fr 1fr;">
+            <mat-form-field appearance="outline">
+                <mat-label>Tipo</mat-label>
+                <mat-select formControlName="type" (selectionChange)="onSelection($event)">
+                    @for (item of types; track $index) {
+                        <mat-option [value]="item">{{item}}</mat-option>
+                    }
+                </mat-select>
+                @for (item of errorMessages['type']; track $index) {
+                    <mat-error *ngIf="updatePatientRequestForm.get('type')?.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+                <mat-label>Data da proxima consulta</mat-label>
+                <input matInput [matDatepicker]="pickerConsulta" formControlName="consultation_date">
+                <mat-datepicker-toggle matIconSuffix [for]="pickerConsulta"></mat-datepicker-toggle>
+                <mat-datepicker #pickerConsulta></mat-datepicker>
+                @for (item of errorMessages['consultation_date']; track $index) {
+                    <mat-error *ngIf="updatePatientRequestForm.get('consultation_date')?.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+        </div>
+        <div class="line" style="grid-template-columns: 1fr;">
+            <mat-form-field appearance="outline">
+                <mat-label>Observação</mat-label>
+                <textarea matInput rows="4" formControlName="observation"></textarea>
+                @for (item of errorMessages['observation']; track $index) {
+                    <mat-error *ngIf="updatePatientRequestForm.get('observation')?.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+        </div>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+        <button matButton="filled" type="submit" [disabled]="updatePatientRequestForm.invalid || wSubmit()">
+            <div class="waiting">
+                @if (wSubmit()) {
+                    <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+                }
+                Atualizar
+            </div>
+        </button>
+        <button matButton [mat-dialog-close]="false">Fechar</button>
+    </mat-dialog-actions>
+</form>
+
+
+

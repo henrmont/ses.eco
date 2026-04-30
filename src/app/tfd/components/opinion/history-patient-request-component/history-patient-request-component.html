@@ -1,0 +1,56 @@
+<h2 mat-dialog-title>Histório de solicitações</h2>
+<mat-dialog-content>
+    @if (isLoading) {
+        <div class="loading-container">
+            <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+        </div>
+    } @else {
+        <mat-accordion [multi]="false">
+        @for (item of patient_requests(); track $index) {
+                <mat-expansion-panel class="accordion">
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>{{item.consultation_date | date: 'dd/MM/yyyy'}}</mat-panel-title>
+                        <mat-panel-description>
+                            {{item.type}}
+                            <button matIconButton matTooltip="Detalhes solicitação" (click)="clickEvent($event); showPatientRequest(item)">
+                                <mat-icon>visibility</mat-icon>
+                            </button>
+                        </mat-panel-description>
+                    </mat-expansion-panel-header>
+                    @for (item of item.opinions; track $index) {
+                        <div class="line" style="grid-template-columns: 3fr 3fr 1fr;">
+                            <div>
+                                {{item.name}}
+                            </div>
+                            <div>
+                                {{item.professional.name}}
+                            </div>
+                            <div style="display: flex; justify-content: flex-end;">
+                                <button matIconButton disabled>
+                                    <mat-icon [className]="item.is_approved ? 'valid' : 'invalid'">{{ item.is_approved ? 'check' : 'close' }}</mat-icon>
+                                </button>
+                                <button matIconButton matTooltip="Detalhes do parecer" (click)="showOpinion(item)">
+                                    <mat-icon>edit_note</mat-icon>
+                                </button>
+                            </div>
+                        </div>
+                    } @empty {
+                        <div class="line" style="grid-template-columns: 1fr; text-align: center;">
+                            Nenhum parecer vinculado à solicitação.
+                        </div>
+                    }
+                </mat-expansion-panel>
+            } @empty {
+                <div class="line" style="grid-template-columns: 1fr; text-align: center;">
+                    Nenhuma solicitação encontrada.
+                </div>
+            }
+        </mat-accordion>
+    }
+</mat-dialog-content>
+<mat-dialog-actions>
+  <button matButton [mat-dialog-close]="false">Fechar</button>
+</mat-dialog-actions>
+
+
+

@@ -1,0 +1,37 @@
+<section>
+    <div class="search">
+        <mat-form-field appearance="outline">
+          <mat-label>Buscar</mat-label>
+          <input matInput (keyup)="applyFilter($event)" placeholder="buscar regra" #input>
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+    </div>
+    
+    <table mat-table [dataSource]="dataSource()">
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef style="width: 70%;"> Nome </th>
+        <td mat-cell *matCellDef="let element"> {{element.name.split('/')[1]}} </td>
+      </ng-container>
+    
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef class="center" style="width: 10%;"> Ações </th>
+        <td mat-cell *matCellDef="let element" class="center">
+            <div>
+                <button matIconButton matTooltip="Atualizar regra" [disabled]="ownerRole(element.name) || checkPermissions('tfd/regra atualizar')" (click)="updateRole(element)">
+                    <mat-icon>drive_file_rename_outline</mat-icon>
+                </button>
+                <button matIconButton matTooltip="Deletar regra" [disabled]="ownerRole(element.name) || checkPermissions('tfd/regra deletar')" (click)="deleteRole(element)">
+                    <mat-icon>delete</mat-icon>
+                </button>
+            </div>
+        </td>
+      </ng-container>
+    
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell center" colspan="2">Nenhum resultado encontrado.</td>
+      </tr>
+    </table>
+</section>

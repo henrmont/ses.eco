@@ -1,0 +1,22 @@
+<h2 mat-dialog-title>Detalhes da unidade hospitalar</h2>
+<mat-dialog-content>
+    <mat-card appearance="outlined">
+        <mat-card-content>
+            <div class="line" style="grid-template-columns: 1fr;">
+                <div>
+                    <strong>Nome:</strong>{{data.hospital_unity.name}}
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 1fr;">
+                <div>
+                    <strong>CNES:</strong>{{data.hospital_unity.cnes}}
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+    <button matButton [mat-dialog-close]="false">Fechar</button>
+</mat-dialog-actions>
+
+

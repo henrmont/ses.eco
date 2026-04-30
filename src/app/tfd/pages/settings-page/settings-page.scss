@@ -1,0 +1,12 @@
+:host {
+    display: flex;
+    justify-content: center;
+}
+
+section {
+    margin-top: 20px;
+    width: 80%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 50px;
+}

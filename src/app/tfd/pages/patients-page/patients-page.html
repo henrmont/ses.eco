@@ -1,0 +1,151 @@
+<section>
+    <mat-tab-group dynamicHeight>
+        <mat-tab>
+            <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">inbox</mat-icon>
+            Minha caixa
+            </ng-template>
+            <div class="table">
+                <div class="search">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Buscar</mat-label>
+                        <input matInput (keyup)="applyOwnerFilter($event)" placeholder="buscar paciente" #ownerInput>
+                        <mat-icon matSuffix>search</mat-icon>
+                    </mat-form-field>
+                </div>
+                
+                <table mat-table [dataSource]="ownerDataSource()">
+                  <ng-container matColumnDef="name">
+                    <th mat-header-cell *matHeaderCellDef> Name </th>
+                    <td mat-cell *matCellDef="let element"> {{element.name}} </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="cns">
+                    <th mat-header-cell *matHeaderCellDef> CNS </th>
+                    <td mat-cell *matCellDef="let element"> {{element.cns | mask:'000 0000 0000 0000'}} </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="document">
+                    <th mat-header-cell *matHeaderCellDef> Documento </th>
+                    <td mat-cell *matCellDef="let element"> {{element.document | mask: element.document_type === 'CPF' ? '000.000.000-00' : '000000 00 00 0000 0 00000 000 0000000 00'}} </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="valid">
+                    <th mat-header-cell *matHeaderCellDef class="center" style="width: 5%;"> Status </th>
+                    <td mat-cell *matCellDef="let element" class="center">
+                      @if (element.status) {
+                        <button matIconButton [matTooltip]="element.is_valid ? 'Inativar paciente' : 'Ativar paciente'" (click)="validatePatient(element)" [disabled]="checkPermissions('tfd/paciente validar')">
+                            <mat-icon [className]="element.is_valid ? 'valid' : 'invalid'">{{ element.is_valid ? 'check' : 'close' }}</mat-icon>
+                        </button>
+                      } @else {
+                        <button matIconButton disabled>
+                            <mat-icon class="invalid">priority_high</mat-icon>
+                        </button>
+                      }
+                    </td>
+                  </ng-container>
+                
+                  <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef class="center" style="width: 25%;"> Ações </th>
+                    <td mat-cell *matCellDef="let element" class="center">
+                        <div>
+                            <button matIconButton matTooltip="Detalhes do paciente" (click)="showPatient(element)">
+                                <mat-icon>visibility</mat-icon>
+                            </button>
+                            <button matIconButton matTooltip="Atualizar paciente" (click)="updatePatient(element)" [disabled]="checkPermissions('tfd/paciente atualizar')">
+                                <mat-icon>drive_file_rename_outline</mat-icon>
+                            </button>
+                            <button matIconButton matTooltip="Acompanhantes" (click)="patientEscorts(element)" [disabled]="checkPermissions('tfd/paciente acompanhantes')">
+                                <mat-icon>group</mat-icon>
+                            </button>
+                            <button matIconButton matTooltip="Laudos" (click)="patientReports(element)" [disabled]="checkPermissions('tfd/paciente laudos')">
+                                <mat-icon>medical_information</mat-icon>
+                            </button>
+                            <button matIconButton matTooltip="Arquivar" (click)="archivePatient(element)" [disabled]="!element.status || checkPermissions('tfd/paciente atualizar')">
+                                <mat-icon>inventory_2</mat-icon>
+                            </button>
+                        </div>
+                    </td>
+                  </ng-container>
+                
+                  <tr mat-header-row *matHeaderRowDef="displayedOwnerColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: displayedOwnerColumns;"></tr>
+                
+                  <tr class="mat-row" *matNoDataRow>
+                    <td class="mat-cell center" colspan="5">Nenhum resultado encontrado.</td>
+                  </tr>
+                </table>
+            </div>
+        </mat-tab>
+
+        <mat-tab>
+            <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">all_inbox</mat-icon>
+            Outras caixas
+            </ng-template>
+            <div class="table">
+                <div class="search">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Buscar</mat-label>
+                        <input matInput (keyup)="applyOthersFilter($event)" placeholder="buscar paciente" #ownerInput>
+                        <mat-icon matSuffix>search</mat-icon>
+                    </mat-form-field>
+                </div>
+                
+                <table mat-table [dataSource]="othersDataSource()">
+                  <ng-container matColumnDef="name">
+                    <th mat-header-cell *matHeaderCellDef> Name </th>
+                    <td mat-cell *matCellDef="let element"> {{element.name}} </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="cns">
+                    <th mat-header-cell *matHeaderCellDef> CNS </th>
+                    <td mat-cell *matCellDef="let element"> {{element.cns | mask:'000 0000 0000 0000'}} </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="responsible">
+                    <th mat-header-cell *matHeaderCellDef> Responsável </th>
+                    <td mat-cell *matCellDef="let element"> {{element.user.professional.name}} </td>
+                  </ng-container>
+                
+                  <ng-container matColumnDef="valid">
+                    <th mat-header-cell *matHeaderCellDef class="center" style="width: 5%;"> Ativo </th>
+                    <td mat-cell *matCellDef="let element" class="center">
+                      @if (element.status) {
+                        <button matIconButton disabled>
+                            <mat-icon [className]="element.is_valid ? 'valid' : 'invalid'">{{ element.is_valid ? 'check' : 'close' }}</mat-icon>
+                        </button>
+                      } @else {
+                        <button matIconButton disabled>
+                            <mat-icon class="invalid">priority_high</mat-icon>
+                        </button>
+                      }
+                    </td>
+                  </ng-container>
+                
+                  <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef class="center" style="width: 10%;"> Ações </th>
+                    <td mat-cell *matCellDef="let element" class="center">
+                        <div>
+                            <button matIconButton matTooltip="Detalhes do paciente" (click)="showPatient(element)">
+                                <mat-icon>visibility</mat-icon>
+                            </button>
+                            <button matIconButton matTooltip="Mover para minha caixa" (click)="movePatientFromOthers(element)">
+                                <mat-icon aria-hidden="false">move_to_inbox</mat-icon>
+                            </button>
+                        </div>
+                    </td>
+                  </ng-container>
+                
+                  <tr mat-header-row *matHeaderRowDef="displayedOthersColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: displayedOthersColumns;"></tr>
+                
+                  <tr class="mat-row" *matNoDataRow>
+                    <td class="mat-cell center" colspan="5">Nenhum resultado encontrado.</td>
+                  </tr>
+                </table>
+            </div>
+        </mat-tab>
+    </mat-tab-group>
+</section>
+

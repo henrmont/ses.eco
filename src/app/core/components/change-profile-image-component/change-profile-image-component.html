@@ -1,0 +1,30 @@
+<h2 mat-dialog-title>Alterar imagem do perfil</h2>
+<mat-dialog-content class="cropper">
+    <image-cropper class="cropper"
+        [imageChangedEvent]="imageChangedEvent"
+        [maintainAspectRatio]="true"
+        [aspectRatio]="4 / 4"
+        [roundCropper]="true"
+        format="png"
+        output="base64"
+        [resizeToWidth]="600"
+        [resizeToHeight]="600"
+        [cropperMinWidth]="200"
+        [cropperMinHeight]="200"
+        (imageCropped)="imageCropped($event)"
+        (imageLoaded)="imageLoaded($event)"
+        (cropperReady)="cropperReady()"
+        (loadImageFailed)="loadImageFailed()"
+    ></image-cropper>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+    <button matButton="filled" type="button" [disabled]="wSubmit()" (click)="onChangeImageSubmit()">
+        <div class="waiting">
+            @if (wSubmit()) {
+                <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+            }
+            Alterar
+        </div>
+    </button>
+    <button matButton mat-dialog-close>Fechar</button>
+</mat-dialog-actions>

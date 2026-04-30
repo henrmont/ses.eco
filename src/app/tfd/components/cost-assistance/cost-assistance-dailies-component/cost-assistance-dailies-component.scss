@@ -1,0 +1,19 @@
+.center {
+    text-align: center;
+}
+
+.center div {
+    display: flex; 
+    justify-content: center;
+}
+
+.center div button {
+    margin: 0 10px;
+}
+
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+

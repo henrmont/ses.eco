@@ -1,0 +1,20 @@
+<h2 mat-dialog-title>Alterar perfil</h2>
+<form [formGroup]="changeProfileInfoForm" (ngSubmit)="onChangeProfileInfoSubmit()">
+    <mat-dialog-content>
+        <mat-form-field appearance="outline">
+            <mat-label>Nome</mat-label>
+            <input matInput type="text" formControlName="name">
+        </mat-form-field>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+        <button matButton="filled" type="submit" [disabled]="wSubmit()">
+            <div class="waiting">
+                @if (wSubmit()) {
+                    <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+                }
+                Alterar
+            </div>
+      </button>
+      <button matButton mat-dialog-close>Fechar</button>
+    </mat-dialog-actions>
+</form>

@@ -1,0 +1,167 @@
+<h2 mat-dialog-title>Novo acompanhante</h2>
+<mat-dialog-content>
+    <mat-stepper #stepper>
+        <mat-step [stepControl]="createEscortPersonalForm">
+            <ng-template matStepLabel>Dados pessoais</ng-template>
+            <form [formGroup]="createEscortPersonalForm">
+                <div class="stepper">
+                    <div class="line" style="grid-template-columns: 1fr 1.5fr;">
+                        <mat-form-field appearance="outline">
+                            <mat-label>CNS</mat-label>
+                            <input matInput type="text" mask="000 0000 0000 0000" formControlName="cns" (keyup)="getEscortCns()">
+                            @for (item of errorMessages['cns']; track $index) {
+                                <mat-error *ngIf="createEscortPersonalForm.get('cns')?.hasError(item.type)">{{item.message}}</mat-error>
+                            }
+                        </mat-form-field>
+                        <div style="display: flex;">
+                            <input type="file" class="file-input" (change)="onFileCNSSelected($event)" #fileCNS style="display: none;">
+                            <button matFab extended (click)="fileCNS.click()" [matTooltip]="labelFileCNS()">
+                                <mat-icon>attach_file</mat-icon>
+                                Anexar CNS
+                            </button>
+                        </div>
+                    </div>
+                    <div class="line" style="grid-template-columns: 1fr 1.5fr;">
+                        <mat-form-field appearance="outline">
+                            <mat-label>CPF</mat-label>
+                            <input matInput type="text" mask="000.000.000-00" formControlName="document" (keyup)="getEscortDocument()">
+                            @for (item of errorMessages['document']; track $index) {
+                                <mat-error *ngIf="createEscortPersonalForm.get('document')?.hasError(item.type)">{{item.message}}</mat-error>
+                            }
+                        </mat-form-field>
+                        <div style="display: flex;">
+                            <input type="file" class="file-input" (change)="onFileDocumentSelected($event)" #fileDocument style="display: none;">
+                            <button matFab extended (click)="fileDocument.click()" [matTooltip]="labelFileDocument()">
+                                <mat-icon>attach_file</mat-icon>
+                                Anexar documento
+                            </button>
+                        </div>
+                    </div>
+                    <div class="line" style="grid-template-columns: 1fr;">
+                        <mat-form-field appearance="outline">
+                            <mat-label>Nome</mat-label>
+                            <input matInput type="text" formControlName="name">
+                            @for (item of errorMessages['name']; track $index) {
+                                <mat-error *ngIf="createEscortPersonalForm.get('name')?.hasError(item.type)">{{item.message}}</mat-error>
+                            }
+                        </mat-form-field>
+                    </div>
+                    <div class="line" style="grid-template-columns: 1fr 1fr;">
+                        <mat-form-field appearance="outline">
+                            <mat-label>Relação</mat-label>
+                            <input matInput type="text" formControlName="relation">
+                            <mat-error>Relação</mat-error>
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Data de nascimento</mat-label>
+                            <input #birthDateInput matInput [matDatepicker]="picker" type="text" mask="00/00/0000" (dateChange)="setBirthDate($event)" [required]="true">
+                            <mat-error>Data de nascimento</mat-error>
+                            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                            <mat-datepicker #picker></mat-datepicker>
+                            @for (item of errorMessages['birth_date']; track $index) {
+                                <mat-error *ngIf="createEscortPersonalForm.get('birth_date')?.hasError(item.type)">{{item.message}}</mat-error>
+                            }
+                        </mat-form-field>
+                    </div>
+                    <div class="line" style="grid-template-columns: 1fr 1fr;">
+                        <mat-form-field appearance="outline">
+                            <mat-label>Gênero</mat-label>
+                            <mat-select formControlName="gender">
+                                @for (item of genders; track $index) {
+                                    <mat-option [value]="item">{{item}}</mat-option>
+                                }
+                            </mat-select>
+                            @for (item of errorMessages['gender']; track $index) {
+                                <mat-error *ngIf="createEscortPersonalForm.get('gender')?.hasError(item.type)">{{item.message}}</mat-error>
+                            }
+                        </mat-form-field>
+                        <div class="toggle">
+                            <mat-slide-toggle formControlName="is_same_address" (change)="useSameAddress(); resetAddress()"><span>Usar o endereço do paciente</span></mat-slide-toggle>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </mat-step>
+        <mat-step [stepControl]="createEscortAddressForm">
+            <ng-template matStepLabel>Dados de endereço</ng-template>
+            <form [formGroup]="createEscortAddressForm">
+                <div class="stepper">
+                    <div class="line" style="grid-template-columns: 1fr 3fr;">
+                        <mat-form-field appearance="outline">
+                            <mat-label>CEP</mat-label>
+                            <input matInput type="text" mask="00000-000" formControlName="cep" (keyup)="getAddress()">
+                            @for (item of errorMessages['cep']; track $index) {
+                                <mat-error *ngIf="createEscortAddressForm.get('cep')?.hasError(item.type)">{{item.message}}</mat-error>
+                            }
+                        </mat-form-field>
+                        <div style="display: flex;">
+                            <input type="file" class="file-input" (change)="onFileAddressSelected($event)" #fileAddress style="display: none;">
+                            <button matFab extended (click)="fileAddress.click()" [matTooltip]="labelFileAddress()" [disabled]="statusAddress()">
+                                <mat-icon>attach_file</mat-icon>
+                                Anexar comprovante de endereço
+                            </button>
+                        </div>
+                    </div>
+                    <mat-form-field appearance="outline">
+                        <mat-label>Endereço</mat-label>
+                        <input matInput type="text" formControlName="address">
+                        @for (item of errorMessages['address']; track $index) {
+                            <mat-error *ngIf="createEscortAddressForm.get('address')?.hasError(item.type)">{{item.message}}</mat-error>
+                        }
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                        <mat-label>Complemento</mat-label>
+                        <input matInput type="text" formControlName="complement">
+                    </mat-form-field>
+                    <div class="line" style="grid-template-columns: 1fr 1fr;">
+                        <mat-form-field appearance="outline">
+                            <mat-label>Número</mat-label>
+                            <input matInput type="text" formControlName="number">
+                            @for (item of errorMessages['number']; track $index) {
+                                <mat-error *ngIf="createEscortAddressForm.get('number')?.hasError(item.type)">{{item.message}}</mat-error>
+                            }
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Bairro</mat-label>
+                            <input matInput type="text" formControlName="neighborhood">
+                            @for (item of errorMessages['neighborhood']; track $index) {
+                                <mat-error *ngIf="createEscortAddressForm.get('neighborhood')?.hasError(item.type)">{{item.message}}</mat-error>
+                            }
+                        </mat-form-field>
+                    </div>
+                    <div class="line" style="grid-template-columns: 1fr 1fr;">
+                        <mat-form-field appearance="outline">
+                            <mat-label>Cidade</mat-label>
+                            <input matInput type="text" formControlName="city">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline" style="width: 40%;">
+                            <mat-label>UF</mat-label>
+                            <input type="text"
+                                matInput
+                                formControlName="state"
+                                [matAutocomplete]="state">
+                            <mat-autocomplete autoActiveFirstOption #state="matAutocomplete">
+                            @for (option of filteredUfsOptions | async; track option) {
+                                <mat-option [value]="option">{{option}}</mat-option>
+                            }
+                            </mat-autocomplete>
+                        </mat-form-field>
+                    </div>
+                </div>
+            </form>
+        </mat-step>
+    </mat-stepper>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+    <button matButton="filled" type="button" [disabled]="createEscortPersonalForm.invalid || createEscortAddressForm.invalid || wSubmit()" (click)="onSubmit()">
+        <div class="waiting">
+            @if (wSubmit()) {
+                <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+            }
+            Criar
+        </div>
+    </button>
+    <button matButton [mat-dialog-close]="false">Fechar</button>
+</mat-dialog-actions>
+
+

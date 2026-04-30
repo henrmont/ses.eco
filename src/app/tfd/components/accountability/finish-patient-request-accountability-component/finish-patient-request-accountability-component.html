@@ -1,0 +1,13 @@
+<h2 mat-dialog-title>Finalizar solicitação</h2>
+<mat-dialog-content>Você deseja finalizar a solicitação.</mat-dialog-content>
+<mat-dialog-actions>
+    <button matButton="filled" [disabled]="wSubmit()" (click)="onDeletePatientRequestSubmit()">
+        <div class="waiting">
+            @if (wSubmit()) {
+                <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+            }
+            Finalizar
+        </div>
+    </button>
+    <button matButton [mat-dialog-close]="false">Fechar</button>
+</mat-dialog-actions>

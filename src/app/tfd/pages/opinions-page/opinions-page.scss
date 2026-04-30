@@ -1,0 +1,62 @@
+:host {
+    display: flex;
+    justify-content: center;
+}
+
+section {
+    margin-top: 20px;
+    width: 80%;
+}
+
+section div.search {
+    width: auto; 
+    display: flex; 
+    justify-content: space-between; 
+    gap: 60px;
+}
+
+mat-form-field {
+    margin: auto;
+    width: 50%;
+}
+
+section .table {
+    width: 100%;
+    margin: auto;
+    margin-top: 30px;
+}
+
+button.add-user {
+    position: fixed; 
+    bottom: 100px; 
+    right: 100px;
+}
+
+.center {
+    text-align: center;
+}
+
+.center div {
+    display: flex; 
+    justify-content: flex-start;
+}
+
+.center div button {
+    margin: 0 10px;
+}
+
+.valid {
+    color: green;
+}
+
+.invalid {
+    color: red;
+}
+
+.back, .bookmark {
+    color: darkorange;
+}
+
+.tab-icon {
+    margin-right: 15px;
+}

@@ -1,0 +1,142 @@
+
+<mat-drawer-container hasBackdrop="true">
+  <mat-drawer #drawer mode="push" position="end">
+    <section class="menu">
+      <div class="banner"></div>
+      <div class="profile">
+        @if (user().image) {
+          <div class="avatar" [style]="'background-image: url('+user().image+');'">
+            <input type="file" class="file-input" (change)="onFileSelected($event)" #fileUpload style="display: none;">
+            <button mat-mini-fab color="primary" (click)="fileUpload.click()">
+              <mat-icon>edit</mat-icon>
+            </button>
+          </div>
+        } @else {
+          <div class="avatar">
+            <input type="file" class="file-input" (change)="onFileSelected($event)" #fileUpload style="display: none;">
+            <button mat-mini-fab color="primary" (click)="fileUpload.click()">
+              <mat-icon>edit</mat-icon>
+            </button>
+          </div>
+        }
+        <div class="info">
+          <div>
+            <h2>{{user().name}}</h2>
+            <h4>{{user().email}}</h4>
+          </div>
+          <div>
+            <button matIconButton (click)="changeProfileInfo()">
+              <mat-icon>edit</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- <mat-list>
+        <div mat-subheader>Webponto</div>
+        <mat-list-item>
+          <mat-icon matListItemIcon color="success">check_circle</mat-icon>
+          <div matListItemTitle>Entrada da manhã</div>
+          <div matListItemLine>7:30</div>
+        </mat-list-item>
+        <mat-list-item>
+          <mat-icon matListItemIcon color="warn">warning</mat-icon>
+          <div matListItemTitle>Saída da manhã</div>
+          <div matListItemLine>Não registrada</div>
+        </mat-list-item>
+        <mat-list-item>
+          <mat-icon matListItemIcon color="warn">warning</mat-icon>
+          <div matListItemTitle>Entrada da tarde</div>
+          <div matListItemLine>Não registrada</div>
+        </mat-list-item>
+        <mat-list-item>
+          <mat-icon matListItemIcon color="warn">warning</mat-icon>
+          <div matListItemTitle>Saída da tarde</div>
+          <div matListItemLine>Não registrada</div>
+        </mat-list-item>
+      </mat-list> -->
+      <mat-divider></mat-divider>
+      <mat-action-list>
+        <div mat-subheader>Sistema</div>
+        <button mat-list-item (click)="changeProfileModule(); drawer.toggle()">
+          <div class="list-button">
+            <mat-icon>app_registration</mat-icon>
+            <div>Selecionar módulo</div>
+          </div>
+        </button>
+        <button mat-list-item (click)="openAboutBox(); drawer.toggle()">
+          <div class="list-button">
+            <mat-icon>info</mat-icon>
+            <div>Sobre</div>
+          </div>
+        </button>
+        <button mat-list-item (click)="logout()">
+          <div class="list-button">
+            <mat-icon>logout</mat-icon>
+            <div>Sair</div>
+          </div>
+        </button>
+      </mat-action-list>
+      <!-- <div style="display: flex; justify-content: center;">
+        <img src="assets/img/logo-mt.png" style="margin-top: 30px; width: 50%; box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;">
+      </div> -->
+    </section>
+  </mat-drawer>
+  <mat-drawer-content class="content">
+    <mat-toolbar>
+      <div class="pages">
+        <button mat-icon-button [routerLink]="['dashboard']">
+          <mat-icon>dashboard</mat-icon>
+        </button>
+        @if (module()) {
+          <button matFab extended [routerLink]="[module().name]">
+            <mat-icon>web_asset</mat-icon>
+            {{module().name.toUpperCase()}}
+          </button>
+        } @else {
+          <button mat-icon-button disabled>
+            <mat-icon>web_asset_off</mat-icon>
+          </button>
+        }
+      </div>
+      <div class="resources">
+        <button mat-icon-button [matMenuTriggerFor]="menu" disabled>
+          <mat-icon>notifications</mat-icon>
+        </button>
+        <mat-menu #menu="matMenu">
+          <mat-list>
+            <!-- @for (item of flash_notifications; track $index) {
+              <mat-list-item>
+                <div style="display: flex; align-items: center;">
+                  <mat-icon style="margin-right: 20px;">notifications</mat-icon>
+                  <div style="display: flex; flex-direction: column;">
+                    <span>{{ item.data.title }}</span>
+                    <span style="font-size: 12px; color: gray;">{{ item.data.message }}</span>
+                  </div>
+                </div>
+              </mat-list-item>
+              <mat-divider></mat-divider>
+            } @empty {
+              <div style="width: 100%; margin-top: 20px; display: flex; flex-direction: column; align-items: center;">
+                <mat-icon style="font-size: 100px; width: 100px;  height: 100px; display: flex; justify-content: center;">notifications_off</mat-icon>
+                <h3>Nenhuma notificação!</h3>
+              </div>
+            } -->
+          </mat-list>
+          <div class="notifications-link">
+            <button mat-button [routerLink]="['notifications']" disabled>Ver todas as notificações</button>
+          </div>
+        </mat-menu>
+        <button mat-icon-button [routerLink]="['messages']" disabled>
+          <mat-icon>forum</mat-icon>
+        </button>
+        <button mat-icon-button (click)="drawer.toggle()">
+          <mat-icon>menu</mat-icon>
+        </button>
+      </div>
+    </mat-toolbar>
+    <div class="container">
+      <router-outlet></router-outlet>
+    </div>
+  </mat-drawer-content>
+</mat-drawer-container>
+

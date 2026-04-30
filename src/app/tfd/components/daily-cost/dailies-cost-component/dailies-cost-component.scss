@@ -1,0 +1,19 @@
+mat-card {
+    margin-bottom: 5px;
+}
+
+mat-card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+mat-list {
+    width: 100%;
+}
+
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}

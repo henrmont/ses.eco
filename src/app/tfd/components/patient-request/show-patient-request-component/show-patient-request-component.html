@@ -1,0 +1,229 @@
+<h2 mat-dialog-title>Detalhes da solicitação</h2>
+<mat-dialog-content>
+    <mat-card appearance="outlined">
+        <mat-card-header>
+            <mat-card-title>Informações gerais</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <div class="line" style="grid-template-columns: 1fr;">
+                <div>
+                    <strong>Paciente:</strong>{{data.patient_request.report.patient_care.patient.name}}
+                    <button matIconButton matTooltip="Detalhes do paciente" (click)="showPatient(patient)">
+                        <mat-icon>visibility</mat-icon>
+                    </button>
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 1fr;">
+                <div>
+                    <strong>CID:</strong>{{data.patient_request.report.cid.code}} - {{data.patient_request.report.cid.name}}
+                    <button matIconButton matTooltip="Detalhes do paciente" (click)="showPatientReport(data.patient_request.report)">
+                        <mat-icon>visibility</mat-icon>
+                    </button>
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 1fr 1fr;">
+                <div>
+                    <strong>Tipo de solicitação:</strong>{{data.patient_request.type}}
+                </div>
+                <div>
+                    <strong>Data da proxima consulta:</strong>{{data.patient_request.consultation_date != null ? (data.patient_request.consultation_date | date:'dd/MM/yyyy') : 'Não aplicável'}}
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 1fr;">
+                <div>
+                    <strong>Unidade hospitalar:</strong>{{data.patient_request.hospital_unity.name}}
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 1fr;">
+                <div>
+                    <strong>Observação:</strong>{{data.patient_request.observation}}
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+    <mat-card appearance="outlined" style="margin-top: 30px;">
+        <mat-card-header>
+            <mat-card-title>Profissionais responsáveis</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <div class="line" style="grid-template-columns: 1fr 1fr;">
+                <div>
+                    <strong>Cadastro:</strong>{{data.patient_request.owner_professional.name}}
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 1fr 1fr;">
+                <div>
+                    <strong>Médico:</strong>{{data.patient_request.medical_professional ? data.patient_request.medical_professional.name : 'Nenhum profissional selecionado'}}
+                    @if (data.patient_request.medical_approved_opinion) {
+                         <button matIconButton matTooltip="Detalhes do parecer médico" (click)="showOpinion(data.patient_request.medical_approved_opinion)">
+                            <mat-icon>visibility</mat-icon>
+                        </button>
+                    }
+                </div>
+                <div>
+                    <strong>Assistente social:</strong>{{data.patient_request.social_professional ? data.patient_request.social_professional.name : 'Nenhum profissional selecionado'}}
+                    @if (data.patient_request.social_approved_opinion) {
+                         <button matIconButton matTooltip="Detalhes do parecer social" (click)="showOpinion(data.patient_request.social_approved_opinion)">
+                            <mat-icon>visibility</mat-icon>
+                        </button>
+                    }
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 1fr 1fr;">
+                <div>
+                    <strong>Passagem:</strong>{{data.patient_request.type == 'Entrada' ? 'Não aplicável' : (data.patient_request.travel_professional ? data.patient_request.travel_professional.name : 'Nenhum profissional selecionado')}}
+                </div>
+                <div>
+                    <strong>Ajuda de custo:</strong>{{data.patient_request.type == 'Entrada' ? 'Não aplicável' : (data.patient_request.cost_assistance_professional ? data.patient_request.cost_assistance_professional.name : 'Nenhum profissional selecionado')}}
+                </div>
+            </div>
+            <div class="line" style="grid-template-columns: 1fr 1fr;">
+                <div>
+                    <strong>Prestação de conta:</strong>{{data.patient_request.type == 'Entrada' ? 'Não aplicável' : (data.patient_request.accountability_professional ? data.patient_request.accountability_professional.name : 'Nenhum profissional selecionado')}}
+                </div>
+                <div>
+                    <strong>Pagamento:</strong>{{data.patient_request.type == 'Entrada' ? 'Não aplicável' : (data.patient_request.payment_professional ? data.patient_request.payment_professional.name : 'Nenhum profissional selecionado')}}
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+    <mat-card appearance="outlined" style="margin-top: 30px;">
+        <mat-card-header>
+            <mat-card-title>Arquivos anexos</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            @for (item of data.patient_request.attachments; track $index) {
+                <div class="line" style="grid-template-columns: 1fr 1fr;">
+                    <div>
+                        {{item.name}}
+                        <button matIconButton matTooltip="Download do arquivo" (click)="download(item.archive_id, item.name)">
+                            <mat-icon>download</mat-icon>
+                        </button>
+                    </div>
+                </div>
+            } @empty {
+                <div class="line" style="grid-template-columns: 1fr; text-align: center;">
+                    Nenhum arquivo anexado à solicitação.
+                </div>
+            }
+        </mat-card-content>
+    </mat-card>
+    <mat-card appearance="outlined" style="margin-top: 30px;">
+        <mat-card-header>
+            <mat-card-title>Viagens</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            @for (item of data.patient_request.travels; track $index) {
+                <div class="line" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
+                    <div>
+                        <strong>Viagem:</strong>{{item.origin}} - {{item.destination}}
+                        <button matIconButton matTooltip="Visualizar viagem" (click)="showTravel(item)">
+                            <mat-icon>visibility</mat-icon>
+                        </button>
+                    </div>
+                    <div>
+                        <strong>Tipo:</strong>{{item.transportation}}
+                    </div>
+                    <div>
+                        <strong>Embarque:</strong>{{item.departure_date | date: 'dd/MM/y'}}
+                    </div>
+                    <div>
+                        <strong>Localizador:</strong>{{item.locator}}
+                    </div>
+                </div>
+            } @empty {
+                <div class="line" style="grid-template-columns: 1fr; text-align: center;">
+                    Nenhuma viagem vinculada à solicitação.
+                </div>
+            }
+        </mat-card-content>
+    </mat-card>
+    <mat-card appearance="outlined" style="margin-top: 30px;">
+        <mat-card-header>
+            <mat-card-title>Ajuda de custo</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            @for (item of data.patient_request.cost_assistances; track $index) {
+                <div class="line" style="grid-template-columns: 1fr 1fr 1fr;">
+                    <div>
+                        <strong>Nome:</strong>{{item.name}}
+                        <button matIconButton matTooltip="Visualizar ajuda de custo" (click)="showCostAssistance(item)">
+                            <mat-icon>visibility</mat-icon>
+                        </button>
+                    </div>
+                    <div>
+                        <strong>Tipo:</strong>{{item.type}}
+                    </div>
+                    <div>
+                        <strong>Data de criação:</strong>{{item.created_at | date: 'dd/MM/y'}}
+                    </div>
+                </div>
+            } @empty {
+                <div class="line" style="grid-template-columns: 1fr; text-align: center;">
+                    Nenhuma ajuda de custo vinculada à solicitação.
+                </div>
+            }
+        </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined" style="margin-top: 30px;">
+        <mat-card-header>
+            <mat-card-title>Prestação de contas</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            @for (item of data.patient_request.accountabilities; track $index) {
+                <div class="line" style="grid-template-columns: 1fr 1fr;">
+                    <div>
+                        <strong>Nome:</strong>{{item.name}}
+                        <button matIconButton matTooltip="Visualizar prestação de contas" (click)="showAccountability(item)">
+                            <mat-icon>visibility</mat-icon>
+                        </button>
+                    </div>
+                    <div>
+                        <strong>Data de criação:</strong>{{item.created_at | date: 'dd/MM/y'}}
+                    </div>
+                </div>
+            } @empty {
+                <div class="line" style="grid-template-columns: 1fr; text-align: center;">
+                    Nenhuma ajuda de custo vinculada à solicitação.
+                </div>
+            }
+        </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined" style="margin-top: 30px;">
+        <mat-card-header>
+            <mat-card-title>Pagamento</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            @if (data.patient_request.payment_info) {
+                <p style="display: flex; justify-content: center; font-weight: bold;">{{data.patient_request.payment_info.description}}</p>
+                <h3>Arquivos</h3>
+                @for (item of data.patient_request.payment_attachments; track $index) {
+                <div class="line" style="grid-template-columns: 1fr 1fr;">
+                    <div>
+                        <strong>Nome:</strong>{{item.name}}
+                    </div>
+                    <div>
+                        <button matIconButton matTooltip="Download do arquivo" (click)="download(item.archive_id, item.name)">
+                            <mat-icon>visibility</mat-icon>
+                        </button>
+                    </div>
+                </div>
+                } @empty {
+                    <div class="line" style="grid-template-columns: 1fr; text-align: center;">
+                        Nenhum documento vinculado ao pagamento.
+                    </div>
+                }
+            } @else {
+                <p style="display: flex; justify-content: center;">{{data.patient_request.payment_info}}</p>
+            }
+            
+        </mat-card-content>
+    </mat-card>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+    <button matButton [mat-dialog-close]="false">Fechar</button>
+</mat-dialog-actions>
+
+

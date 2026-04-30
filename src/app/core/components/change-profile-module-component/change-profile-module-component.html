@@ -1,0 +1,21 @@
+<h2 mat-dialog-title>Selecionar módulo</h2>
+<mat-dialog-content>
+  <mat-action-list>
+  @for (item of data.user.valid_modules; track $index) {
+    <button mat-list-item (click)="changeProfileModule(item.id)" [disabled]="checkModule(item.id)">
+      <div class="list-item">
+        <div>
+          <mat-icon>person</mat-icon>
+          <div>{{ item.name }}</div>
+        </div>
+        @if (checkModule(item.id)) {
+          <mat-icon>check</mat-icon>
+        }
+      </div>
+    </button>
+  }
+  </mat-action-list>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Fechar</button>
+</mat-dialog-actions>

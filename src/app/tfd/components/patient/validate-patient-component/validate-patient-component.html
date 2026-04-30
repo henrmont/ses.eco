@@ -1,0 +1,13 @@
+<h2 mat-dialog-title>{{ data.patient_care.is_valid ? 'Inativar paciente' : 'Ativar paciente' }}</h2>
+<mat-dialog-content>{{ data.patient_care.is_valid ? 'Você deseja inativar o paciente?' : 'Você deseja ativar o paciente?' }}</mat-dialog-content>
+<mat-dialog-actions>
+    <button matButton="filled" [disabled]="wSubmit()" (click)="onValidatePatientSubmit()">
+        <div class="waiting">
+            @if (wSubmit()) {
+                <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+            }
+            {{ data.patient_care.is_valid ? 'Inativar' : 'Ativar' }}
+        </div>
+    </button>
+    <button matButton [mat-dialog-close]="false">Fechar</button>
+</mat-dialog-actions>

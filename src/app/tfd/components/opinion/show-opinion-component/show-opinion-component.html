@@ -1,0 +1,18 @@
+<h2 mat-dialog-title>Detalhes do parecer</h2>
+<mat-dialog-content>
+    <mat-card appearance="outlined">
+        <mat-card-content>
+            <div style="display: flex; align-items: center;">
+                <strong>Nome:</strong>{{data.opinion.name}}
+            </div>
+        </mat-card-content>
+    </mat-card>
+    <mat-card appearance="outlined" style="margin-top: 30px;">
+        <mat-card-content>
+            <div [innerHTML]="sanitizedHtml"></div>
+        </mat-card-content>
+    </mat-card>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+    <button matButton [mat-dialog-close]="false">Fechar</button>
+</mat-dialog-actions>

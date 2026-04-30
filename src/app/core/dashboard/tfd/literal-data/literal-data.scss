@@ -1,0 +1,24 @@
+section {
+    display: flex;
+    justify-content: space-between;
+    column-gap: 20px;
+}
+
+mat-icon.icon {
+    width: auto;
+    height: auto;
+    font-size: 40px;
+}
+
+mat-card {
+    width: 200px;
+}
+
+mat-card-subtitle {
+    text-align: center;
+    height: 50px;
+}
+
+h2 {
+    font-size: 17px;
+}

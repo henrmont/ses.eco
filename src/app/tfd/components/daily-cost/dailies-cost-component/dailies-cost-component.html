@@ -1,0 +1,30 @@
+<mat-card appearance="raised">
+    <mat-card-header>
+        <mat-card-title>Diárias</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+        @if (isLoading()) {
+            <div class="loading-container">
+                <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+            </div>
+        } @else {
+            <mat-list>
+                @for (item of dailiesCost(); track $index) {
+                    <mat-list-item>
+                        @if (item.overnight) {
+                            <mat-icon matListItemIcon>dark_mode</mat-icon>
+                        } @else {
+                            <mat-icon matListItemIcon>wb_sunny</mat-icon>
+                        }
+                        <div matListItemTitle>{{item.name}} - <strong>{{item.value | currency: 'BRL'}}</strong></div>
+                        <div matListItemMeta>
+                            <button matIconButton matTooltip="Atualizar valor da diária" (click)="updateDailyCost(item)">
+                                <mat-icon>drive_file_rename_outline</mat-icon>
+                            </button>
+                        </div>
+                    </mat-list-item>
+                }
+            </mat-list>
+        }
+    </mat-card-content>
+</mat-card>

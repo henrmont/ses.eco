@@ -1,0 +1,16 @@
+.line {
+    display: grid; 
+    grid-template-columns: 1fr; 
+    column-gap: 20px; 
+    margin-top: 10px;
+    height: 40px;
+}
+
+.line div {
+    display: flex; 
+    align-items: center;
+}
+
+strong {
+    margin-right: 5px;
+}

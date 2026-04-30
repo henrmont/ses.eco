@@ -1,0 +1,22 @@
+<h2 mat-dialog-title>Descrição do pagamento</h2>
+<form [formGroup]="undoPatientRequestForm" (ngSubmit)="onUndoPatientRequestSubmit()">
+    <mat-dialog-content>
+        <div class="line" style="grid-template-columns: 1fr;">
+            <mat-form-field appearance="outline">
+                <mat-label>Descrição</mat-label>
+                <textarea matInput rows="6" formControlName="description"></textarea>
+            </mat-form-field>
+        </div>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button matButton="filled" type="submit" [disabled]="undoPatientRequestForm.invalid || wSubmit()">
+        <div class="waiting">
+            @if (wSubmit()) {
+                <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+            }
+            Atualizar
+        </div>
+      </button>
+      <button matButton [mat-dialog-close]="false">Fechar</button>
+    </mat-dialog-actions>
+</form>

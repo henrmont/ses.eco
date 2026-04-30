@@ -1,0 +1,64 @@
+<h2 mat-dialog-title>Viagens</h2>
+<mat-dialog-content>
+    @if (isLoading()) {
+        <div class="loading-container">
+            <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+        </div>
+    } @else {
+        <table mat-table [dataSource]="dataSource()" class="mat-elevation-z8">
+            <ng-container matColumnDef="os">
+                <th mat-header-cell *matHeaderCellDef> OS </th>
+                <td mat-cell *matCellDef="let element"> {{element.os}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="origin">
+                <th mat-header-cell *matHeaderCellDef> Origem </th>
+                <td mat-cell *matCellDef="let element"> {{element.origin}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="destination">
+                <th mat-header-cell *matHeaderCellDef> Destino </th>
+                <td mat-cell *matCellDef="let element"> {{element.destination}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="departure_date">
+                <th mat-header-cell *matHeaderCellDef> Data de embarque </th>
+                <td mat-cell *matCellDef="let element"> {{element.departure_date | date: 'dd/MM/y'}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef class="center" style="width: 25%;"> Ações </th>
+                <td mat-cell *matCellDef="let element" class="center">
+                    <div>
+                        <button matIconButton matTooltip="Detalhes da viagem" (click)="showTravel(element)">
+                            <mat-icon>visibility</mat-icon>
+                        </button>
+                        <button matIconButton matTooltip="Atualizar viagem" (click)="updateTravel(element)">
+                            <mat-icon>drive_file_rename_outline</mat-icon>
+                        </button>
+                        <button matIconButton matTooltip="Passageiros" (click)="passengers(element)">
+                            <mat-icon>airline_seat_recline_normal</mat-icon>
+                        </button>
+                        <button matIconButton matTooltip="Rotas" (click)="routes(element)">
+                            <mat-icon>routes</mat-icon>
+                        </button>
+                        <button matIconButton matTooltip="Deletar viagem" (click)="deleteTravel(element)">
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </div>
+                </td>
+            </ng-container>
+    
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    
+            <tr class="mat-row" *matNoDataRow>
+                <td class="mat-cell center" colspan="5" class="center">Nenhuma viagem cadastrada.</td>
+            </tr>
+        </table>
+    }
+</mat-dialog-content>
+<mat-dialog-actions>
+  <button matButton="filled" (click)="createTravel()">Nova viagem</button>
+  <button matButton [mat-dialog-close]="false">Fechar</button>
+</mat-dialog-actions>

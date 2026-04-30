@@ -1,0 +1,51 @@
+<h2 mat-dialog-title>Atualizar laudo</h2>
+<form [formGroup]="updateReportForm">
+    <mat-dialog-content>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; column-gap: 20px;">
+            <mat-form-field appearance="outline">
+                <mat-label>Protocolo</mat-label>
+                <input matInput type="text" formControlName="protocol">
+                @for (item of errorMessages['protocol']; track $index) {
+                    <mat-error *ngIf="updateReportForm.get('protocol')?.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+            <div class="toggle">
+                <mat-slide-toggle formControlName="lawsuit"><span>Ação judicial</span></mat-slide-toggle>
+            </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr; column-gap: 20px;">
+            <mat-form-field class="example-full-width" appearance="outline">
+                <mat-label>CID</mat-label>
+                <input type="text" matInput [formControl]="cidControl" [matAutocomplete]="cid" [readonly]="cidReadOnly()">
+                @if (cidLoading()) {
+                    <mat-spinner matSuffix [diameter]="30" style="margin-right: 10px;"></mat-spinner>
+                }
+                <mat-autocomplete #cid="matAutocomplete" [displayWith]="displayCid">
+                @for (option of filteredCidOptions | async; track option.id) {
+                    <mat-option [value]="option" (click)="setCid(option.id)">{{option.code}} - {{option.name}}</mat-option>
+                }
+                </mat-autocomplete>
+            </mat-form-field>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr; column-gap: 20px;">
+            <mat-form-field appearance="outline">
+                <mat-label>Diagnóstico</mat-label>
+                <textarea matInput rows="6" formControlName="diagnosis"></textarea>
+                @for (item of errorMessages['diagnosis']; track $index) {
+                    <mat-error *ngIf="updateReportForm.get('diagnosis')?.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+        </div>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+        <button matButton="filled" type="submit" [disabled]="updateReportForm.invalid || wSubmit() || updateReportForm.pristine" (click)="onSubmit()">
+            <div class="waiting">
+                @if (wSubmit()) {
+                    <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+                }
+                Atualizar
+            </div>
+        </button>
+        <button matButton [mat-dialog-close]="false">Fechar</button>
+    </mat-dialog-actions>
+</form>

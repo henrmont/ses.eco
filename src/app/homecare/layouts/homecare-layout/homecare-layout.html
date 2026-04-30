@@ -1,0 +1,49 @@
+<mat-drawer-container>
+  <mat-drawer mode="side" opened>
+    <mat-action-list>
+        <!-- Usuários -->
+        @if (checkPermission(['usuário listar','usuário criar'])) {
+          <div mat-subheader>Usuários</div>
+        }
+        @if (checkPermission(['usuário listar'])) {
+          <button mat-list-item [routerLink]="['usuarios']">
+            <div class="link">
+              <mat-icon>groups</mat-icon>
+              <div>Usuários</div>
+            </div>
+          </button>
+        }
+        @if (checkPermission(['usuário criar'])) {
+          <button mat-list-item (click)="createUser()">
+            <div class="link">
+              <mat-icon>person_add</mat-icon>
+              <div>Novo usuário</div>
+            </div>
+          </button>
+        }
+        <!-- Regras -->
+        @if (checkPermission(['regra listar','regra criar'])) {
+          <div mat-subheader>Regras</div>
+        }
+        @if (checkPermission(['regra listar'])) {
+          <button mat-list-item [routerLink]="['regras']">
+            <div class="link">
+              <mat-icon>security</mat-icon>
+              <div>Regras</div>
+            </div>
+          </button>
+        }
+        @if (checkPermission(['regra criar'])) {
+          <button mat-list-item>
+            <div class="link">
+              <mat-icon>add_moderator</mat-icon>
+              <div>Nova regra</div>
+            </div>
+          </button>
+        }
+      </mat-action-list>
+  </mat-drawer>
+  <mat-drawer-content>
+    <router-outlet></router-outlet>
+  </mat-drawer-content>
+</mat-drawer-container>

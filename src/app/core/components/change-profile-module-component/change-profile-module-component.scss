@@ -1,0 +1,23 @@
+mat-dialog-content {
+    padding: 0 !important; 
+    padding-bottom: 15px;
+}
+
+mat-action-list {
+    width: 100%;
+}
+
+div.list-item {
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between;
+}
+
+div.list-item div {
+    display: flex; 
+    align-items: center;
+}
+
+div.list-item mat-icon {
+    margin-right: 10px;
+}

@@ -1,0 +1,38 @@
+<h2 mat-dialog-title>Atualizar diária</h2>
+<form [formGroup]="createCostAssistanceDailyForm" (ngSubmit)="onCreateCostAssistanceDailySubmit()">
+    <mat-dialog-content>
+        <div class="line" style="margin-top: 10px;">
+            <mat-form-field class="example-full-width" appearance="outline">
+                <mat-label>Tipo de diária</mat-label>
+                <mat-select formControlName="daily_cost_id">
+                    @for (item of dailyCostsOptions; track $index) {
+                        <mat-option [value]="item.id">{{item.name}}</mat-option>
+                    }
+                </mat-select>
+                @for (item of errorMessages['daily_cost_id']; track $index) {
+                    <mat-error *ngIf="createCostAssistanceDailyForm.get('daily_cost_id')?.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+        </div>
+        <div class="line" style="margin-top: 10px;">
+            <mat-form-field class="example-full-width" appearance="outline">
+                <mat-label>Quantidade</mat-label>
+                <input matInput type="number" formControlName="amount" min="1">
+                @for (item of errorMessages['amount']; track $index) {
+                    <mat-error *ngIf="createCostAssistanceDailyForm.get('amount')?.hasError(item.type)">{{item.message}}</mat-error>
+                }
+            </mat-form-field>
+        </div>
+    </mat-dialog-content>
+    <mat-dialog-actions>
+    <button matButton="filled" [disabled]="createCostAssistanceDailyForm.invalid || wSubmit()">
+        <div class="waiting">
+            @if (wSubmit()) {
+                <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+            }
+            Atualizar
+        </div>
+    </button>
+    <button matButton [mat-dialog-close]="false">Fechar</button>
+    </mat-dialog-actions>
+</form>
