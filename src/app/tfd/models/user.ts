@@ -13,4 +13,5 @@ export interface User {
     is_valid?: boolean;
     is_editable?: boolean;
     professional?: Profession;
+    type?: string;
 }

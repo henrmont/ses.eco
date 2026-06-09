@@ -1,85 +1,91 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { catchError, map, Observable, of } from 'rxjs';
 import { environment } from '../../../environments/environment.development';
 import { User } from '../models/user';
 import { Role } from '../models/role';
 import { AbstractControl, AsyncValidatorFn, ValidationErrors } from '@angular/forms';
 
-const requestOptions = {
-  'Authorization': `Bearer ${window.localStorage.getItem('token')}`
+export interface ApiResponse {
+  message: string;
+  status?: string;
+  [key: string]: any; 
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class UserService {
+  // 🔒 Injeções e URLs configuradas como imutáveis
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${environment.apiTfdUrl}/user`;
+  private readonly validatorUrl = `${environment.apiTfdUrl}/validator`;
 
-  constructor(
-    private http: HttpClient
-  ) {}
+  // 🧹 Os headers manuais continuam banidos! O Interceptor cuida do token com maestria.
 
   getUsers(): Observable<User[]> {
-    return this.http.get<User[]>(`${environment.apiTfdUrl}/user/get-users`, {headers: requestOptions})
+    return this.http.get<User[]>(`${this.apiUrl}/get-users`);
   }
 
   getRoles(): Observable<Role[]> {
-    return this.http.get<Role[]>(`${environment.apiTfdUrl}/user/get-roles`, {headers: requestOptions})
+    return this.http.get<Role[]>(`${this.apiUrl}/get-roles`);
   }
 
-  createUser(data: User): Observable<Array<any>> {
-    return this.http.post<Array<any>>(`${environment.apiTfdUrl}/user/create-user`, data, {headers: requestOptions})
+  createUser(data: User): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/create-user`, data);
   }
 
-  lockUser(user: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/user/lock-user/${user}`, {headers: requestOptions})
+  lockUser(userId: number): Observable<ApiResponse> {
+    // 🛠️ Corpo vazio {} passado corretamente como 2º parâmetro no PATCH para alternar o status
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/lock-user/${userId}`, {});
   }
 
-  validateUser(user: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/user/validate-user/${user}`, {headers: requestOptions})
+  validateUser(userId: number): Observable<ApiResponse> {
+    // 🛠️ Atende perfeitamente ao nosso componente dinâmico de alternância de validação (is_valid)
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/validate-user/${userId}`, {});
   }
 
-  updateUser(user: number, data: User): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/user/update-user/${user}`, data, {headers: requestOptions})
+  updateUser(userId: number, data: User): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-user/${userId}`, data);
   }
 
-  deleteUser(user: number): Observable<Array<any>> {
-    return this.http.delete<Array<any>>(`${environment.apiTfdUrl}/user/delete-user/${user}`, {headers: requestOptions})
+  deleteUser(userId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/delete-user/${userId}`);
   }
 
-  rolesUser(user: number, data: Role[]): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/user/roles-user/${user}`, data, {headers: requestOptions})
+  rolesUser(userId: number, data: Role[]): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/roles-user/${userId}`, data);
   }
 
-  // Validators
-  emailUserExistsValidator(data: string | null | undefined): AsyncValidatorFn {
+  // --- VALIDATORS ASSÍNCRONOS BLINDADOS ---
+
+  emailUserExistsValidator(currentEmail: string | null | undefined): AsyncValidatorFn {
     return (control: AbstractControl): Observable<ValidationErrors | null> => {
       const email = control.value;
-
       if (!email) return of(null);
 
-      return this.http.get<{ emailExists: boolean }>(`${environment.apiTfdUrl}/validator/email-user-exists/${email}/${data}`, { headers: requestOptions }).pipe(
-        map(res => {
-          return res ? { emailExists: true } : null;
-        }),
-        catchError(() => of(null))
+      // 🌟 Garante que o fallback do valor de checagem inicial não envie texto "null" literal na URL
+      const emailToCompare = currentEmail || '';
+
+      return this.http.get<boolean>(`${this.validatorUrl}/email-user-exists/${email}/${emailToCompare}`).pipe(
+        map(emailExists => emailExists ? { emailExists: true } : null),
+        catchError(() => of(null)) // Se a API falhar, não trava o fluxo de digitação do usuário
       );
     };
   }
 
-  cnsUserExistsValidator(data: string | null | undefined): AsyncValidatorFn {
+  cnsUserExistsValidator(currentCns: string | null | undefined): AsyncValidatorFn {
     return (control: AbstractControl): Observable<ValidationErrors | null> => {
       const cns = control.value;
-
       if (!cns) return of(null);
 
-      return this.http.get<{ cnsExists: boolean }>(`${environment.apiTfdUrl}/validator/cns-user-exists/${cns}/${data}`, { headers: requestOptions }).pipe(
-        map(res => {
-          return res ? { cnsExists: true } : null;
-        }),
+      // 🌟 Evita envio de lixo ou strings "undefined" literais para as rotas do back-end
+      const cnsToCompare = currentCns || '';
+
+      return this.http.get<boolean>(`${this.validatorUrl}/cns-user-exists/${cns}/${cnsToCompare}`).pipe(
+        map(cnsExists => cnsExists ? { cnsExists: true } : null),
         catchError(() => of(null))
       );
     };
   }
-  
 }

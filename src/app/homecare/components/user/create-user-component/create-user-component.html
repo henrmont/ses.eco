@@ -6,61 +6,78 @@
                 <mat-label>Nome</mat-label>
                 <input matInput type="text" formControlName="name">
                 @for (item of errorMessages['name']; track $index) {
-                    <mat-error *ngIf="createUserForm.get('name')?.hasError(item.type)">{{item.message}}</mat-error>
+                    <mat-error [hidden]="!createUserForm.get('name')?.hasError(item.type)">
+                        {{ item.message }}
+                    </mat-error>
                 }
             </mat-form-field>
         </div>
+        
         <div class="line" style="grid-template-columns: 1fr 1fr;">
             <mat-form-field appearance="outline">
                 <mat-label>Email</mat-label>
                 <input matInput type="email" formControlName="email">
                 @for (item of errorMessages['email']; track $index) {
-                    <mat-error *ngIf="createUserForm.get('email')?.hasError(item.type)">{{item.message}}</mat-error>
+                    <mat-error [hidden]="!createUserForm.get('email')?.hasError(item.type)">
+                        {{ item.message }}
+                    </mat-error>
                 }
             </mat-form-field>
+            
             <mat-form-field appearance="outline">
                 <mat-label>Tipo</mat-label>
                 <mat-select formControlName="type" (selectionChange)="onSelection($event)">
                     @for (item of types; track $index) {
-                        <mat-option [value]="item">{{item}}</mat-option>
+                        <mat-option [value]="item">{{ item }}</mat-option>
                     }
                 </mat-select>
                 @for (item of errorMessages['type']; track $index) {
-                    <mat-error *ngIf="createUserForm.get('type')?.hasError(item.type)">{{item.message}}</mat-error>
+                    <mat-error [hidden]="!createUserForm.get('type')?.hasError(item.type)">
+                        {{ item.message }}
+                    </mat-error>
                 }
             </mat-form-field>
         </div>
+        
         <div class="line" style="grid-template-columns: 1fr 1fr;">
             <mat-form-field appearance="outline">
                 <mat-label>CNS</mat-label>
                 <input matInput type="text" mask="000 0000 0000 0000" formControlName="cns">
                 @for (item of errorMessages['cns']; track $index) {
-                    <mat-error *ngIf="createUserForm.get('cns')?.hasError(item.type)">{{item.message}}</mat-error>
+                    <mat-error [hidden]="!createUserForm.get('cns')?.hasError(item.type)">
+                        {{ item.message }}
+                    </mat-error>
                 }
             </mat-form-field>
+            
             <mat-form-field appearance="outline">
                 <mat-label>Matrícula</mat-label>
                 <input matInput type="text" mask="000000" formControlName="registration">
                 @for (item of errorMessages['registration']; track $index) {
-                    <mat-error *ngIf="createUserForm.get('registration')?.hasError(item.type)">{{item.message}}</mat-error>
+                    <mat-error [hidden]="!createUserForm.get('registration')?.hasError(item.type)">
+                        {{ item.message }}
+                    </mat-error>
                 }
             </mat-form-field>
         </div>
+        
         <div class="line" style="grid-template-columns: 1fr 1fr;">
             <mat-form-field appearance="outline">
                 <mat-label>Registro profissional</mat-label>
                 <input matInput type="text" formControlName="professional_register">
             </mat-form-field>
+            
             <mat-form-field appearance="outline">
                 <mat-label>CBO</mat-label>
                 <input matInput type="text" formControlName="cbo">
             </mat-form-field>
         </div>
     </mat-dialog-content>
+    
     <mat-dialog-actions align="end">
-      <button matButton="filled" type="submit" [disabled]="createUserForm.invalid || createUserForm.pending || wSubmit()">
+      <button matButton="filled" type="submit" [disabled]="createUserForm.invalid || createUserForm.pending || isLoading()">
             <div class="waiting">
-                @if (wSubmit()) {
+                @if (isLoading()) {
                     <mat-spinner matPrefix [diameter]="20"></mat-spinner>
                 }
                 Criar

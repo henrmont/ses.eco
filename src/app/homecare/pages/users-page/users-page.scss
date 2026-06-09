@@ -1,43 +1,80 @@
+// Usando o seletor :host para definir o container principal da página
 :host {
     display: flex;
     justify-content: center;
+    width: 100%;
+    min-height: 100vh;
+    background-color: #fafafa; // Um fundo levemente cinza destaca a tabela branca
 }
 
 section {
-    margin-top: 20px;
-    width: 80%;
+    margin-top: 24px;
+    width: 85%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    // Container de busca
+    div.search {
+        display: flex; 
+        justify-content: center; 
+        width: 100%;
+
+        mat-form-field {
+            width: 100%;
+            max-width: 500px; // Evita que o input fique gigante em telas ultra-wide
+        }
+    }
+
+    // Estilização da Tabela do Angular Material
+    table.mat-mdc-table {
+        width: 100%;
+        background: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+        // Estilo comum para células de cabeçalho e corpo
+        th.mat-mdc-header-cell, 
+        td.mat-mdc-cell {
+            padding: 12px 16px;
+            vertical-align: middle;
+        }
+
+        th.mat-mdc-header-cell {
+            font-weight: 600;
+            background-color: #f1f5f9; // Tom cinza moderno para o topo da tabela
+            color: #334155;
+        }
+
+        // Classes utilitárias dentro da tabela
+        .center {
+            text-align: center;
+            
+            // Container dos botões de ações
+            div {
+                display: flex; 
+                justify-content: center;
+                gap: 4px; // Substitui o space-around por um espaçamento fixo e elegante
+            }
+        }
+
+        // Cores dos ícones de status (Ativo/Inativo)
+        .valid {
+            color: #16a34a; // Verde Tailwind (mais elegante que o 'green' puro)
+        }
+
+        .invalid {
+            color: #dc2626; // Vermelho Tailwind
+        }
+    }
 }
 
-section div.search {
-    width: auto; 
-    display: flex; 
-    justify-content: center; 
-    gap: 60px;
-}
-
-mat-form-field {
-    width: 50%;
-}
-
+// Botão Flutuante de Adicionar Usuário (Estilo FAB)
 button.add-user {
     position: fixed; 
-    bottom: 100px; 
-    right: 100px;
-}
-
-.center {
-    text-align: center;
-}
-
-.center div {
-    display: flex; 
-    justify-content: space-around;
-}
-
-.valid {
-    color: green;
-}
-
-.invalid {
-    color: red;
+    bottom: 40px; // Ajustado de 100px para ficar mais anatômico na tela
+    right: 40px;
+    z-index: 10;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
 }

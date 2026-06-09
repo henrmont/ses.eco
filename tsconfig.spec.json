@@ -4,12 +4,17 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./out-tsc/spec",
+    "target": "es2022",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "types": [
-      "jasmine",
-      "@angular/localize"
+      "vitest/globals",
+      "node"
     ]
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.spec.ts",
+    "src/**/*.d.ts",
+    "src/setup-vitest.ts"
   ]
 }

@@ -1,13 +1,19 @@
-<h2 mat-dialog-title>{{ data.user.module.pivot.is_valid ? 'Inválidar usuário' : 'Validar usuário' }}</h2>
-<mat-dialog-content>{{ data.user.module.pivot.is_valid ? 'Você deseja inválidar o usuário?' : 'Você deseja validar o usuário?' }}</mat-dialog-content>
+<h2 mat-dialog-title>
+  {{ data.user.module.pivot.is_valid ? 'Invalidar usuário' : 'Validar usuário' }}
+</h2>
+
+<mat-dialog-content>
+  Você deseja {{ data.user.module.pivot.is_valid ? 'invalidar' : 'validar' }} o usuário <strong>{{ data.user.name }}</strong>?
+</mat-dialog-content>
+
 <mat-dialog-actions>
-    <button matButton="filled" [disabled]="wSubmit()" (click)="onSubmit()">
-        <div class="waiting">
-            @if (wSubmit()) {
-                <mat-spinner matPrefix [diameter]="20"></mat-spinner>
-            }
-            {{ data.user.module.pivot.is_valid ? 'Invalidar' : 'Validar' }}
-        </div>
-    </button>
-    <button matButton [mat-dialog-close]="false">Fechar</button>
+  <button matButton [mat-dialog-close]="false">Fechar</button>
+  <button matButton="filled" [disabled]="isSubmitting()" (click)="onSubmit()">
+    <div class="waiting">
+      @if (isSubmitting()) {
+        <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+      }
+      {{ data.user.module.pivot.is_valid ? 'Invalidar' : 'Validar' }}
+    </div>
+  </button>
 </mat-dialog-actions>

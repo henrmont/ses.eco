@@ -1,7 +1,8 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { finalize } from 'rxjs';
 import { UserService } from '../../../services/user-service';
 import { MessageService } from '../../../../core/services/message-service';
 
@@ -10,30 +11,36 @@ import { MessageService } from '../../../../core/services/message-service';
   imports: [MatDialogModule, MatButtonModule, MatProgressSpinnerModule],
   templateUrl: './validate-user-component.html',
   styleUrl: './validate-user-component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush, // ⚡ Performance otimizada com OnPush
 })
 export class ValidateUserComponent {
+  protected readonly data = inject(MAT_DIALOG_DATA);
+  private readonly userService = inject(UserService);
+  private readonly messageService = inject(MessageService);
+  private readonly dialogRef = inject(MatDialogRef<ValidateUserComponent>);
 
-  data = inject(MAT_DIALOG_DATA);
+  readonly isSubmitting = signal<boolean>(false);
+
+  onSubmit(): void {
+    this.isSubmitting.set(true);
     
-  constructor(
-    private userService: UserService,
-    private messageService: MessageService,
-    private dialogRef: MatDialogRef<ValidateUserComponent>,
-  ) {}
+    // 🌟 Mapeia o estado dinâmico utilizando a propriedade correta: 'is_valid'
+    const isValid = this.data.user.module?.pivot?.is_valid;
+    
+    const acao = isValid ? 'invalidado' : 'validado';
+    const acaoErro = isValid ? 'invalidar' : 'validar';
 
-  wSubmit = signal<boolean>(false)
-  onSubmit() {
-    this.wSubmit.set(true)
-    this.userService.validateUser(this.data.user.id).subscribe({
-      next: (response: any) => {
-        this.messageService.showMessage(response.message)
-        this.dialogRef.close(true)
-      },
-      error: (err) => {
-        this.messageService.showMessage(err.error.message)
-        this.wSubmit.set(false)
-      },
-    })
+    this.userService.validateUser(this.data.user.id)
+      .pipe(finalize(() => this.isSubmitting.set(false)))
+      .subscribe({
+        next: (response: any) => {
+          this.messageService.showMessage(response.message || `Usuário ${acao} com sucesso!`);
+          this.dialogRef.close(true);
+        },
+        error: (err) => {
+          const fallbackMessage = err?.error?.message || `Erro ao tentar ${acaoErro} o usuário.`;
+          this.messageService.showMessage(fallbackMessage);
+        },
+      });
   }
-
 }

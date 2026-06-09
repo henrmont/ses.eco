@@ -1,12 +1,11 @@
 <mat-drawer-container>
   <mat-drawer mode="side" opened>
     <mat-action-list>
-        <!-- Usuários -->
         @if (checkPermission(['usuário listar','usuário criar'])) {
           <div mat-subheader>Usuários</div>
         }
         @if (checkPermission(['usuário listar'])) {
-          <button mat-list-item [routerLink]="['usuarios']">
+          <button mat-list-item [routerLink]="['usuarios']" routerLinkActive="active">
             <div class="link">
               <mat-icon>groups</mat-icon>
               <div>Usuários</div>
@@ -21,12 +20,12 @@
             </div>
           </button>
         }
-        <!-- Regras -->
+        
         @if (checkPermission(['regra listar','regra criar'])) {
           <div mat-subheader>Regras</div>
         }
         @if (checkPermission(['regra listar'])) {
-          <button mat-list-item [routerLink]="['regras']">
+          <button mat-list-item [routerLink]="['regras']" routerLinkActive="active">
             <div class="link">
               <mat-icon>security</mat-icon>
               <div>Regras</div>
@@ -41,12 +40,12 @@
             </div>
           </button>
         }
-        <!-- Unidades hospitalares -->
-         @if (checkPermission(['unidade hospitalar listar'])) {
+        
+        @if (checkPermission(['unidade hospitalar listar'])) {
           <div mat-subheader>Unidades hospitalares</div>
         }
         @if (checkPermission(['unidade hospitalar listar'])) {
-          <button mat-list-item [routerLink]="['unidades-hospitalares']">
+          <button mat-list-item [routerLink]="['unidades-hospitalares']" routerLinkActive="active">
             <div class="link">
               <mat-icon>domain</mat-icon>
               <div>Unidades hospitalares</div>
@@ -61,12 +60,12 @@
               </div>
           </button>
         }
-        <!-- Datasus -->
-         @if (checkPermission(['datasus listar'])) {
+        
+        @if (checkPermission(['datasus listar'])) {
           <div mat-subheader>Datasus</div>
         }
         @if (checkPermission(['datasus listar'])) {
-          <button mat-list-item [routerLink]="['sigtap']">
+          <button mat-list-item [routerLink]="['sigtap']" routerLinkActive="active">
             <div class="link">
               <mat-icon>medical_services</mat-icon>
               <div>Sigtap</div>
@@ -82,24 +81,24 @@
               </div>
           </button>
         }
-        <!-- Configurações -->
+        
         @if (checkPermission(['configuração listar'])) {
           <div mat-subheader>Configurações</div>
         }
         @if (checkPermission(['configuração listar'])) {
-          <button mat-list-item [routerLink]="['configuracoes']">
+          <button mat-list-item [routerLink]="['configuracoes']" routerLinkActive="active">
             <div class="link">
               <mat-icon>settings</mat-icon>
               <div>Configurações</div>
             </div>
           </button>
         }
-        <!-- Pacientes -->
+        
         @if (checkPermission(['paciente listar','paciente criar'])) {
           <div mat-subheader>Pacientes</div>
         }
         @if (checkPermission(['paciente listar'])) {
-          <button mat-list-item [routerLink]="['pacientes']">
+          <button mat-list-item [routerLink]="['pacientes']" routerLinkActive="active">
             <div class="link">
               <mat-icon>personal_injury</mat-icon>
               <div>Pacientes</div>
@@ -114,12 +113,12 @@
             </div>
           </button>
         }
-        <!-- Solicitações -->
+        
         @if (checkPermission(['solicitação listar','solicitação criar'])) {
           <div mat-subheader>Solicitações</div>
         }
         @if (checkPermission(['solicitação listar'])) {
-          <button mat-list-item [routerLink]="['solicitacoes']">
+          <button mat-list-item [routerLink]="['solicitacoes']" routerLinkActive="active">
             <div class="link">
               <mat-icon>assignment</mat-icon>
               <div>Solicitações</div>
@@ -134,19 +133,19 @@
             </div>
           </button>
         }
-        <!-- Pareceres -->
+        
         @if (checkPermission(['parecer listar'])) {
           <div mat-subheader>Pareceres</div>
         }
         @if (checkPermission(['parecer listar'])) {
-          <button mat-list-item [routerLink]="['pareceres']">
+          <button mat-list-item [routerLink]="['pareceres']" routerLinkActive="active">
             <div class="link">
               <mat-icon>grading</mat-icon>
               <div>Pareceres técnicos</div>
             </div>
           </button>
         }
-        <!-- passagens -->
+        
         @if (checkPermission(['passagem listar','passagem criar'])) {
           <div mat-subheader>Passagens</div>
         }
@@ -159,49 +158,49 @@
           </button>
         }
         @if (checkPermission(['passagem listar'])) {
-          <button mat-list-item [routerLink]="['passagens']">
+          <button mat-list-item [routerLink]="['passagens']" routerLinkActive="active">
             <div class="link">
               <mat-icon>luggage</mat-icon>
               <div>Viagens</div>
             </div>
           </button>
         }
-        <!-- ajuda de custo -->
+        
         @if (checkPermission(['ajuda de custo listar'])) {
           <div mat-subheader>Ajuda de custo</div>
         }
         @if (checkPermission(['ajuda de custo listar'])) {
-          <button mat-list-item [routerLink]="['ajudas-de-custo']">
+          <button mat-list-item [routerLink]="['ajudas-de-custo']" routerLinkActive="active">
             <div class="link">
               <mat-icon>price_check</mat-icon>
               <div>Ajuda de custo</div>
             </div>
           </button>
-          <button mat-list-item [routerLink]="['prestacoes-de-conta']">
+          <button mat-list-item [routerLink]="['prestacoes-de-conta']" routerLinkActive="active">
             <div class="link">
               <mat-icon>receipt_long</mat-icon>
               <div>Prestação de contas</div>
             </div>
           </button>
         }
-        <!-- pagamentos -->
+        
         @if (checkPermission(['pagamento listar'])) {
           <div mat-subheader>Pagamentos</div>
         }
         @if (checkPermission(['pagamento listar'])) {
-          <button mat-list-item [routerLink]="['pagamentos']">
+          <button mat-list-item [routerLink]="['pagamentos']" routerLinkActive="active">
             <div class="link">
               <mat-icon>payments</mat-icon>
               <div>Pagamentos</div>
             </div>
           </button>
         }
-        <!-- Consultar -->
+        
         @if (checkPermission(['consultar paciente','consultar arquivo'])) {
           <div mat-subheader>Consultar</div>
         }
         @if (checkPermission(['consultar paciente'])) {
-          <button mat-list-item [routerLink]="['consultar-paciente']">
+          <button mat-list-item [routerLink]="['consultar-paciente']" routerLinkActive="active">
             <div class="link">
               <mat-icon>person_search</mat-icon>
               <div>Paciente</div>
@@ -209,7 +208,7 @@
           </button>
         }
         @if (checkPermission(['consultar arquivo'])) {
-          <button mat-list-item [routerLink]="['consultar-arquivo']">
+          <button mat-list-item [routerLink]="['consultar-arquivo']" routerLinkActive="active">
             <div class="link">
               <mat-icon>inventory_2</mat-icon>
               <div>Arquivo</div>
@@ -222,4 +221,3 @@
     <router-outlet></router-outlet>
   </mat-drawer-content>
 </mat-drawer-container>
-

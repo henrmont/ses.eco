@@ -1,22 +1,39 @@
-mat-form-field {
+:host {
+    display: block;
     width: 100%;
-    height: auto;
+}
+
+// Garante que o Angular Material respeite o atributo [hidden] do HTML
+mat-error[hidden] {
+  display: none !important;
+}
+
+mat-form-field {
+  width: 100%;
+  height: auto;
 }
 
 mat-dialog-content {
-    display: flex;
-    flex-direction: column;
-    row-gap: 10px;
+  display: flex;
+  flex-direction: column;
+  row-gap: 10px;
+  padding-top: 10px; // Evita que a borda outline do primeiro campo seja cortada no topo do modal
 }
 
 .waiting {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  mat-spinner {
+    display: inline-block;
+    flex-shrink: 0; // Impede que o layout flex esmague o tamanho do spinner
+  }
 }
 
 .line {
-    display: grid; 
-    grid-template-columns: 1fr; 
-    column-gap: 20px; 
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: 20px;
 }

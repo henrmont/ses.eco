@@ -1,22 +1,52 @@
-mat-list {
-    width: 100%;
+:host {
+  display: block;
+  width: 100%;
 }
 
-mat-list-item div {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.loading-shade {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 150px;
 }
 
-.waiting {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.subtitle {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 16px;
 }
 
-.loading-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+.roles-list {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 0 !important;
+}
+
+.role-item {
+  border-bottom: 1px solid #f0f0f0;
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.role-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.role-name {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.empty-msg {
+  text-align: center;
+  color: #999;
+  padding: 24px;
+  font-style: italic;
 }

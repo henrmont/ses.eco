@@ -1,40 +1,67 @@
-<h2 mat-dialog-title>Detalhes do usuário</h2>
-<mat-dialog-content>
-    <mat-card appearance="outlined">
-        <mat-card-content>
-            <div class="line" style="grid-template-columns: 1fr;">
-                <div>
-                    <strong>Nome:</strong>{{data.user.professional.name}}
-                </div>
-            </div>
-            <div class="line" style="grid-template-columns: 1fr 1fr;">
-                <div>
-                    <strong>Email:</strong>{{data.user.email}}
-                </div>
-                <div>
-                    <strong>Tipo:</strong>{{data.user.professional.type}}
-                </div>
-            </div>
-            <div class="line" style="grid-template-columns: 1fr 1fr;">
-                <div>
-                    <strong>CNS:</strong>{{data.user.professional.cns | mask:'000 0000 0000 0000'}}
-                </div>
-                <div>
-                    <strong>Matrícula:</strong>{{data.user.professional.registration}}
-                </div>
-            </div>
-            <div class="line" style="grid-template-columns: 1fr 1fr;">
-                <div>
-                    <strong>Registro profissional:</strong>{{data.user.professional.professional_register ? data.user.professional.professional_register : 'NÃO APLICÁVEL'}}
-                </div>
-                <div>
-                    <strong>CBO:</strong>{{data.user.professional.cbo ? data.user.professional.cbo : 'NÃO APLICÁVEL'}}
-                </div>
-            </div>
-        </mat-card-content>
-    </mat-card>
-</mat-dialog-content>
-<mat-dialog-actions align="end">
-    <button matButton [mat-dialog-close]="false">Fechar</button>
-</mat-dialog-actions>
+<h2 mat-dialog-title>
+  Detalhes do Usuário
+</h2>
 
+<mat-dialog-content>
+  <div class="user-details-container">
+    
+    <mat-card variant="outlined" class="detail-card">
+      <mat-card-header>
+        <mat-card-title>Dados da Conta</mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="grid-content">
+        <div class="info-group">
+          <span class="label">Nome:</span>
+          <span class="value">{{ data.user.professional.name }}</span>
+        </div>
+        <div class="info-group">
+          <span class="label">E-mail:</span>
+          <span class="value">{{ data.user.email }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card variant="outlined" class="detail-card">
+      <mat-card-header>
+        <mat-card-title>Vínculo Profissional</mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="grid-content">
+        <div class="info-group">
+          <span class="label">Tipo de Profissional:</span>
+          <span class="value highlight">{{ data.user.professional.type }}</span>
+        </div>
+        
+        <div class="info-group">
+          <span class="label">CNS:</span>
+          <span class="value">{{ data.user.professional.cns | mask: '000 0000 0000 0000' }}</span>
+        </div>
+
+        @if (data.user.professional.registration) {
+          <div class="info-group">
+            <span class="label">Matrícula:</span>
+            <span class="value">{{ data.user.professional.registration }}</span>
+          </div>
+        }
+
+        @if (data.user.professional.professional_register) {
+          <div class="info-group">
+            <span class="label">Registro Profissional:</span>
+            <span class="value">{{ data.user.professional.professional_register }}</span>
+          </div>
+        }
+
+        @if (data.user.professional.cbo) {
+          <div class="info-group">
+            <span class="label">CBO:</span>
+            <span class="value">{{ data.user.professional.cbo }}</span>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button matButton [mat-dialog-close]="true" color="primary">Fechar</button>
+</mat-dialog-actions>
