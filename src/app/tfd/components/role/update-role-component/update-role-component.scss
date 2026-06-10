@@ -1,10 +1,58 @@
-.field {
-    display: flex;
-    justify-content: center;
-    width: auto;
+:host {
+    display: block;
+    width: 100%;
+}
+
+// Garante que o Angular Material respeite o atributo [hidden] do HTML (herdado de usuários)
+mat-error[hidden] {
+  display: none !important;
 }
 
 mat-form-field {
+  width: 100%;
+  height: auto;
+}
+
+mat-dialog-content {
+  display: flex;
+  flex-direction: column;
+  row-gap: 10px;
+  padding-top: 10px; // Evita que a borda outline do primeiro campo seja cortada no topo do modal
+}
+
+// Classe utilitária para inputs em Grid (unificada com o padrão de usuários)
+.line {
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: 20px;
+}
+
+// Estrutura do botão com Spinner de Loading (herdado de usuários)
+.waiting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  mat-spinner {
+    display: inline-block;
+    flex-shrink: 0; // Impede que o layout flex esmague o tamanho do spinner
+  }
+}
+
+// Container centralizado para o carregamento inicial das permissões
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px; // Dá um respiro visual enquanto o spinner roda
+}
+
+// --- ESTRUTURA DE PERMISSÕES (Mantida e Lapidada) ---
+
+section {
+    display: flex;
+    flex-direction: column;
     width: 100%;
 }
 
@@ -12,34 +60,36 @@ mat-form-field {
     display: flex; 
     align-items: center;
     margin-top: 30px;
+    color: #334155; // Tom de cinza moderno para casar com a identidade do sistema
+
+    mat-icon {
+        margin-right: 16px;
+        width: auto;
+        height: auto;
+        font-size: 24px; // Ajustado levemente para alinhar melhor com os textos h2
+    }
+
+    h2 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0;
+    }
 }
 
-.title mat-icon {
-    margin-right: 20px;
-    width: auto;
-    height: auto;
-    font-size: 27px;
-}
-
+// Grid de 3 colunas preservado com maestria
 .group {
     display: grid; 
     grid-template-columns: repeat(3, 1fr); 
-    gap: 10px;
-}
+    gap: 12px;
+    margin-top: 8px;
 
-.group div {
-    display: flex; 
-    justify-content: space-between;
-}
-
-.loading-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.waiting {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    div {
+        display: flex; 
+        justify-content: space-between;
+        align-items: center;
+        
+        mat-slide-toggle {
+            width: 100%;
+        }
+    }
 }

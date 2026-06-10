@@ -6,10 +6,15 @@
                 <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
             </div>
         } @else {
-            <div class="field">
+            <div class="line">
                 <mat-form-field appearance="outline">
                     <mat-label>Nome</mat-label>
                     <input matInput type="text" formControlName="name">
+                    @for (item of errorMessages['name']; track $index) {
+                        <mat-error [hidden]="!updateRoleForm.get('name')?.hasError(item.type)">
+                            {{ item.message }}
+                        </mat-error>
+                    }
                 </mat-form-field>
             </div>
 
@@ -21,10 +26,13 @@
                 <div class="group">
                     @for (item of getFilteredRole('usuário'); track item.id) {
                         <div>
-                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">{{item.name.split('/')[1]}}</mat-slide-toggle>
+                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">
+                                {{ item.name.split('/').pop() }}
+                            </mat-slide-toggle>
                         </div>
                     }
                 </div>
+
                 <div class="title">
                     <mat-icon>security</mat-icon>
                     <h2>Regras</h2>
@@ -32,10 +40,13 @@
                 <div class="group">
                     @for (item of getFilteredRole('regra'); track item.id) {
                         <div>
-                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">{{item.name.split('/')[1]}}</mat-slide-toggle>
+                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">
+                                {{ item.name.split('/').pop() }}
+                            </mat-slide-toggle>
                         </div>
                     }
                 </div>
+
                 <div class="title">
                     <mat-icon>domain</mat-icon>
                     <h2>Unidades hospitalares</h2>
@@ -43,10 +54,13 @@
                 <div class="group">
                     @for (item of getFilteredRole('unidade hospitalar'); track item.id) {
                         <div>
-                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">{{item.name.split('/')[1]}}</mat-slide-toggle>
+                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">
+                                {{ item.name.split('/').pop() }}
+                            </mat-slide-toggle>
                         </div>
                     }
                 </div>
+
                 <div class="title">
                     <mat-icon>medical_services</mat-icon>
                     <h2>Datasus</h2>
@@ -54,10 +68,13 @@
                 <div class="group">
                     @for (item of getFilteredRole('datasus'); track item.id) {
                         <div>
-                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">{{item.name.split('/')[1]}}</mat-slide-toggle>
+                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">
+                                {{ item.name.split('/').pop() }}
+                            </mat-slide-toggle>
                         </div>
                     }
                 </div>
+
                 <div class="title">
                     <mat-icon>settings</mat-icon>
                     <h2>Configurações</h2>
@@ -65,10 +82,13 @@
                 <div class="group">
                     @for (item of getFilteredRole('configuração'); track item.id) {
                         <div>
-                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">{{item.name.split('/')[1]}}</mat-slide-toggle>
+                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">
+                                {{ item.name.split('/').pop() }}
+                            </mat-slide-toggle>
                         </div>
                     }
                 </div>
+
                 <div class="title">
                     <mat-icon>personal_injury</mat-icon>
                     <h2>Pacientes</h2>
@@ -76,10 +96,13 @@
                 <div class="group">
                     @for (item of getFilteredRole('paciente'); track item.id) {
                         <div>
-                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">{{item.name.split('/')[1]}}</mat-slide-toggle>
+                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">
+                                {{ item.name.split('/').pop() }}
+                            </mat-slide-toggle>
                         </div>
                     }
                 </div>
+
                 <div class="title">
                     <mat-icon>assignment</mat-icon>
                     <h2>Solicitações</h2>
@@ -87,10 +110,13 @@
                 <div class="group">
                     @for (item of getFilteredRole('solicitação'); track item.id) {
                         <div>
-                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">{{item.name.split('/')[1]}}</mat-slide-toggle>
+                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">
+                                {{ item.name.split('/').pop() }}
+                            </mat-slide-toggle>
                         </div>
                     }
                 </div>
+
                 <div class="title">
                     <mat-icon>search</mat-icon>
                     <h2>Consultar</h2>
@@ -98,10 +124,13 @@
                 <div class="group">
                     @for (item of getFilteredRole('consultar'); track item.id) {
                         <div>
-                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">{{item.name.split('/')[1]}}</mat-slide-toggle>
+                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">
+                                {{ item.name.split('/').pop() }}
+                            </mat-slide-toggle>
                         </div>
                     }
                 </div>
+
                 <div class="title">
                     <mat-icon>grading</mat-icon>
                     <h2>Pareceres</h2>
@@ -109,10 +138,13 @@
                 <div class="group">
                     @for (item of getFilteredRole('parecer'); track item.id) {
                         <div>
-                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">{{item.name.split('/')[1]}}</mat-slide-toggle>
+                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">
+                                {{ item.name.split('/').pop() }}
+                            </mat-slide-toggle>
                         </div>
                     }
                 </div>
+
                 <div class="title">
                     <mat-icon>luggage</mat-icon>
                     <h2>Passagens</h2>
@@ -120,10 +152,13 @@
                 <div class="group">
                     @for (item of getFilteredRole('passagem'); track item.id) {
                         <div>
-                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">{{item.name.split('/')[1]}}</mat-slide-toggle>
+                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">
+                                {{ item.name.split('/').pop() }}
+                            </mat-slide-toggle>
                         </div>
                     }
                 </div>
+
                 <div class="title">
                     <mat-icon>price_check</mat-icon>
                     <h2>Ajudas de custo</h2>
@@ -131,10 +166,13 @@
                 <div class="group">
                     @for (item of getFilteredRole('ajuda de custo'); track item.id) {
                         <div>
-                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">{{item.name.split('/')[1]}}</mat-slide-toggle>
+                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">
+                                {{ item.name.split('/').pop() }}
+                            </mat-slide-toggle>
                         </div>
                     }
                 </div>
+
                 <div class="title">
                     <mat-icon>payments</mat-icon>
                     <h2>Pagamentos</h2>
@@ -142,23 +180,31 @@
                 <div class="group">
                     @for (item of getFilteredRole('pagamento'); track item.id) {
                         <div>
-                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">{{item.name.split('/')[1]}}</mat-slide-toggle>
+                            <mat-slide-toggle (toggleChange)="togglePermission(item)" [checked]="checkPermission(item.id)">
+                                {{ item.name.split('/').pop() }}
+                            </mat-slide-toggle>
                         </div>
                     }
                 </div>
             </section>
+
+            @for (item of errorMessages['permissions']; track $index) {
+                <mat-error style="display: block; margin-top: 12px;" [hidden]="!updateRoleForm.get('permissions')?.hasError(item.type)">
+                    {{ item.message }}
+                </mat-error>
+            }
         }
     </mat-dialog-content>
+    
     <mat-dialog-actions align="end">
-        <button matButton="filled" type="submit" [disabled]="updateRoleForm.invalid || updateRoleForm.pristine || wSubmit()">
+        <button matButton [mat-dialog-close]="false">Fechar</button>
+        <button matButton="filled" type="submit" [disabled]="updateRoleForm.invalid || updateRoleForm.pristine || updateRoleForm.pending || isSubmitting()">
             <div class="waiting">
-                @if (wSubmit()) {
+                @if (isSubmitting()) {
                     <mat-spinner matPrefix [diameter]="20"></mat-spinner>
                 }
                 Atualizar
             </div>
         </button>
-        <button matButton [mat-dialog-close]="false">Fechar</button>
     </mat-dialog-actions>
 </form>
-

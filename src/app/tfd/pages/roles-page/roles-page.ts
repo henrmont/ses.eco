@@ -1,84 +1,109 @@
-import { Component, OnInit, signal } from '@angular/core';
-import {MatTableDataSource, MatTableModule} from '@angular/material/table';
-import {MatInputModule} from '@angular/material/input';
-import {MatFormFieldModule} from '@angular/material/form-field';
-import {MatButtonModule} from '@angular/material/button';
-import {MatIconModule} from '@angular/material/icon';
-import {MatTooltipModule} from '@angular/material/tooltip';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
+import { finalize } from 'rxjs';
+
+// Angular Material
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
+// Core & Shared
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
-import { RoleService } from '../../services/role-service';
-import { Role } from '../../models/role';
 import { Permission } from '../../models/permission';
-import { UpdateRoleComponent } from '../../components/role/update-role-component/update-role-component';
+import { Role } from '../../models/role';
+import { RoleService } from '../../services/role-service';
+
+// Componentes de Dialogs (Alinhados com a nova estrutura)
 import { DeleteRoleComponent } from '../../components/role/delete-role-component/delete-role-component';
+import { UpdateRoleComponent } from '../../components/role/update-role-component/update-role-component';
 
 const TFD_ROLES_CHANNEL = new BroadcastChannel('tfd-roles-channel');
 
 @Component({
   selector: 'app-roles-page',
-  imports: [MatFormFieldModule, MatInputModule, MatTableModule, MatButtonModule, MatIconModule, MatTooltipModule],
+  imports: [
+    MatFormFieldModule, 
+    MatInputModule, 
+    MatTableModule, 
+    MatButtonModule, 
+    MatIconModule, 
+    MatTooltipModule
+  ],
   templateUrl: './roles-page.html',
   styleUrl: './roles-page.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ OnPush para máxima performance com Signals
 })
-export class RolesPage implements OnInit {
+export class RolesPage implements OnInit, OnDestroy {
+  // 🔒 Injeções de dependência imutáveis e modernas via inject()
+  private readonly roleService = inject(RoleService);
+  private readonly dialog = inject(MatDialog);
+  private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef); // Controle automático de desassinatura
 
-  loadingDialog!: MatDialogRef<LoadingComponent>
+  private loadingDialog!: MatDialogRef<LoadingComponent>;
   
-  displayedColumns: string[] = ['name','actions'];
-  dataSource = signal<MatTableDataSource<Role>>(new MatTableDataSource());
-  applyFilter(event: Event) {
-    const FILTER_VALUE = (event.target as HTMLInputElement).value;
-    this.dataSource().filter = FILTER_VALUE.trim().toLowerCase();
-  }
+  // Cache das informações do usuário logado para evitar loops custosos no HTML
+  private readonly currentUser = this.route.parent?.parent?.snapshot.data['user'];
 
-  constructor(
-    private roleService: RoleService,
-    private dialog: MatDialog,
-    private route: ActivatedRoute
-  ) {
-    TFD_ROLES_CHANNEL.onmessage = (message) => {
-      if (message.data === 'update') {
-        this.upgradeRoles()
-      }
-    }
-  }
+  // Propriedades expostas para o Template
+  protected readonly displayedColumns: string[] = ['name', 'actions'];
+  
+  // Lista bruta armazenada em um Signal puro
+  protected readonly rolesList = signal<Role[]>([]);
+
+  // Computed Signal: Recria e atualiza o DataSource de forma reativa e performática
+  protected readonly dataSource = computed(() => new MatTableDataSource(this.rolesList()));
 
   ngOnInit(): void {
-    this.getRoles()
-  }
+    this.getRoles(true); // Ativa o loading na primeira carga
 
-  getRoles() {
-    this.loading()
-    this.roleService.getRoles().subscribe({
-      next: (response) => {
-        this.dataSource.set(new MatTableDataSource(response)) 
-      },
-      complete: () => {
-        this.loadingDialog.close()
+    // Ouvindo o canal de broadcast com segurança
+    TFD_ROLES_CHANNEL.onmessage = (message) => {
+      if (message.data === 'update') {
+        this.getRoles(false); // Atualiza em background de forma silenciosa
       }
-    })
+    };
   }
 
-  upgradeRoles() {
-    this.roleService.getRoles().subscribe({
-      next: (response) => {
-        this.dataSource.set(new MatTableDataSource(response)) 
-      },
-    })
+  ngOnDestroy(): void {
+    // Evita vazamento de memória fechando o canal
+    TFD_ROLES_CHANNEL.close();
   }
 
-  checkPermissions(name: string) {
-    const ROLES = this.route.parent?.parent?.snapshot.data['user'].roles
-    for (const item of ROLES) {
-      if (item.permissions.filter((permission: Permission) => permission.name == name).length > 0)
-        return false 
-    }
-    return true
+  protected applyFilter(event: Event): void {
+    const filterValue = (event.target as HTMLInputElement).value;
+    this.dataSource().filter = filterValue.trim().toLowerCase();
   }
 
-  loading() {
+  // Busca unificada com tratamento seguro de Loading e Desassinatura
+  private getRoles(showLoading = false): void {
+    if (showLoading) this.openLoading();
+
+    this.roleService.getRoles()
+      .pipe(
+        finalize(() => {
+          if (showLoading && this.loadingDialog) {
+            this.loadingDialog.close();
+          }
+        }),
+        takeUntilDestroyed(this.destroyRef) // Cancela a requisição se o usuário sair da página
+      )
+      .subscribe({
+        next: (response) => {
+          this.rolesList.set(response);
+        },
+        error: () => {
+          // Espaço para tratamento amigável de erros se necessário
+        }
+      });
+  }
+
+  private openLoading(): void {
     this.loadingDialog = this.dialog.open(LoadingComponent, {
       height: '200px',
       disableClose: true,
@@ -86,43 +111,41 @@ export class RolesPage implements OnInit {
     });
   }
 
-  ownerRole(role: Role): boolean {
-    const OWNER_ROLES = this.route.parent?.parent?.snapshot.data['user'].roles.map((item: any) => item.name)
-    if (OWNER_ROLES.includes(role))
-      return true
-    return false
+  protected checkPermissions(permissionName: string): boolean {
+    if (!this.currentUser?.roles) return true;
+    return !this.currentUser.roles.some((role: any) => 
+      role.permissions.some((p: Permission) => p.name === permissionName)
+    );
   }
 
-  updateRole(role: Role) {
-    this.dialog.open(UpdateRoleComponent, {
-      width: '900px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        role: role
-      }
-    }).afterClosed().subscribe(result => {
-      if (result){
-        this.upgradeRoles()
-        TFD_ROLES_CHANNEL.postMessage('update')
-      }
-    })
-  }
-  
-  deleteRole(role: Role) {
-    this.dialog.open(DeleteRoleComponent, {
-      width: '400px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        role: role
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.upgradeRoles()
-        TFD_ROLES_CHANNEL.postMessage('update')
-      }
-    })
+  protected ownerRole(role: Role): boolean {
+    if (!this.currentUser?.roles) return false;
+    const ownerRoleNames = this.currentUser.roles.map((item: any) => item.name);
+    return ownerRoleNames.includes(role.name);
   }
 
+  // Centralizador de abertura de dialogs com tratamento RXJS limpo
+  private openDialog(component: any, data: any, width = '400px'): void {
+    this.dialog.open(component, {
+      width,
+      disableClose: true,
+      autoFocus: false,
+      data
+    }).afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef)) // Protege o fluxo pós-fechamento
+      .subscribe(result => {
+        if (result) {
+          this.handleRoleChange();
+        }
+      });
+  }
+
+  private handleRoleChange(): void {
+    this.getRoles(false);
+    TFD_ROLES_CHANNEL.postMessage('update');
+  }
+
+  // Métodos de ação extremamente enxutos para o HTML
+  protected updateRole(role: Role): void { this.openDialog(UpdateRoleComponent, { role }, '900px'); }
+  protected deleteRole(role: Role): void { this.openDialog(DeleteRoleComponent, { role }, '400px'); }
 }

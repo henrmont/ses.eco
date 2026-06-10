@@ -1,13 +1,19 @@
-<h2 mat-dialog-title>Deletar regra</h2>
-<mat-dialog-content>Você deseja deletar a regra?</mat-dialog-content>
-<mat-dialog-actions>
-  <button matButton="filled" [disabled]="wSubmit()" (click)="onSubmit()">
-        <div class="waiting">
-            @if (wSubmit()) {
-                <mat-spinner matPrefix [diameter]="20"></mat-spinner>
-            }
-            Excluir
-        </div>
+<h2 mat-dialog-title>Deletar Regra</h2>
+
+<mat-dialog-content>
+  <p>
+    Tem certeza de que deseja deletar a regra <strong>{{ data.role.name?.split('/').pop() || data.role.name }}</strong>?
+  </p>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button matButton [disabled]="isSubmitting()" [mat-dialog-close]="false">Fechar</button>
+  <button matButton="filled" (click)="onSubmit()" [disabled]="isSubmitting()">
+    <div class="waiting">
+      @if (isSubmitting()) {
+        <mat-progress-spinner mode="indeterminate" [diameter]="20"></mat-progress-spinner>
+      }
+      Deletar
+    </div>
   </button>
-  <button matButton [mat-dialog-close]="false">Fechar</button>
 </mat-dialog-actions>

@@ -69,12 +69,3 @@ section {
         }
     }
 }
-
-// Botão Flutuante de Adicionar Usuário (Estilo FAB)
-button.add-user {
-    position: fixed; 
-    bottom: 40px; // Ajustado de 100px para ficar mais anatômico na tela
-    right: 40px;
-    z-index: 10;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-}

@@ -1,90 +1,91 @@
-import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, signal, inject, computed, DestroyRef } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop'; // 👈 Essencial para gerenciar o ciclo de vida do subscribe de forma moderna
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
-import { finalize } from 'rxjs'; // 👈 Importado para garantir o fechamento seguro do loading
-import { UserService } from '../../services/user-service';
-import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
-import { User } from '../../models/user';
-import { Permission } from '../../models/permission';
+import { finalize } from 'rxjs';
 
-// Componentes de Dialogs (Sincronizados e limpos)
-import { LockUserComponent } from '../../components/user/lock-user-component/lock-user-component';
-import { ValidateUserComponent } from '../../components/user/validate-user-component/validate-user-component';
-import { ShowUserComponent } from '../../components/user/show-user-component/show-user-component';
-import { RolesUserComponent } from '../../components/user/roles-user-component/roles-user-component';
+// Angular Material
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
+// Core & Shared
+import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
+import { Permission } from '../../models/permission';
+import { User } from '../../models/user';
+import { UserService } from '../../services/user-service';
+
+// Components (Dialogs)
 import { DeleteUserComponent } from '../../components/user/delete-user-component/delete-user-component';
+import { LockUserComponent } from '../../components/user/lock-user-component/lock-user-component';
+import { RolesUserComponent } from '../../components/user/roles-user-component/roles-user-component';
+import { ShowUserComponent } from '../../components/user/show-user-component/show-user-component';
 import { UpdateUserComponent } from '../../components/user/update-user-component/update-user-component';
+import { ValidateUserComponent } from '../../components/user/validate-user-component/validate-user-component';
+
+const TFD_USERS_CHANNEL = new BroadcastChannel('tfd-users-channel');
 
 @Component({
   selector: 'app-users-page',
-  // standalone: true 👈 Removido (Padrão nativo e implícito na v21)
-  imports: [MatFormFieldModule, MatInputModule, MatTableModule, MatButtonModule, MatIconModule, MatTooltipModule],
+  imports: [
+    MatFormFieldModule, 
+    MatInputModule, 
+    MatTableModule, 
+    MatButtonModule, 
+    MatIconModule, 
+    MatTooltipModule
+  ],
   templateUrl: './users-page.html',
   styleUrl: './users-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UsersPage implements OnInit, OnDestroy {
-  // 🔒 Injeções de dependência imutáveis e padronizadas
+  // Injeções de dependência
   private readonly userService = inject(UserService);
   private readonly dialog = inject(MatDialog);
   private readonly route = inject(ActivatedRoute);
-  private readonly destroyRef = inject(DestroyRef); // 👈 Injetado para o controle automático de desassinatura
+  private readonly destroyRef = inject(DestroyRef);
 
-  private readonly channel = new BroadcastChannel('tfd-users-channel');
   private loadingDialog!: MatDialogRef<LoadingComponent>;
-
-  displayedColumns: string[] = ['is_editable', 'email', 'name', 'type', 'is_valid', 'actions'];
-  
-  // Guardamos a lista bruta mapeada num Signal puro
-  readonly usersList = signal<any[]>([]);
-
-  // Computed Signal: Sempre que usersList mudar, ele recria o DataSource de forma performática
-  readonly dataSource = computed(() => new MatTableDataSource(this.usersList()));
-
-  // Cache das permissões logadas para evitar loops no template
   private readonly currentUser = this.route.parent?.parent?.snapshot.data['user'];
+  
+  // Propriedades expostas para o Template
+  protected readonly displayedColumns: string[] = ['is_editable', 'email', 'name', 'type', 'is_valid', 'actions'];
+  protected readonly usersList = signal<any[]>([]);
+  protected readonly dataSource = computed(() => new MatTableDataSource(this.usersList()));
 
   ngOnInit(): void {
-    this.getUsers(true); // Ativa o loading na primeira carga
+    this.getUsers(true);
 
-    // Ouvindo o canal de broadcast com segurança
-    this.channel.onmessage = (message) => {
+    TFD_USERS_CHANNEL.onmessage = (message) => {
       if (message.data === 'update') {
-        this.getUsers(false); // Atualiza em background de forma silenciosa
+        this.getUsers(false);
       }
     };
   }
 
   ngOnDestroy(): void {
-    // Evita vazamento de memória fechando o canal ao destruir o componente
-    this.channel.close();
+    TFD_USERS_CHANNEL.close();
   }
 
-  applyFilter(event: Event): void {
+  protected applyFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
     this.dataSource().filter = filterValue.trim().toLowerCase();
   }
 
-  // DRY (Don't Repeat Yourself): Unificamos a busca e o mapeamento dos dados do Laravel
-  getUsers(showLoading = false): void {
-    if (showLoading) this.showLoading();
+  private getUsers(showLoading = false): void {
+    if (showLoading) this.openLoading();
 
     this.userService.getUsers()
       .pipe(
-        // 🌟 Remove de forma segura o Dialog de carregamento mesmo se a API falhar (Evita tela travada)
         finalize(() => {
           if (showLoading && this.loadingDialog) {
             this.loadingDialog.close();
           }
         }),
-        // 🌟 Destrói automaticamente a inscrição se o usuário mudar de rota enquanto a requisição carrega
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
@@ -100,7 +101,6 @@ export class UsersPage implements OnInit, OnDestroy {
               roles: item.roles
             };
 
-            // O pulo do gato mantido com sucesso total!
             return {
               ...userObj,
               isEditable: this.calculateEditable(userObj)
@@ -108,14 +108,11 @@ export class UsersPage implements OnInit, OnDestroy {
           });
 
           this.usersList.set(mappedUsers);
-        },
-        error: () => {
-          // Trate o erro de carregamento amigavelmente aqui se achar necessário
         }
       });
   }
 
-  private showLoading(): void {
+  private openLoading(): void {
     this.loadingDialog = this.dialog.open(LoadingComponent, {
       height: '200px',
       disableClose: true,
@@ -123,20 +120,18 @@ export class UsersPage implements OnInit, OnDestroy {
     });
   }
 
-  // Refatorado para processamento interno no TypeScript
   private calculateEditable(user: User): boolean {
     if (!this.currentUser || this.currentUser.id === user.id) return false;
     return !user.module?.pivot?.is_editable;
   }
 
-  checkPermissions(name: string): boolean {
+  protected checkPermissions(permissionName: string): boolean {
     if (!this.currentUser?.roles) return true;
     return !this.currentUser.roles.some((role: any) => 
-      role.permissions.some((p: Permission) => p.name === name)
+      role.permissions.some((p: Permission) => p.name === permissionName)
     );
   }
 
-  // Centralizador de abertura de dialogs com tratamento correto de ciclo de vida reativo
   private openDialog(component: any, data: any, width = '400px'): void {
     this.dialog.open(component, {
       width,
@@ -144,20 +139,24 @@ export class UsersPage implements OnInit, OnDestroy {
       autoFocus: false,
       data
     }).afterClosed()
-      .pipe(takeUntilDestroyed(this.destroyRef)) // 👈 Protegendo o fluxo assíncrono pós-fechamento do dialog
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(result => {
         if (result) {
-          this.getUsers(false);
-          this.channel.postMessage('update');
+          this.handleUserChange();
         }
       });
   }
 
-  // Métodos de ação extremamente limpos e fáceis de ler:
-  lockUser(user: User): void { this.openDialog(LockUserComponent, { user }); }
-  validateUser(user: User): void { this.openDialog(ValidateUserComponent, { user }); }
-  rolesUser(user: User): void { this.openDialog(RolesUserComponent, { user }); }
-  deleteUser(user: User): void { this.openDialog(DeleteUserComponent, { user }); }
-  updateUser(user: User): void { this.openDialog(UpdateUserComponent, { user }, '700px'); }
-  showUser(user: User): void { this.openDialog(ShowUserComponent, { user }, '700px'); }
+  private handleUserChange(): void {
+    this.getUsers(false);
+    TFD_USERS_CHANNEL.postMessage('update');
+  }
+
+  // Métodos de ação do template HTML
+  protected lockUser(user: User): void { this.openDialog(LockUserComponent, { user }); }
+  protected validateUser(user: User): void { this.openDialog(ValidateUserComponent, { user }); }
+  protected rolesUser(user: User): void { this.openDialog(RolesUserComponent, { user }); }
+  protected deleteUser(user: User): void { this.openDialog(DeleteUserComponent, { user }); }
+  protected updateUser(user: User): void { this.openDialog(UpdateUserComponent, { user }, '700px'); }
+  protected showUser(user: User): void { this.openDialog(ShowUserComponent, { user }, '700px'); }
 }

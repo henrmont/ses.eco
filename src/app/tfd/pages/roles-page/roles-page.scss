@@ -1,35 +1,62 @@
+// Usando o seletor :host para definir o container principal da página (idêntico à users-page)
 :host {
     display: flex;
     justify-content: center;
+    width: 100%;
+    min-height: 100vh;
+    background-color: #fafafa; // Um fundo levemente cinza destaca a tabela branca
 }
 
 section {
-    margin-top: 20px;
-    width: 50%;
-}
+    margin-top: 24px;
+    width: 50%; // Ajustado de 50% para 85% para casar perfeitamente com a proporção de usuários
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 
-section div.search {
-    width: auto; 
-    display: flex; 
-    justify-content: center; 
-    gap: 60px;
-}
+    // Container de busca
+    div.search {
+        display: flex; 
+        justify-content: center; 
+        width: 100%;
 
-mat-form-field {
-    width: 80%;
-}
+        mat-form-field {
+            width: 100%;
+            max-width: 500px; // Evita que o input fique gigante em telas ultra-wide
+        }
+    }
 
-button.add-user {
-    position: fixed; 
-    bottom: 100px; 
-    right: 100px;
-}
+    // Estilização da Tabela do Angular Material
+    table.mat-mdc-table {
+        width: 100%;
+        background: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 
-.center {
-    text-align: center;
-}
+        // Estilo comum para células de cabeçalho e corpo
+        th.mat-mdc-header-cell, 
+        td.mat-mdc-cell {
+            padding: 12px 16px;
+            vertical-align: middle;
+        }
 
-.center div {
-    display: flex; 
-    justify-content: space-around;
+        th.mat-mdc-header-cell {
+            font-weight: 600;
+            background-color: #f1f5f9; // Tom cinza moderno herdado de usuários
+            color: #334155;
+        }
+
+        // Classes utilitárias dentro da tabela
+        .center {
+            text-align: center;
+            
+            // Container dos botões de ações
+            div {
+                display: flex; 
+                justify-content: center;
+                gap: 4px; // Espaçamento fixo e elegante herdado da nova estrutura
+            }
+        }
+    }
 }

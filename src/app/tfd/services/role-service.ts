@@ -1,42 +1,41 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment.development';
 import { Role } from '../models/role';
 import { Permission } from '../models/permission';
 
-const requestOptions = {
-  'Authorization': `Bearer ${window.localStorage.getItem('token')}`
+export interface ApiResponse {
+  message: string;
+  status?: string;
+  [key: string]: any; 
 }
-
 
 @Injectable({
   providedIn: 'root',
 })
 export class RoleService {
-
-  constructor(
-    private http: HttpClient,
-  ) {}
+  // 🔒 Injeções e URLs configuradas como imutáveis e limpas (sem lixo de headers manuais)
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${environment.apiTfdUrl}/role`;
 
   getRoles(): Observable<Role[]> {
-    return this.http.get<Role[]>(`${environment.apiTfdUrl}/role/get-roles`, {headers: requestOptions})
+    return this.http.get<Role[]>(`${this.apiUrl}/get-roles`);
   }
 
   getPermissions(): Observable<Permission[]> {
-    return this.http.get<Permission[]>(`${environment.apiTfdUrl}/role/get-permissions`, {headers: requestOptions})
+    return this.http.get<Permission[]>(`${this.apiUrl}/get-permissions`);
   }
 
-  createRole(data: Role): Observable<Array<any>> {
-    return this.http.post<Array<any>>(`${environment.apiTfdUrl}/role/create-role`, data, {headers: requestOptions})
+  createRole(data: Role): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/create-role`, data);
   }
 
-  updateRole(role: number, data: Role): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/role/update-role/${role}`, data, {headers: requestOptions})
+  updateRole(roleId: number, data: Role): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-role/${roleId}`, data);
   }
 
-  deleteRole(role: number): Observable<Array<any>> {
-    return this.http.delete<Array<any>>(`${environment.apiTfdUrl}/role/delete-role/${role}`, {headers: requestOptions})
+  deleteRole(roleId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/delete-role/${roleId}`);
   }
-  
 }
