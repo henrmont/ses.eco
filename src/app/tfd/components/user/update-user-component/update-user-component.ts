@@ -8,7 +8,7 @@ import { MatSelectModule, MatSelectChange } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
-import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
+import { NgxMaskDirective } from 'ngx-mask';
 import { finalize } from 'rxjs';
 import { UserService } from '../../../services/user-service';
 import { MessageService } from '../../../../core/services/message-service';
@@ -27,7 +27,6 @@ import { Professionals } from '../../../enums/professionals';
     MatProgressSpinnerModule,
     MatIconModule,
     NgxMaskDirective,
-    NgxMaskPipe
   ],
   templateUrl: './update-user-component.html',
   styleUrls: ['./update-user-component.scss'],
