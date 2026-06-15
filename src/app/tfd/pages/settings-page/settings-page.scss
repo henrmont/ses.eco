@@ -1,12 +1,24 @@
+// Usando o seletor :host para definir o container principal da página
 :host {
     display: flex;
     justify-content: center;
+    width: 100%;
+    min-height: calc(100vh - 100px);
+    background-color: #fafafa; // Um fundo levemente cinza destaca a tabela branca
 }
 
-section {
-    margin-top: 20px;
-    width: 80%;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 50px;
+.page-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
