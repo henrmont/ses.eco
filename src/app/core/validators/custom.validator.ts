@@ -8,11 +8,11 @@ export class CustomValidators {
       if (!value) return null;
 
       if (value.length === 11) {
-        return this.validateCPF(value) ? null : { cpfInvalid: true };
+        return CustomValidators.validateCPF(value) ? null : { cpfInvalid: true };
       }
 
       if (value.length === 32) {
-        return this.validateCNJ(value) ? null : { cnjInvalid: true };
+        return CustomValidators.validateCNJ(value) ? null : { cnjInvalid: true };
       }
 
       return { documentInvalid: true };
@@ -25,7 +25,7 @@ export class CustomValidators {
       if (!value) return null;
 
       if (value.length === 15) {
-        return this.validateCNS(value) ? null : { cnsInvalid: true };
+        return CustomValidators.validateCNS(value) ? null : { cnsInvalid: true };
       }
 
       return { documentInvalid: true };
@@ -38,7 +38,7 @@ export class CustomValidators {
       if (!value) return null;
 
       if (value.length === 11) {
-        return this.validateCPF(value) ? null : { cpfInvalid: true };
+        return CustomValidators.validateCPF(value) ? null : { cpfInvalid: true };
       }
 
       return { documentInvalid: true };
@@ -66,12 +66,10 @@ export class CustomValidators {
         soma += parseInt(cns[i]) * (15 - i);
       }
       
-      // Para ser válido, o resto da divisão por 11 deve ser zero
       if (soma % 11 !== 0) {
         return false;
       }
     } 
-    // Regra para CNS iniciado em 1 ou 2 (PIS/PASEP)
     else if (['1', '2'].includes(cns[0])) {
       const pis = cns.substring(0, 11);
       let soma = 0;
@@ -98,7 +96,6 @@ export class CustomValidators {
         return false;
       }
     } else {
-      // Se não começar com 1, 2, 7, 8 ou 9, é inválido
       return false;
     }
 
@@ -123,12 +120,7 @@ export class CustomValidators {
     return true;
   }
 
-  /**
-   * Validação de Matrícula CNJ (Provimento nº 3/2009)
-   * A regra utiliza Módulo 11 com pesos de 2 a 11, da direita para a esquerda.
-   */
   private static validateCNJ(cnj: string): boolean {
-    // A matrícula não pode ser composta por números todos iguais
     if (/^(\d)\1+$/.test(cnj)) return false;
 
     const corpo = cnj.substring(0, 30);
@@ -137,7 +129,6 @@ export class CustomValidators {
     let soma = 0;
     let peso = 2;
 
-    // Multiplica da direita para a esquerda, reiniciando o peso em 11
     for (let i = corpo.length - 1; i >= 0; i--) {
       soma += parseInt(corpo.charAt(i)) * peso;
       peso = (peso === 11) ? 2 : peso + 1;
@@ -146,18 +137,13 @@ export class CustomValidators {
     let resto = soma % 11;
     let dvCalculado = 11 - resto;
 
-    // Se o resultado for 10 ou 11, o DV é 1
     if (dvCalculado === 10 || dvCalculado === 11) {
       dvCalculado = 1;
     }
 
-    // O CNJ usa dois dígitos, mas o cálculo do provimento gera um valor que 
-    // deve ser comparado com o número formado pelos dois últimos dígitos.
-    // Se o cálculo resultar em 1 dígito (ex: 7), ele é comparado como "07".
     const dvFormatado = dvCalculado.toString().padStart(2, '0');
 
     return dvFormatado === dvInformado;
   }
 
 }
-

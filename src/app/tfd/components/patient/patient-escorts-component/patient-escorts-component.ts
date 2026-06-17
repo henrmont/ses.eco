@@ -1,128 +1,141 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import {MatTableModule, MatTableDataSource} from '@angular/material/table';
-import {MatIconModule} from '@angular/material/icon';
-import {MatTooltipModule} from '@angular/material/tooltip';
-import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import { NgxMaskPipe } from 'ngx-mask';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { finalize } from 'rxjs';
+
+// Angular Material
+import { MatButtonModule } from '@angular/material/button';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
+// Pipes & Models
+import { NgxMaskPipe } from 'ngx-mask';
 import { Escort } from '../../../models/escort';
 import { PatientService } from '../../../services/patient-service';
-import { ShowPatientEscortComponent } from '../show-patient-escort-component/show-patient-escort-component';
+
+// Dialogs Components
 import { CreatePatientEscortComponent } from '../create-patient-escort-component/create-patient-escort-component';
-import { UpdatePatientEscortComponent } from '../update-patient-escort-component/update-patient-escort-component';
 import { DeletePatientEscortComponent } from '../delete-patient-escort-component/delete-patient-escort-component';
+import { ShowPatientEscortComponent } from '../show-patient-escort-component/show-patient-escort-component';
+import { UpdatePatientEscortComponent } from '../update-patient-escort-component/update-patient-escort-component';
+
+interface PermissionItem {
+  name: string;
+}
+
+interface RolePermission {
+  permissions: PermissionItem[];
+}
 
 @Component({
   selector: 'app-patient-escorts-component',
-  imports: [FormsModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatTableModule, MatIconModule, MatTooltipModule, MatProgressSpinnerModule, MatSlideToggleModule, NgxMaskPipe],
+  imports: [
+    FormsModule,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatTableModule,
+    MatIconModule,
+    MatTooltipModule,
+    MatProgressSpinnerModule,
+    MatSlideToggleModule,
+    NgxMaskPipe
+  ],
   templateUrl: './patient-escorts-component.html',
   styleUrl: './patient-escorts-component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientEscortsComponent implements OnInit {
+  // Injeções de dependência
+  protected readonly data = inject(MAT_DIALOG_DATA);
+  private readonly dialog = inject(MatDialog);
+  private readonly patientService = inject(PatientService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  data = inject(MAT_DIALOG_DATA);
-  displayedColumns: string[] = ['name','document','cns','status','actions'];
-  dataSource = signal<MatTableDataSource<Escort>>(new MatTableDataSource());
-  patientEscorts = signal<Escort[]>([])
-  isLoading = signal<boolean>(true);
-
-  constructor(
-    private dialog: MatDialog,
-    private patientService: PatientService,
-  ) {}
+  // Propriedades expostas para o Template
+  protected readonly displayedColumns: string[] = ['name', 'document', 'cns', 'status', 'actions'];
+  protected readonly escortsList = signal<Escort[]>([]);
+  protected readonly dataSource = computed(() => new MatTableDataSource(this.escortsList()));
+  protected readonly isLoading = signal<boolean>(true);
 
   ngOnInit(): void {
-    this.getPatientEscorts();
+    this.fetchPatientEscorts(true);
   }
 
-  getPatientEscorts() {
-    this.patientService.getPatientEscorts(this.data.patient_care.id).subscribe({
-      next: (response) => {
-        this.dataSource.set(new MatTableDataSource(response)) 
-      },
-      complete: () => {
-        this.isLoading.set(false);
-      }
-    })
-  }
-
-  upgradePatientEscorts() {
-    this.patientService.getPatientEscorts(this.data.patient_care.id).subscribe({
-      next: (response) => {
-        this.dataSource.set(new MatTableDataSource(response)) 
-      },
-    })
-  }
-
-  checkPermissions(name: any) {
-    const ROLES = this.data.permissions
-    for (const item of ROLES) {
-      if (item.permissions.filter((permission: any) => permission.name == name).length > 0)
-        return false 
+  /**
+   * Busca os acompanhantes do paciente de forma reativa.
+   */
+  private fetchPatientEscorts(showLoading = false): void {
+    if (showLoading) {
+      this.isLoading.set(true);
     }
-    return true
+
+    this.patientService.getPatientEscorts(this.data.patient_care.id)
+      .pipe(
+        finalize(() => {
+          if (showLoading) {
+            this.isLoading.set(false);
+          }
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (response) => {
+          this.escortsList.set(response);
+        }
+      });
   }
 
-  showPatientEscort(escort: Escort) {
-    this.dialog.open(ShowPatientEscortComponent, {
-      width: '800px',
-      height: '700px',
+  /**
+   * Centraliza a abertura de modais com tratamento automático do afterClosed
+   */
+  private openDialog(component: any, data: any, options: { width?: string; height?: string; refreshWithLoading?: boolean } = {}): void {
+    this.dialog.open(component, {
+      width: options.width || '800px',
+      height: options.height || '700px',
       disableClose: true,
       autoFocus: false,
-      data: {
-        escort: escort,
-      }
-    })
+      data
+    }).afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((result) => {
+        if (result) {
+          this.fetchPatientEscorts(options.refreshWithLoading || false);
+        }
+      });
   }
 
-  createPatientEscort() {
-    this.dialog.open(CreatePatientEscortComponent, {
-      width: '800px',
-      height: '700px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        patient_care: this.data.patient_care,
-      }
-    }).afterClosed().subscribe(result => {
-      if (result)
-        this.upgradePatientEscorts()
-    })
+  // Métodos de ação disparados pelo template HTML
+  protected showPatientEscort(escort: Escort): void {
+    this.openDialog(ShowPatientEscortComponent, 
+      { escort }, 
+      { height: 'auto' }
+    );
   }
 
-  updatePatientEscort(escort: Escort) {
-    this.dialog.open(UpdatePatientEscortComponent, {
-      width: '800px',
-      height: '700px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        patient_care: this.data.patient_care,
-        escort: escort,
-      }
-    }).afterClosed().subscribe(result => {
-      if (result)
-        this.upgradePatientEscorts()
-    })
+  protected createPatientEscort(): void {
+    this.openDialog(CreatePatientEscortComponent, 
+      { patient_care: this.data.patient_care }, 
+      { height: 'auto' }
+    );
   }
 
-  deletePatientEscort(escort: Escort) {
-    this.dialog.open(DeletePatientEscortComponent, {
-      width: '400px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        escort: escort,
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.isLoading.set(true)
-        this.getPatientEscorts()
-      }
-    })
+  protected updatePatientEscort(escort: Escort): void {
+    this.openDialog(UpdatePatientEscortComponent, 
+      { patient_care: this.data.patient_care, escort },
+      { height: 'auto' }
+    );
   }
 
+  protected deletePatientEscort(escort: Escort): void {
+    this.openDialog(
+      DeletePatientEscortComponent, 
+      { escort }, 
+      { width: '400px', height: 'auto', refreshWithLoading: true }
+    );
+  }
 }

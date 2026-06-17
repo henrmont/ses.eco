@@ -1,34 +1,41 @@
 mat-dialog-content {
-    padding-top: 10px;
+  padding-top: 10px;
 }
 
 mat-form-field {
-    width: 100%;
-}
-
-.toggle {
-    padding-top: 10px;
-}
-
-.toggle span {
-    margin-left: 10px;
+  width: 100%;
 }
 
 .stepper {
-    margin-top: 10px; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 10px;
+  margin-top: 10px; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 10px;
 }
 
 .line {
-    display: grid; 
-    grid-template-columns: 1fr; 
-    column-gap: 20px; 
+  display: grid; 
+  align-items: center;
+  column-gap: 20px; 
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-bottom: 20px; // Alinha o slide-toggle verticalmente com os inputs da mesma linha
+
+  span {
+    margin-left: 10px;
+  }
+}
+
+.btn-archive {
+    margin-top: -15px;
 }
 
 .waiting {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }

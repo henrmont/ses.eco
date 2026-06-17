@@ -1,194 +1,252 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { catchError, map, Observable, of } from 'rxjs';
 import { environment } from '../../../environments/environment.development';
 import { Patient } from '../models/patient';
 import { AbstractControl, AsyncValidatorFn, ValidationErrors } from '@angular/forms';
 import { PatientCare } from '../models/patient-care';
-import * as moment from 'moment';
 import { Escort } from '../models/escort';
 import { ReportAttachment } from '../models/report-attachment';
+import * as moment from 'moment';
 
-const requestOptions = {
-  'Authorization': `Bearer ${window.localStorage.getItem('token')}`
+// Interface genérica para padronizar as respostas de mutação do back-end (Laravel)
+export interface ApiResponse {
+  message: string;
+  status?: string;
+  [key: string]: any;
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class PatientService {
+  // 🔒 Injeções e URLs configuradas como imutáveis
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${environment.apiTfdUrl}/patient`;
+  private readonly checksUrl = `${environment.apiTfdUrl}/checks`;
+  private readonly validatorUrl = `${environment.apiTfdUrl}/validator`;
 
-  constructor(
-    private http: HttpClient,
-  ) {}
+  // 🧹 Os headers manuais foram removidos! O Interceptor gerencia o Token globalmente.
+
+  // --- FLUXO DE PACIENTES ---
 
   getPatients(): Observable<Patient[]> {
-    return this.http.get<Patient[]>(`${environment.apiTfdUrl}/patient/get-patients`, {headers: requestOptions})
+    return this.http.get<Patient[]>(`${this.apiUrl}/get-patients`);
   }
 
-  createPatient(data: any): Observable<Array<any>> {
-    return this.http.post<Array<any>>(`${environment.apiTfdUrl}/patient/create-patient`, this.mountFormData(data), {headers: requestOptions})
+  createPatient(data: any): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/create-patient`, this.mountFormData(data));
   }
 
-  updatePatient(patient: number, data: any): Observable<Array<any>> {
-    return this.http.post<Array<any>>(`${environment.apiTfdUrl}/patient/update-patient/${patient}`, this.mountFormData(data), {headers: requestOptions})
+  updatePatient(patientId: number, data: any): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/update-patient/${patientId}`, this.mountFormData(data));
   }
 
-  getPatientEscorts(patient_care: number): Observable<Escort[]> {
-    return this.http.get<Escort[]>(`${environment.apiTfdUrl}/patient/get-patient-escorts/${patient_care}`, {headers: requestOptions})
+  archivePatient(patientCareId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/archive-patient/${patientCareId}`, {});
   }
 
-  createPatientEscort(patient_care: number, data: any): Observable<Array<any>> {
-    return this.http.post<Array<any>>(`${environment.apiTfdUrl}/patient/create-patient-escort/${patient_care}`, this.mountFormData(data), {headers: requestOptions})
+  movePatientFromArchive(patientCareId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-from-archive/${patientCareId}`, {});
   }
 
-  updatePatientEscort(escort: number, data: any): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/patient/update-patient-escort/${escort}`, this.mountFormData(data), {headers: requestOptions})
+  movePatientFromOthers(patientCareId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-from-others/${patientCareId}`, {});
   }
 
-  deletePatientEscort(escort: number): Observable<Array<any>> {
-    return this.http.delete<Array<any>>(`${environment.apiTfdUrl}/patient/delete-patient-escort/${escort}`, {headers: requestOptions})
+  validatePatient(patientCareId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/validate-patient/${patientCareId}`, {});
   }
 
-  getPatientReports(patient_care: number): Observable<Report[]> {
-    return this.http.get<Report[]>(`${environment.apiTfdUrl}/patient/get-patient-reports/${patient_care}`, {headers: requestOptions})
+  // --- FLUXO DE ACOMPANHANTES (ESCORTS) ---
+
+  getPatientEscorts(patientCareId: number): Observable<Escort[]> {
+    return this.http.get<Escort[]>(`${this.apiUrl}/get-patient-escorts/${patientCareId}`);
   }
 
-  getCids(patient_care: number): Observable<any> {
-    return this.http.get<any>(`${environment.apiTfdUrl}/patient/get-cids/${patient_care}`, {headers: requestOptions})
+  createPatientEscort(patientCareId: number, data: any): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/create-patient-escort/${patientCareId}`, this.mountFormData(data));
   }
 
-  createPatientReport(patient_care: number, data: Report): Observable<Array<any>> {
-    return this.http.post<Array<any>>(`${environment.apiTfdUrl}/patient/create-patient-report/${patient_care}`, data, {headers: requestOptions})
+  updatePatientEscort(escortId: number, data: any): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-patient-escort/${escortId}`, this.mountFormData(data));
   }
 
-  updatePatientReport(report: number, data: Report): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/patient/update-patient-report/${report}`, data, {headers: requestOptions})
+  deletePatientEscort(escortId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/delete-patient-escort/${escortId}`);
   }
 
-  deletePatientReport(report: number): Observable<Array<any>> {
-    return this.http.delete<Array<any>>(`${environment.apiTfdUrl}/patient/delete-patient-report/${report}`, {headers: requestOptions})
+  // --- FLUXO DE PRONTUÁRIOS / LAUDOS (REPORTS) ---
+
+  getPatientReports(patientCareId: number): Observable<any[]> { // Alterado para any[] temporariamente caso o model Report mude
+    return this.http.get<any[]>(`${this.apiUrl}/get-patient-reports/${patientCareId}`);
   }
 
-  getReportAttachments(report: number): Observable<ReportAttachment[]> {
-    return this.http.get<ReportAttachment[]>(`${environment.apiTfdUrl}/patient/get-report-attachments/${report}`, {headers: requestOptions})
+  createPatientReport(patientCareId: number, data: any): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/create-patient-report/${patientCareId}`, data);
   }
 
-  createReportAttachment(report: number, data: any): Observable<Array<any>> {
-    return this.http.post<Array<any>>(`${environment.apiTfdUrl}/patient/create-report-attachment/${report}`, this.mountFormData(data), {headers: requestOptions})
+  updatePatientReport(reportId: number, data: any): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-patient-report/${reportId}`, data);
   }
 
-  updateReportAttachment(report_attachment: number, data: any): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/patient/update-report-attachment/${report_attachment}`, this.mountFormData(data), {headers: requestOptions})
+  deletePatientReport(reportId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/delete-patient-report/${reportId}`);
   }
 
-  deleteReportAttachment(report_attachment: number): Observable<Array<any>> {
-    return this.http.delete<Array<any>>(`${environment.apiTfdUrl}/patient/delete-report-attachment/${report_attachment}`, {headers: requestOptions})
+  getCids(patientCareId: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/get-cids/${patientCareId}`);
   }
 
-  archivePatient(patient_care: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/patient/archive-patient/${patient_care}`, {headers: requestOptions})
+  // --- FLUXO DE ANEXOS DE LAUDO (REPORT ATTACHMENTS) ---
+
+  getReportAttachments(reportId: number): Observable<ReportAttachment[]> {
+    return this.http.get<ReportAttachment[]>(`${this.apiUrl}/get-report-attachments/${reportId}`);
   }
 
-  movePatientFromArchive(patient_care: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/patient/move-patient-from-archive/${patient_care}`, {headers: requestOptions})
+  createReportAttachment(reportId: number, data: any): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/create-report-attachment/${reportId}`, this.mountFormData(data));
   }
 
-  movePatientFromOthers(patient_care: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/patient/move-patient-from-others/${patient_care}`, {headers: requestOptions})
+  updateReportAttachment(reportAttachmentId: number, data: any): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-report-attachment/${reportAttachmentId}`, this.mountFormData(data));
   }
 
-  validatePatient(patient_care: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/patient/validate-patient/${patient_care}`, {headers: requestOptions})
+  deleteReportAttachment(reportAttachmentId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/delete-report-attachment/${reportAttachmentId}`);
   }
 
-  // Checks
+  // --- CONSULTAS DIRETAS (CHECKS) ---
+
   getEscortCns(cns: number): Observable<Escort> {
-    return this.http.get<Escort>(`${environment.apiTfdUrl}/checks/get-escort-cns/${cns}`, {headers: requestOptions})
+    return this.http.get<Escort>(`${this.checksUrl}/get-escort-cns/${cns}`);
   }
 
   getEscortDocument(document: number): Observable<Escort> {
-    return this.http.get<Escort>(`${environment.apiTfdUrl}/checks/get-escort-document/${document}`, {headers: requestOptions})
+    return this.http.get<Escort>(`${this.checksUrl}/get-escort-document/${document}`);
   }
   
-  // Validators
-  cnsPatientExistsValidator(data: string | null | undefined): AsyncValidatorFn {
+  // --- VALIDATORS ASSÍNCRONOS BLINDADOS ---
+
+  cnsPatientExistsValidator(currentCns: string | null | undefined): AsyncValidatorFn {
     return (control: AbstractControl): Observable<ValidationErrors | null> => {
       const cns = control.value;
-
+      
+      // Se o campo estiver vazio, o formulário está válido por aqui
       if (!cns) return of(null);
 
-      return this.http.get<{ cnsExists: boolean }>(`${environment.apiTfdUrl}/validator/cns-patient-exists/${cns}/${data}`, { headers: requestOptions }).pipe(
-        map(res => {
-          return res ? { cnsExists: true } : null;
-        }),
-        catchError(() => of(null))
-      );
+      // Se o CNS digitado for exatamente igual ao atual (caso de edição), não precisa consultar o banco
+      if (currentCns && cns === currentCns) return of(null);
+
+      // Tratamento para não passar a string "null" ou "undefined" na rota
+      const cnsToCompare = currentCns ? currentCns : '';
+
+      return this.http.get<{ cnsExists: boolean }>(`${this.validatorUrl}/cns-patient-exists/${cns}/${cnsToCompare}`)
+        .pipe(
+          map(res => {
+            // Garante a verificação forçando o booleano, independente de como o backend responda
+            const exists = res && (res.cnsExists === true || (res as any) === true);
+            
+            // Retorna o objeto de erro esperado pelo Angular, ou null para válido
+            return exists ? { cnsExists: true } : null;
+          }),
+          catchError(() => {
+            // Se a API falhar, assume que não existe para não travar o fluxo do usuário
+            return of(null);
+          })
+        );
     };
   }
 
-  cnsEscortExistsValidator(patient_care: PatientCare, data: string | null | undefined): AsyncValidatorFn {
+  cnsEscortExistsValidator(patientCare: PatientCare, currentCns: string | null | undefined): AsyncValidatorFn {
     return (control: AbstractControl): Observable<ValidationErrors | null> => {
       const cns = control.value;
-
       if (!cns) return of(null);
 
-      if (patient_care.patient?.cns === cns) return of({ cnsPatientExists: true });
+      // Se o CNS digitado for exatamente igual ao atual (caso de edição do acompanhante), não consulta o banco
+      if (currentCns && cns === currentCns) return of(null);
 
-      return this.http.get<{ cnsExists: boolean }>(`${environment.apiTfdUrl}/validator/cns-escort-exists/${patient_care.id}/${cns}/${data}`, { headers: requestOptions }).pipe(
-        map(res => {
-          return res ? { cnsExists: true } : null;
-        }),
-        catchError(() => of(null))
-      );
+      // Validação local imediata se o CNS digitado pertencer ao próprio paciente titular
+      if (patientCare.patient?.cns === cns) return of({ cnsPatientExists: true });
+
+      // Garante que não passará string textuale "null" ou "undefined" na URL
+      const cnsToCompare = currentCns ? currentCns : '';
+
+      return this.http.get<{ cnsExists: boolean }>(`${this.validatorUrl}/cns-escort-exists/${patientCare.id}/${cns}/${cnsToCompare}`)
+        .pipe(
+          map(res => {
+            const exists = res && (res.cnsExists === true || (res as any) === true);
+            return exists ? { cnsExists: true } : null;
+          }),
+          catchError(() => of(null))
+        );
     };
   }
 
-  documentPatientExistsValidator(data: string | null | undefined): AsyncValidatorFn {
+  documentPatientExistsValidator(currentDocument: string | null | undefined): AsyncValidatorFn {
     return (control: AbstractControl): Observable<ValidationErrors | null> => {
       const document = control.value;
-
       if (!document) return of(null);
 
-      return this.http.get<{ documentExists: boolean }>(`${environment.apiTfdUrl}/validator/document-patient-exists/${document}/${data}`, { headers: requestOptions }).pipe(
-        map(res => {
-          return res ? { documentExists: true } : null;
-        }),
-        catchError(() => of(null))
-      );
+      // Se o Documento digitado for idêntico ao atual do paciente, validação passa direto
+      if (currentDocument && document === currentDocument) return of(null);
+
+      // Garante que não passará string textuale "null" ou "undefined" na URL
+      const documentToCompare = currentDocument ? currentDocument : '';
+
+      return this.http.get<{ documentExists: boolean }>(`${this.validatorUrl}/document-patient-exists/${document}/${documentToCompare}`)
+        .pipe(
+          map(res => {
+            const exists = res && (res.documentExists === true || (res as any) === true);
+            return exists ? { documentExists: true } : null;
+          }),
+          catchError(() => of(null))
+        );
     };
   }
 
-  documentEscortExistsValidator(patient_care: PatientCare, data: string | null | undefined): AsyncValidatorFn {
+  documentEscortExistsValidator(patientCare: PatientCare, currentDocument: string | null | undefined): AsyncValidatorFn {
     return (control: AbstractControl): Observable<ValidationErrors | null> => {
       const document = control.value;
-
       if (!document) return of(null);
 
-      if (patient_care.patient?.document === document) return of({ documentPatientExists: true });
+      // Se o Documento digitado for idêntico ao atual do acompanhante, validação passa direto
+      if (currentDocument && document === currentDocument) return of(null);
 
-      return this.http.get<{ documentExists: boolean }>(`${environment.apiTfdUrl}/validator/document-escort-exists/${patient_care.id}/${document}/${data}`, { headers: requestOptions }).pipe(
-        map(res => {
-          return res ? { documentExists: true } : null;
-        }),
-        catchError(() => of(null))
-      );
+      // Validação local imediata se o CPF/Documento digitado pertencer ao próprio titular
+      if (patientCare.patient?.document === document) return of({ documentPatientExists: true });
+
+      // Garante que não passará string textuale "null" ou "undefined" na URL
+      const documentToCompare = currentDocument ? currentDocument : '';
+
+      return this.http.get<{ documentExists: boolean }>(`${this.validatorUrl}/document-escort-exists/${patientCare.id}/${document}/${documentToCompare}`)
+        .pipe(
+          map(res => {
+            const exists = res && (res.documentExists === true || (res as any) === true);
+            return exists ? { documentExists: true } : null;
+          }),
+          catchError(() => of(null))
+        );
     };
   }
 
-  // Resources
-  private mountFormData(data: any): FormData
-  {
-    const formData = new FormData()
+  // --- TRATAMENTO E COMPOSIÇÃO DE MULTIPART/FORM-DATA ---
+
+  private mountFormData(data: any): FormData {
+    const formData = new FormData();
+    
+    if (!data) return formData;
+
     for (const [key, value] of Object.entries(data)) {
-      if (value instanceof File || value instanceof Blob)
+      if (value instanceof File || value instanceof Blob) {
         formData.append(key, value, 'file');
-      else if (moment.isMoment(value))
+      } else if (moment.isMoment(value)) {
         formData.append(key, value.format('YYYY-MM-DD'));
-      else if (value !== null && value !== undefined)
-        formData.append(key, value as string);
+      } else if (value !== null && value !== undefined) {
+        formData.append(key, String(value));
+      }
     }
-    return formData
+    
+    return formData;
   }
-  
 }

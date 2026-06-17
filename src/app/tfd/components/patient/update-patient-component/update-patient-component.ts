@@ -1,28 +1,29 @@
-import { Component, effect, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, OnInit, signal, WritableSignal } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import {STEPPER_GLOBAL_OPTIONS} from '@angular/cdk/stepper';
+import { STEPPER_GLOBAL_OPTIONS } from '@angular/cdk/stepper';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
-import {MatFormFieldModule} from '@angular/material/form-field';
-import {MatInputModule} from '@angular/material/input';
-import {MatStepperModule} from '@angular/material/stepper';
-import {MatIconModule} from '@angular/material/icon';
-import {MatDatepickerInputEvent, MatDatepickerModule} from '@angular/material/datepicker';
-import {MatSlideToggleModule} from '@angular/material/slide-toggle';
-import {MatAutocompleteModule} from '@angular/material/autocomplete';
-import {MatTooltipModule} from '@angular/material/tooltip';
-import { map, Observable, startWith } from 'rxjs';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatStepperModule } from '@angular/material/stepper';
+import { MatIconModule } from '@angular/material/icon';
+import { MatDatepickerInputEvent, MatDatepickerModule } from '@angular/material/datepicker';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { finalize, map, Observable, startWith } from 'rxjs';
 import { CommonModule, formatDate } from '@angular/common';
 import { MatSelectChange, MatSelectModule } from '@angular/material/select';
 import { saveAs } from 'file-saver';
 import { NgxMaskDirective } from 'ngx-mask';
-import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import { ERRORS } from '../../../consts/errors';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+
 import { ViacepService } from '../../../../core/services/viacep-service';
 import { PatientService } from '../../../services/patient-service';
 import { MessageService } from '../../../../core/services/message-service';
 import { StorageService } from '../../../../core/services/storage-service';
 import { CustomValidators } from '../../../../core/validators/custom.validator';
+
 import { Deficiency } from '../../../enums/deficiency';
 import { MaritalStatus } from '../../../enums/marital-status';
 import { Gender } from '../../../enums/gender';
@@ -31,38 +32,135 @@ import { Profession } from '../../../enums/profession';
 import { Ufs } from '../../../enums/ufs';
 import { Race } from '../../../enums/race';
 
+interface ErrorMessageStructure {
+  type: string;
+  message: string;
+}
+
 @Component({
   selector: 'app-update-patient-component',
-  imports: [FormsModule, ReactiveFormsModule, CommonModule, MatSelectModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatStepperModule, MatIconModule, MatDatepickerModule, MatSlideToggleModule, MatAutocompleteModule, MatTooltipModule, NgxMaskDirective, MatProgressSpinnerModule],
+  imports: [
+    FormsModule, ReactiveFormsModule, CommonModule, MatSelectModule, MatDialogModule, 
+    MatButtonModule, MatFormFieldModule, MatInputModule, MatStepperModule, MatIconModule, 
+    MatDatepickerModule, MatSlideToggleModule, MatAutocompleteModule, MatTooltipModule, 
+    NgxMaskDirective, MatProgressSpinnerModule
+  ],
   templateUrl: './update-patient-component.html',
   styleUrl: './update-patient-component.scss',
-  providers: [{provide: STEPPER_GLOBAL_OPTIONS, useValue: {showError: true}}],
+  providers: [{ provide: STEPPER_GLOBAL_OPTIONS, useValue: { showError: true } }],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UpdatePatientComponent implements OnInit {
+  readonly data = inject(MAT_DIALOG_DATA);
+  private readonly formBuilder = inject(FormBuilder);
+  private readonly viacepService = inject(ViacepService);
+  private readonly patientService = inject(PatientService);
+  private readonly messageService = inject(MessageService);
+  private readonly storageService = inject(StorageService);
+  private readonly dialogRef = inject(MatDialogRef<UpdatePatientComponent>);
 
-  data = inject(MAT_DIALOG_DATA)
-  errorMessages = ERRORS
-  updatePatientPersonalForm: FormGroup
-  updatePatientAddressForm: FormGroup
-  updatePatientIdentificationForm: FormGroup
-  updatePatientInfoForm: FormGroup
+  readonly isSubmitting = signal<boolean>(false);
+  readonly ethnicityType = signal<boolean>(true);
+  readonly type = signal<boolean>(true);
 
-  constructor(
-    private formBuilder: FormBuilder,
-    private viacepService: ViacepService,
-    private patientService: PatientService,
-    private messageService: MessageService,
-    private storageService: StorageService,
-    private dialogRef: MatDialogRef<UpdatePatientComponent>,
-  ) {
+  updatePatientIdentificationForm!: FormGroup;
+  updatePatientPersonalForm!: FormGroup;
+  updatePatientAddressForm!: FormGroup;
+  updatePatientInfoForm!: FormGroup;
+
+  races: string[] = Object.values(Race);
+  deficiencies: string[] = Object.values(Deficiency);
+  marital_status: string[] = Object.values(MaritalStatus);
+  genders: string[] = Object.values(Gender);
+  ethnicities: string[] = Object.values(Ethnicity);
+  professions: string[] = Object.values(Profession);
+  ufs: string[] = Object.keys(Ufs);
+
+  naturalnessControl = new FormControl<string | any>('', Validators.required);
+  naturalnessOptions!: any[];
+  filteredNaturalnessOptions!: Observable<any[]>;
+  readonly naturalnessReadOnly = signal<boolean>(true);
+  readonly naturalnessLoading = signal<boolean>(false);
+
+  filteredProfessionsOptions!: Observable<string[]>;
+  filteredUfsOptions!: Observable<string[]>;
+
+  files: { [key: string]: File | null } = {
+    cns: null,
+    document: null,
+    deficiency: null,
+    address: null,
+    protocol: null
+  };
+
+  // Alterado para garantir o tipo estrito da string para o template
+  labelsFiles: Record<string, WritableSignal<string>> = {
+    cns: signal<string>('Nenhum arquivo selecionado'),
+    document: signal<string>('Nenhum arquivo selecionado'),
+    deficiency: signal<string>('Nenhum arquivo selecionado'),
+    address: signal<string>('Nenhum arquivo selecionado'),
+    protocol: signal<string>('Nenhum arquivo selecionado')
+  };
+
+  errorMessages: Record<string, ErrorMessageStructure[]> = {
+    cns: [
+      { type: 'required', message: 'O número do CNS é obrigatório.' },
+      { type: 'invalidCns', message: 'Número de CNS inválido.' },
+      { type: 'cnsExists', message: 'Este CNS já está cadastrado.' }
+    ],
+    document_type: [{ type: 'required', message: 'Selecione o tipo de documento.' }],
+    document: [
+      { type: 'required', message: 'O documento é obrigatório.' },
+      { type: 'invalidCpfOrCnj', message: 'Formato de CPF ou CNJ inválido.' },
+      { type: 'documentExists', message: 'Este documento já está cadastrado.' }
+    ],
+    sigadoc: [{ type: 'required', message: 'O número do SigaDoc é obrigatório.' }],
+    name: [{ type: 'required', message: 'O nome do paciente é obrigatório.' }],
+    birth_date: [{ type: 'required', message: 'A data de nascimento é obrigatória.' }],
+    gender: [{ type: 'required', message: 'Selecione o gênero.' }],
+    race: [{ type: 'required', message: 'A raça/cor é obrigatória.' }],
+    ethnicity: [{ type: 'required', message: 'A etnia é obrigatória.' }],
+    naturalness: [{ type: 'required', message: 'A naturalidade é obrigatória.' }],
+    cep: [
+      { type: 'required', message: 'O CEP é obrigatório.' },
+      { type: 'pattern', message: 'Formato de CEP inválido (Ex: 00000-000).' }
+    ],
+    address: [{ type: 'required', message: 'O endereço é obrigatório.' }],
+    number: [{ type: 'required', message: 'O número residencial é obrigatório.' }],
+    neighborhood: [{ type: 'required', message: 'O bairro é obrigatório.' }]
+  };
+
+  constructor() {
+    this.initForms();
+
+    effect(() => {
+      const ethnicityControl = this.updatePatientPersonalForm?.get('ethnicity');
+      if (this.ethnicityType()) {
+        ethnicityControl?.disable();
+        ethnicityControl?.reset();
+      } else {
+        ethnicityControl?.enable();
+      }
+    });
+  }
+
+  ngOnInit() {
+    this.setEthnicityType(this.data.patient.race);
+    this.setFilteredProfessions();
+    this.setFilteredUfs();
+    this.getNaturalness();
+  }
+
+  private initForms() {
     this.updatePatientIdentificationForm = this.formBuilder.group({
-      cns: [this.data.patient.cns, [Validators.required, CustomValidators.cnsValidator()],[this.patientService.cnsPatientExistsValidator(this.data.patient.cns)]],
+      cns: [this.data.patient.cns, [Validators.required, CustomValidators.cnsValidator()], [this.patientService.cnsPatientExistsValidator(this.data.patient.cns)]],
       file_cns_id: [this.data.patient.file_cns_id],
       document_type: [this.data.patient.document_type, [Validators.required]],
       document: [this.data.patient.document, [Validators.required, CustomValidators.cpfOrCnjValidator()], [this.patientService.documentPatientExistsValidator(this.data.patient.document)]],
       file_document_id: [this.data.patient.file_document_id],
       sigadoc: [this.data.patient.sigadoc, [Validators.required]],
-    })
+    });
+
     this.updatePatientPersonalForm = this.formBuilder.group({
       name: [this.data.patient.name, [Validators.required]],
       birth_date: [this.data.patient.birth_date ? formatDate(this.data.patient.birth_date, 'yyyy-MM-dd', 'en') : null, [Validators.required]],
@@ -80,7 +178,8 @@ export class UpdatePatientComponent implements OnInit {
       profession: [this.data.patient.profession],
       deficiency: [this.data.patient.deficiency],
       file_deficiency_id: [this.data.patient.file_deficiency_id],
-    })
+    });
+
     this.updatePatientAddressForm = this.formBuilder.group({
       cep: [this.data.patient.cep, [Validators.required, Validators.pattern(/^\d{5}-?\d{3}$/)]],
       address: [this.data.patient.address, [Validators.required]],
@@ -90,50 +189,26 @@ export class UpdatePatientComponent implements OnInit {
       neighborhood: [this.data.patient.neighborhood, [Validators.required]],
       city: [this.data.patient.city],
       state: [this.data.patient.state],
-    })
+    });
+
     this.updatePatientInfoForm = this.formBuilder.group({
-      control_number: [this.data.patient.patient_info.control_number],
-      observation: [this.data.patient.patient_info.observation],
-      file_protocol_id: [this.data.patient.patient_info.file_protocol_id],
-    })
-    effect(() => {
-      if (this.ethnicityType()) {
-        this.updatePatientPersonalForm.get('ethnicity')?.disable();
-        this.updatePatientPersonalForm.get('ethnicity')?.reset();
-      } else {
-        this.updatePatientPersonalForm.get('ethnicity')?.enable();
-      }
-    })
+      control_number: [this.data.patient.patient_info?.control_number || null],
+      observation: [this.data.patient.patient_info?.observation || null],
+      file_protocol_id: [this.data.patient.patient_info?.file_protocol_id || null],
+    });
   }
 
-  ngOnInit() {
-    this.setEthnicityType(this.data.patient.race)
-    this.setFilteredProfessions()
-    this.setFilteredUfs()
-    this.getNaturalness()
-  }
-
-  type = signal<boolean>(true)
   setType(type: boolean) {
-    this.type.set(type)
+    this.type.set(type);
   }
 
-  races: any[] = Object.values(Race)
-  ethnicityType = signal<boolean>(true);
   onSelection(event: MatSelectChange) {
-    this.setEthnicityType(event.value)
-  }
-  setEthnicityType(type: string) {
-    if (type === 'Indígena')
-      this.ethnicityType.set(false)
-    else
-      this.ethnicityType.set(true)
+    this.setEthnicityType(event.value);
   }
 
-  deficiencies: string[] = Object.values(Deficiency)
-  marital_status: string[] = Object.values(MaritalStatus)
-  genders: string[] = Object.values(Gender)
-  ethnicities: string[] = Object.values(Ethnicity)
+  setEthnicityType(type: string) {
+    this.ethnicityType.set(type !== 'Indígena');
+  }
 
   setBirthDate(event: MatDatepickerInputEvent<Date>) {
     this.updatePatientPersonalForm.get('birth_date')?.setValue(event.value);
@@ -141,51 +216,42 @@ export class UpdatePatientComponent implements OnInit {
   }
 
   getNaturalness() {
-    this.naturalnessControl.setValue('')
-    this.naturalnessLoading.set(true)
+    this.naturalnessControl.setValue('');
+    this.naturalnessLoading.set(true);
     this.viacepService.getNaturalness().subscribe({
       next: (response) => {
-        this.naturalnessOptions = response.map((item: any) => item.nome)
-        this.setNaturalnessOptions()
+        this.naturalnessOptions = response.map((item: any) => item.nome);
+        this.setNaturalnessOptions();
       },
       complete: () => {
-        this.naturalnessLoading.set(false)
-        this.naturalnessReadOnly.set(false)
-        this.naturalnessControl.setValue(this.data.patient.naturalness)
+        this.naturalnessLoading.set(false);
+        this.naturalnessReadOnly.set(false);
+        this.naturalnessControl.setValue(this.data.patient.naturalness);
       }
-    })
+    });
   }
-  naturalnessControl = new FormControl<string | any>('', Validators.required);
-  naturalnessOptions!: any[];
-  filteredNaturalnessOptions!: Observable<any[]>;
-  naturalnessReadOnly = signal<boolean>(true)
-  naturalnessLoading = signal<boolean>(false)
+
   setNaturalnessOptions() {
     this.filteredNaturalnessOptions = this.naturalnessControl.valueChanges.pipe(
       startWith(''),
-      map(value => {
-        const name = typeof value === 'string' ? value : value;
-        return name ? this._filterNaturalness(name as string) : this.naturalnessOptions.slice(0,10);
-      }),
+      map(value => value ? this._filterNaturalness(value) : this.naturalnessOptions.slice(0, 10)),
     );
   }
+
   onNaturalnessSelected(option: any) {
-    this.updatePatientPersonalForm.patchValue({
-      naturalness: option
-    });
+    this.updatePatientPersonalForm.patchValue({ naturalness: option });
     this.updatePatientPersonalForm.markAsDirty();
   }
+
   private _filterNaturalness(name: string): any[] {
     const filterValue = name.toLowerCase();
-
-    return this.naturalnessOptions.filter(option => option.toLowerCase().includes(filterValue)).slice(0,10);
+    return this.naturalnessOptions.filter(option => option.toLowerCase().includes(filterValue)).slice(0, 10);
   }
+
   displayNaturalness(naturalness: any): string {
-    return naturalness && naturalness ? naturalness : '';
+    return naturalness ? naturalness : '';
   }
 
-  filteredProfessionsOptions!: Observable<string[]>;
-  professions: string[] = Object.values(Profession)
   setFilteredProfessions() {
     this.filteredProfessionsOptions = this.updatePatientPersonalForm.get('profession')!.valueChanges.pipe(
       startWith(''),
@@ -193,8 +259,6 @@ export class UpdatePatientComponent implements OnInit {
     );
   }
 
-  filteredUfsOptions!: Observable<string[]>;
-  ufs: string[] = Object.keys(Ufs)
   setFilteredUfs() {
     this.filteredUfsOptions = this.updatePatientAddressForm.get('state')!.valueChanges.pipe(
       startWith(''),
@@ -202,23 +266,14 @@ export class UpdatePatientComponent implements OnInit {
     );
   }
 
-  private _filter(options: any, value: string): string[] {
+  private _filter(options: string[], value: string): string[] {
     const filterValue = value.toLowerCase();
-
-    return options.filter((option: any) => option.toLowerCase().includes(filterValue));
-  }
-
-  download(archive: number, name: string) {
-    this.storageService.download(archive).subscribe({
-      next: (response) => {
-        saveAs(response.archive,name)
-      }
-    })
+    return options.filter(option => option.toLowerCase().includes(filterValue));
   }
 
   getAddress() {
-    const cep = this.updatePatientAddressForm.get('cep')?.value
-    if (cep && cep.length === 8) {
+    const cep = this.updatePatientAddressForm.get('cep')?.value;
+    if (cep && cep.replace(/\D/g, '').length === 8) {
       this.viacepService.getAddress(cep).subscribe({
         next: (response) => {
           this.updatePatientAddressForm.patchValue({
@@ -226,77 +281,64 @@ export class UpdatePatientComponent implements OnInit {
             neighborhood: response.bairro,
             city: response.localidade,
             state: response.uf,
-          })
+          });
         }
-      })
+      });
     }
   }
 
-  labelFileCNS = signal<string>('Nenhum arquivo selecionado');
-  fileCNS!:File
-  onFileCNSSelected(event: any) {
-    this.labelFileCNS.set(event.target.files[0].name)
-    this.fileCNS = event.target.files[0]
-    this.updatePatientIdentificationForm.markAsDirty();
+  download(archive: number, name: string) {
+    this.storageService.download(archive).subscribe({
+      next: (response) => {
+        saveAs(response.archive, name);
+      }
+    });
   }
 
-  labelFileDocument = signal<string>('Nenhum arquivo selecionado');
-  fileDocument!:File
-  onFileDocumentSelected(event: any) {
-    this.labelFileDocument.set(event.target.files[0].name)
-    this.fileDocument = event.target.files[0]
-    this.updatePatientIdentificationForm.markAsDirty();
+  onFileSelected(event: any, type: 'cns' | 'document' | 'deficiency' | 'address' | 'protocol', formToDirty: FormGroup) {
+    const file = event.target.files[0];
+    if (file) {
+      this.labelsFiles[type].set(file.name);
+      this.files[type] = file;
+      formToDirty.markAsDirty();
+    }
   }
 
-  labelFileDeficiency = signal<string>('Nenhum arquivo selecionado');
-  fileDeficiency!:File
-  onFileDeficiencySelected(event: any) {
-    this.labelFileDeficiency.set(event.target.files[0].name)
-    this.fileDeficiency = event.target.files[0]
-    this.updatePatientPersonalForm.markAsDirty();
-  }
-
-  labelFileAddress = signal<string>('Nenhum arquivo selecionado');
-  fileAddress!:File
-  onFileAddressSelected(event: any) {
-    this.labelFileAddress.set(event.target.files[0].name)
-    this.fileAddress = event.target.files[0]
-    this.updatePatientAddressForm.markAsDirty();
-  }
-
-  labelFileProtocol = signal<string>('Nenhum arquivo selecionado');
-  fileProtocol!:File
-  onFileProtocolSelected(event: any) {
-    this.labelFileProtocol.set(event.target.files[0].name)
-    this.fileProtocol = event.target.files[0]
-    this.updatePatientInfoForm.markAsDirty();
-  }
-
-  wSubmit = signal<boolean>(false)
   onUpdatePatientSubmit() {
-    this.wSubmit.set(true);
+    if (
+      this.updatePatientIdentificationForm.invalid ||
+      this.updatePatientPersonalForm.invalid ||
+      this.updatePatientAddressForm.invalid ||
+      this.updatePatientInfoForm.invalid
+    ) {
+      return;
+    }
+
+    this.isSubmitting.set(true);
+
     const patientData = {
       ...this.updatePatientIdentificationForm.value,
       ...this.updatePatientPersonalForm.value,
       ...this.updatePatientAddressForm.value,
       ...this.updatePatientInfoForm.value,
-      file_cns: this.fileCNS,
-      file_document: this.fileDocument,
-      file_deficiency: this.fileDeficiency,
-      file_address: this.fileAddress,
-      file_protocol: this.fileProtocol,
+      file_cns: this.files['cns'],
+      file_document: this.files['document'],
+      file_deficiency: this.files['deficiency'],
+      file_address: this.files['address'],
+      file_protocol: this.files['protocol'],
     };
 
-    this.patientService.updatePatient(this.data.patient.id, patientData).subscribe({
-      next: (response: any) => {
-        this.messageService.showMessage(response.message);
-        this.dialogRef.close(true);
-      },
-      error: (err) => {
-        this.messageService.showMessage(err.error.message);
-        this.wSubmit.set(false);
-      }
-    });
+    this.patientService.updatePatient(this.data.patient.id, patientData)
+      .pipe(finalize(() => this.isSubmitting.set(false)))
+      .subscribe({
+        next: (response: any) => {
+          this.messageService.showMessage(response.message || 'Paciente atualizado com sucesso!');
+          this.dialogRef.close(true);
+        },
+        error: (err) => {
+          const errMsg = err?.error?.message || 'Erro ao atualizar paciente.';
+          this.messageService.showMessage(errMsg);
+        }
+      });
   }
-
 }

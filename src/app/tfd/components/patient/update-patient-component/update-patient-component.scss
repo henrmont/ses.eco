@@ -1,34 +1,72 @@
 mat-dialog-content {
-    padding-top: 10px;
+  padding-top: 12px; // Leve ajuste para desgrudar do título de forma harmônica
 }
 
 mat-form-field {
-    width: 100%;
+  width: 100%;
 }
 
+// Alinhamento vertical do slide toggle (Recém-nascido)
 .toggle {
-    padding-top: 10px;
-}
+  display: flex;
+  align-items: center;
+  height: 56px; // Mesma altura padrão do mat-form-field outline para alinhar na linha
 
-.toggle span {
+  span {
     margin-left: 10px;
+    font-size: 14px;
+    color: var(--mdc-outlined-text-field-label-text-color, rgba(0, 0, 0, 0.6));
+  }
 }
 
+// Container de cada passo do Stepper
 .stepper {
-    margin-top: 10px; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 10px;
+  margin-top: 12px; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 12px;
 }
 
+// Linhas em Grid
 .line {
-    display: grid; 
-    grid-template-columns: 1fr; 
-    column-gap: 20px; 
+  display: grid; 
+  grid-template-columns: 1fr; 
+  column-gap: 20px;
+  row-gap: 12px; // Evita que campos grudem caso quebrem de linha em telas menores
+  align-items: start; // Garante que inputs e botões alinhem pelo topo
+
+  // Ajuste cirúrgico para centralizar os botões de "Anexar/Download" verticalmente com o input ao lado
+  div[style*="display: flex"] {
+    align-items: center;
+    height: 56px; // Força a mesma altura do form-field para o botão estender perfeitamente
+  }
 }
 
+// Garante que o input nativo de arquivos suma sem quebrar a lógica de clique
+.file-input {
+  display: none !important;
+}
+
+// Feedback visual do botão de criação durante o envio
 .waiting {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  mat-spinner {
+    margin-right: 2px;
+  }
+}
+
+// Responsividade básica de segurança (caso a modal abra em telas muito pequenas/tablets)
+@media (max-width: 768px) {
+  .line {
+    grid-template-columns: 1fr !important; // Força virar coluna única em telas pequenas
+    
+    div[style*="display: flex"] {
+      justify-content: flex-start;
+      margin-bottom: 8px;
+    }
+  }
 }

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -10,30 +10,41 @@ import { MessageService } from '../../../../core/services/message-service';
   imports: [MatDialogModule, MatButtonModule, MatProgressSpinnerModule],
   templateUrl: './delete-patient-escort-component.html',
   styleUrl: './delete-patient-escort-component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima com OnPush + Signals
 })
 export class DeletePatientEscortComponent {
+  // Injeções de Dependência modernas via inject()
+  protected readonly data = inject(MAT_DIALOG_DATA);
+  private readonly patientService = inject(PatientService);
+  private readonly messageService = inject(MessageService);
+  private readonly dialogRef = inject(MatDialogRef<DeletePatientEscortComponent>);
 
-  data = inject(MAT_DIALOG_DATA);
-  
-  constructor(
-    private patientService: PatientService,
-    private messageService: MessageService,
-    private dialog: MatDialogRef<DeletePatientEscortComponent>,
-  ) {}
+  // Estado de submissão reativo
+  protected readonly isSubmitting = signal<boolean>(false);
 
-  wSubmit = signal<boolean>(false)
-  onDeleteEscortSubmit() {
-    this.wSubmit.set(true)
-    this.patientService.deletePatientEscort(this.data.escort.pivot.id).subscribe({
+  /**
+   * Dispara a requisição para remover o vínculo do acompanhante
+   */
+  protected onSubmit(): void {
+    const pivotId = this.data?.escort?.pivot?.id;
+
+    if (!pivotId) {
+      this.messageService.showMessage('Erro: Identificador do vínculo não encontrado.');
+      return;
+    }
+
+    this.isSubmitting.set(true);
+
+    this.patientService.deletePatientEscort(pivotId).subscribe({
       next: (response: any) => {
-        this.messageService.showMessage(response.message)
-        this.dialog.close(true)
+        this.messageService.showMessage(response.message || 'Acompanhante removido com sucesso!');
+        this.dialogRef.close(true); // Retorna true para sinalizar sucesso à listagem pai
       },
       error: (err) => {
-        this.messageService.showMessage(err.error.message)
-        this.wSubmit.set(false)
+        const errorMessage = err?.error?.message || 'Ocorreu um erro ao tentar remover o acompanhante.';
+        this.messageService.showMessage(errorMessage);
+        this.isSubmitting.set(false);
       },
-    })
+    });
   }
-
 }

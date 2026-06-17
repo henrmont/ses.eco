@@ -1,17 +1,14 @@
-import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { MatSnackBar } from '@angular/material/snack-bar';
-
+import { MatSnackBar, MatSnackBarConfig } from '@angular/material/snack-bar';
 import { MessageService } from './message-service';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('MessageService', () => {
   let service: MessageService;
-  let snackBarMock: any;
+  let snackBarMock: { open: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
-    vi.clearAllMocks();
-
-    // Mock simples da função open do MatSnackBar
+    // Cria um mock nativo do Vitest para as funções do MatSnackBar
     snackBarMock = {
       open: vi.fn()
     };
@@ -19,26 +16,26 @@ describe('MessageService', () => {
     TestBed.configureTestingModule({
       providers: [
         MessageService,
-        { provide: MatSnackBar, useValue: snackBarMock }
+        { provide: MatSnackBar, useValue: snackBarMock } // Injeta o mock no lugar do SnackBar real
       ]
     });
 
-    // Obtém a instância do serviço através do TestBed injector
     service = TestBed.inject(MessageService);
   });
 
-  it('should be created', () => {
+  it('deve ser criado', () => {
     expect(service).toBeTruthy();
   });
 
-  it('deve chamar o MatSnackBar.open com a mensagem informada e as configurações padrão', () => {
-    const mensagemDeTeste = 'Operação realizada com sucesso!';
+  it('deve abrir o snackbar com as configurações padrão (showMessage)', () => {
+    const mensagemTeste = 'Paciente salvo com sucesso!';
     
-    service.showMessage(mensagemDeTeste);
+    service.showMessage(mensagemTeste);
 
+    // Verifica se o método open do Vitest foi chamado com os parâmetros esperados
     expect(snackBarMock.open).toHaveBeenCalledWith(
-      mensagemDeTeste,
-      'Fechar',
+      mensagemTeste,
+      'Fechar', // Action padrão
       {
         duration: 3000,
         horizontalPosition: 'center',
@@ -47,32 +44,26 @@ describe('MessageService', () => {
     );
   });
 
-  it('deve permitir customizar o texto da ação do botão quando informado', () => {
-    const mensagemDeTeste = 'Excluído!';
+  it('deve permitir sobrescrever as configurações padrão e a ação (showMessage)', () => {
+    const mensagemTeste = 'Erro crítico!';
     const acaoCustomizada = 'Desfazer';
+    const configCustomizada: MatSnackBarConfig = {
+      duration: 5000,
+      panelClass: ['error-snackbar'],
+      verticalPosition: 'bottom' // Sobrescrevendo o 'top' padrão
+    };
 
-    service.showMessage(mensagemDeTeste, acaoCustomizada);
+    service.showMessage(mensagemTeste, acaoCustomizada, configCustomizada);
 
     expect(snackBarMock.open).toHaveBeenCalledWith(
-      mensagemDeTeste,
+      mensagemTeste,
       acaoCustomizada,
-      expect.any(Object) // Garante que enviou o objeto de configuração
-    );
-  });
-
-  it('deve permitir sobrescrever as configurações padrão de posicionamento ou duração', () => {
-    const configSobrescrevida = { duration: 5000, verticalPosition: 'bottom' as const };
-
-    service.showMessage('Erro grave', 'Fechar', configSobrescrevida);
-
-    expect(snackBarMock.open).toHaveBeenCalledWith(
-      'Erro grave',
-      'Fechar',
-      expect.objectContaining({
-        duration: 5000,
-        horizontalPosition: 'center', // Mantém o padrão não modificado
-        verticalPosition: 'bottom'    // Aplicou a alteração
-      })
+      {
+        duration: 5000,               // Mudou de 3000 para 5000
+        horizontalPosition: 'center', // Manteve o padrão do serviço
+        verticalPosition: 'bottom',     // Mudou de top para bottom
+        panelClass: ['error-snackbar'] // Nova propriedade adicionada pelo config externo
+      }
     );
   });
 });

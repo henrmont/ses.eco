@@ -1,19 +1,46 @@
 mat-dialog-content {
-    padding-top: 10px;
+  padding-top: 12px; // Leve ajuste para desgrudar do título de forma harmônica
 }
 
 mat-form-field {
-    width: 100%;
+  width: 100%;
 }
 
+// Linhas em Grid para o input de nome e o botão de upload
 .line {
-    display: grid; 
-    grid-template-columns: 1fr; 
-    column-gap: 20px; 
+  display: grid; 
+  grid-template-columns: 1fr; 
+  column-gap: 20px; 
+  row-gap: 12px; // Evita que campos grudem caso quebrem de linha em telas menores
+  align-items: start; // Garante que inputs e botões alinhem pelo topo
+
+  // Ajuste cirúrgico para centralizar o botão de "Anexar arquivo" verticalmente com o input ao lado
+  div[style*="display: flex"] {
+    align-items: center;
+    height: 56px; // Força a mesma altura do form-field para o botão estender perfeitamente
+  }
 }
 
+// Feedback visual do botão de criação durante o envio reativo
 .waiting {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  mat-spinner {
+    margin-right: 2px;
+  }
+}
+
+// Responsividade de segurança para visualização em telas reduzidas
+@media (max-width: 768px) {
+  .line {
+    grid-template-columns: 1fr !important; // Força virar coluna única em telas pequenas
+    
+    div[style*="display: flex"] {
+      justify-content: flex-start;
+      margin-bottom: 8px;
+    }
+  }
 }

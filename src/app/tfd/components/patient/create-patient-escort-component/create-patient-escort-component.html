@@ -14,8 +14,8 @@
                             }
                         </mat-form-field>
                         <div style="display: flex;">
-                            <input type="file" class="file-input" (change)="onFileCNSSelected($event)" #fileCNS style="display: none;">
-                            <button matFab extended (click)="fileCNS.click()" [matTooltip]="labelFileCNS()">
+                            <input type="file" class="file-input" (change)="onFileSelected($event, 'cns')" #fileCNS style="display: none;">
+                            <button matFab extended (click)="fileCNS.click()" [matTooltip]="labelsFiles.cns()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar CNS
                             </button>
@@ -30,8 +30,8 @@
                             }
                         </mat-form-field>
                         <div style="display: flex;">
-                            <input type="file" class="file-input" (change)="onFileDocumentSelected($event)" #fileDocument style="display: none;">
-                            <button matFab extended (click)="fileDocument.click()" [matTooltip]="labelFileDocument()">
+                            <input type="file" class="file-input" (change)="onFileSelected($event, 'document')" #fileDocument style="display: none;">
+                            <button matFab extended (click)="fileDocument.click()" [matTooltip]="labelsFiles.document()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar documento
                             </button>
@@ -50,12 +50,11 @@
                         <mat-form-field appearance="outline">
                             <mat-label>Relação</mat-label>
                             <input matInput type="text" formControlName="relation">
-                            <mat-error>Relação</mat-error>
                         </mat-form-field>
                         <mat-form-field appearance="outline">
                             <mat-label>Data de nascimento</mat-label>
-                            <input #birthDateInput matInput [matDatepicker]="picker" type="text" mask="00/00/0000" (dateChange)="setBirthDate($event)" [required]="true">
-                            <mat-error>Data de nascimento</mat-error>
+                            <!-- Mantido o padrão limpo sem a máscara de texto que conflita com o Value Accessor -->
+                            <input matInput [matDatepicker]="picker" type="text" formControlName="birth_date" (dateChange)="setBirthDate($event)">
                             <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
                             <mat-datepicker #picker></mat-datepicker>
                             @for (item of errorMessages['birth_date']; track $index) {
@@ -76,7 +75,7 @@
                             }
                         </mat-form-field>
                         <div class="toggle">
-                            <mat-slide-toggle formControlName="is_same_address" (change)="useSameAddress(); resetAddress()"><span>Usar o endereço do paciente</span></mat-slide-toggle>
+                            <mat-slide-toggle formControlName="is_same_address" (change)="resetAddress()"><span>Usar o endereço do paciente</span></mat-slide-toggle>
                         </div>
                     </div>
                 </div>
@@ -95,8 +94,8 @@
                             }
                         </mat-form-field>
                         <div style="display: flex;">
-                            <input type="file" class="file-input" (change)="onFileAddressSelected($event)" #fileAddress style="display: none;">
-                            <button matFab extended (click)="fileAddress.click()" [matTooltip]="labelFileAddress()" [disabled]="statusAddress()">
+                            <input type="file" class="file-input" (change)="onFileSelected($event, 'address')" #fileAddress style="display: none;">
+                            <button matFab extended (click)="fileAddress.click()" [matTooltip]="labelsFiles.address()" [disabled]="isSameAddressSignal()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar comprovante de endereço
                             </button>
@@ -153,15 +152,13 @@
     </mat-stepper>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-    <button matButton="filled" type="button" [disabled]="createEscortPersonalForm.invalid || createEscortAddressForm.invalid || wSubmit()" (click)="onSubmit()">
+    <button matButton [mat-dialog-close]="false">Fechar</button>
+    <button matButton="filled" type="button" [disabled]="createEscortPersonalForm.invalid || (createEscortAddressForm.invalid && !isSameAddressSignal()) || isSubmitting()" (click)="onSubmit()">
         <div class="waiting">
-            @if (wSubmit()) {
+            @if (isSubmitting()) {
                 <mat-spinner matPrefix [diameter]="20"></mat-spinner>
             }
             Criar
         </div>
     </button>
-    <button matButton [mat-dialog-close]="false">Fechar</button>
 </mat-dialog-actions>
-
-

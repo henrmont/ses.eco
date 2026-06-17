@@ -1,16 +1,112 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 85vh; 
+  max-height: 85vh;
+  overflow: hidden; 
+}
+
+// Único container com scroll vertical
+mat-dialog-content {
+  flex: 1;                  
+  overflow-y: auto !important; 
+  max-height: none !important; 
+  padding: 4px 24px;
+}
+
+// Título do modal fixo no topo
+h2[mat-dialog-title] {
+  margin: 0;
+  padding: 16px 24px;
+  flex-shrink: 0; 
+}
+
+// Botão de ações fixo no rodapé
+mat-dialog-actions {
+  margin: 0;
+  padding: 12px 24px 16px;
+  flex-shrink: 0; 
+  border-top: 1px solid rgba(0, 0, 0, 0.08); 
+}
+
+// Container dos cards
+.user-details-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+// Ajustado para mat-card sombreado e título idêntico ao show-user
+.detail-card {
+  border-radius: 8px;
+  // Remove o estilo "outlined" (borda) e aplica a sombra (elevação) padrão do Material Card
+  border: none !important;
+  box-shadow: 0px 2px 1px -1px rgba(0, 0, 0, 0.2), 
+              0px 1px 1px 0px rgba(0, 0, 0, 0.14), 
+              0px 1px 3px 0px rgba(0, 0, 0, 0.12) !important;
+  
+  mat-card-header {
+    margin-bottom: 12px;
+    
+    mat-card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--mdc-outlined-card-label-text-color, #555);
+    }
+  }
+}
+
+// Linhas do Grid
 .line {
-    display: grid; 
-    grid-template-columns: 1fr; 
-    column-gap: 20px; 
-    margin-top: 10px;
-    height: 40px;
+  display: grid;
+  gap: 16px; 
+  margin-top: 12px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr !important; // Responsivo para celular
+  }
+
+  // Bloco de informação (Equivalente ao .info-group do show-user)
+  div {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    
+    // Tipografia do VALOR (.value do show-user)
+    font-size: 0.95rem;
+    color: #212121;
+    font-weight: 400;
+
+    // Tipografia da LABEL (.label do show-user)
+    strong {
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      color: #757575;
+      letter-spacing: 0.5px;
+    }
+
+    // Comportamento especial para quando a div do valor contiver botões de download
+    &:has(button[matIconButton]), &:has(button[mat-icon-button]) {
+      flex-direction: row;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+
+      strong {
+        width: 100%;
+        margin-bottom: -4px; 
+      }
+    }
+  }
 }
 
-.line div {
-    display: flex; 
-    align-items: center;
-}
-
-strong {
-    margin-right: 5px;
+// Classe de destaque para informações principais (ex: Nome do Paciente)
+// Adicione a classe class="highlight" na div ou no texto do Nome lá no seu HTML
+.highlight {
+  font-weight: 600 !important;
+  color: var(--mat-sys-primary, #1976d2) !important;
 }

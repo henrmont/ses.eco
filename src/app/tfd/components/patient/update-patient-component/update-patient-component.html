@@ -14,11 +14,11 @@
                             }
                         </mat-form-field>
                         <div style="display: flex;">
-                            <button matFab style="margin-right: 20px;" [disabled]="data.patient.file_cns_id == null" (click)="download(data.patient.file_cns_id, 'cns')">
+                            <button matFab style="margin-right: 20px;" type="button" [disabled]="data.patient.file_cns_id == null" (click)="download(data.patient.file_cns_id, 'cns')">
                                 <mat-icon>download</mat-icon>
                             </button>
-                            <input type="file" class="file-input" (change)="onFileCNSSelected($event)" #fileCNS style="display: none;">
-                            <button matFab extended (click)="fileCNS.click()" [matTooltip]="labelFileCNS()">
+                            <input type="file" class="file-input" (change)="onFileSelected($event, 'cns', updatePatientIdentificationForm)" #fileCNS style="display: none;">
+                            <button matFab extended type="button" (click)="fileCNS.click()" [matTooltip]="labelsFiles['cns']() ?? ''">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar CNS
                             </button>
@@ -37,17 +37,17 @@
                         </mat-form-field>
                         <mat-form-field appearance="outline">
                             <mat-label>Documento</mat-label>
-                            <input matInput type="text" [mask]="updatePatientIdentificationForm.get('document_type')?.value === 'CPF' ? '000.000.000-00' : '000000 00 00 0000 0 00000 000 0000000 00'" formControlName="document">
+                            <input matInput type="text" [mask]="(updatePatientIdentificationForm.get('document_type')?.value === 'CPF') ? '000.000.000-00' : '000000 00 00 0000 0 00000 000 0000000 00'" formControlName="document">
                             @for (item of errorMessages['document']; track $index) {
                                 <mat-error *ngIf="updatePatientIdentificationForm.get('document')?.hasError(item.type)">{{item.message}}</mat-error>
                             }
                         </mat-form-field>
                         <div style="display: flex;">
-                            <button matFab style="margin-right: 20px;" [disabled]="data.patient.file_document_id == null" (click)="download(data.patient.file_document_id, 'document')">
+                            <button matFab style="margin-right: 20px;" type="button" [disabled]="data.patient.file_document_id == null" (click)="download(data.patient.file_document_id, 'document')">
                                 <mat-icon>download</mat-icon>
                             </button>
-                            <input type="file" class="file-input" (change)="onFileDocumentSelected($event)" #fileDocument style="display: none;">
-                            <button matFab extended (click)="fileDocument.click()" [matTooltip]="labelFileDocument()">
+                            <input type="file" class="file-input" (change)="onFileSelected($event, 'document', updatePatientIdentificationForm)" #fileDocument style="display: none;">
+                            <button matFab extended type="button" (click)="fileDocument.click()" [matTooltip]="labelsFiles['document']() ?? ''">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar documento
                             </button>
@@ -79,7 +79,7 @@
                         </mat-form-field>
                         <mat-form-field appearance="outline">
                             <mat-label>Data de nascimento</mat-label>
-                            <input matInput [matDatepicker]="picker" type="text" mask="00/00/0000" (dateChange)="setBirthDate($event)" value="{{data.patient.birth_date | date:'dd/MM/yyyy'}}" [required]="true">
+                            <input matInput [matDatepicker]="picker" type="text" mask="00/00/0000" (dateChange)="setBirthDate($event)" [value]="(data.patient.birth_date | date:'dd/MM/yyyy') ?? ''" [required]="true">
                             @for (item of errorMessages['birth_date']; track $index) {
                                 <mat-error *ngIf="updatePatientPersonalForm.get('birth_date')?.hasError(item.type)">{{item.message}}</mat-error>
                             }
@@ -94,7 +94,6 @@
                                 }
                             </mat-select>
                         </mat-form-field>
-                        
                     </div>
                     <div class="line" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
                         <mat-form-field appearance="outline">
@@ -109,14 +108,14 @@
                             }
                         </mat-form-field>
                         <mat-form-field appearance="outline">
-                            <mat-label>Etinia</mat-label>
+                            <mat-label>Etnia</mat-label>
                             <mat-select formControlName="ethnicity">
                                 @for (item of ethnicities; track $index) {
                                     <mat-option [value]="item">{{item}}</mat-option>
                                 }
                             </mat-select>
-                            @for (item of errorMessages['race']; track $index) {
-                                <mat-error *ngIf="updatePatientPersonalForm.get('race')?.hasError(item.type)">{{item.message}}</mat-error>
+                            @for (item of errorMessages['ethnicity']; track $index) {
+                                <mat-error *ngIf="updatePatientPersonalForm.get('ethnicity')?.hasError(item.type)">{{item.message}}</mat-error>
                             }
                         </mat-form-field>
                         <mat-form-field appearance="outline">
@@ -149,10 +148,7 @@
                     <div class="line" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
                         <mat-form-field appearance="outline">
                             <mat-label>Profissão</mat-label>
-                            <input type="text"
-                                matInput
-                                formControlName="profession"
-                                [matAutocomplete]="profession">
+                            <input type="text" matInput formControlName="profession" [matAutocomplete]="profession">
                             <mat-autocomplete autoActiveFirstOption #profession="matAutocomplete">
                             @for (option of filteredProfessionsOptions | async; track option) {
                                 <mat-option [value]="option">{{option}}</mat-option>
@@ -195,11 +191,11 @@
                             </mat-select>
                         </mat-form-field>
                         <div style="display: flex;">
-                            <button matFab style="margin-right: 20px;" [disabled]="data.patient.file_deficiency_id == null" (click)="download(data.patient.file_deficiency_id, 'deficiência')">
+                            <button matFab style="margin-right: 20px;" type="button" [disabled]="data.patient.file_deficiency_id == null" (click)="download(data.patient.file_deficiency_id, 'deficiência')">
                                 <mat-icon>download</mat-icon>
                             </button>
-                            <input type="file" class="file-input" (change)="onFileDeficiencySelected($event)" #fileDeficiency style="display: none;">
-                            <button matFab extended (click)="fileDeficiency.click()" [matTooltip]="labelFileDeficiency()">
+                            <input type="file" class="file-input" (change)="onFileSelected($event, 'deficiency', updatePatientPersonalForm)" #fileDeficiency style="display: none;">
+                            <button matFab extended type="button" (click)="fileDeficiency.click()" [matTooltip]="labelsFiles['deficiency']() ?? ''">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar laudo
                             </button>
@@ -221,11 +217,11 @@
                             }
                         </mat-form-field>
                         <div style="display: flex;">
-                            <button matFab style="margin-right: 20px;" [disabled]="data.patient.file_address_id == null" (click)="download(data.patient.file_address_id, 'endereço')">
+                            <button matFab style="margin-right: 20px;" type="button" [disabled]="data.patient.file_address_id == null" (click)="download(data.patient.file_address_id, 'endereço')">
                                 <mat-icon>download</mat-icon>
                             </button>
-                            <input type="file" class="file-input" (change)="onFileAddressSelected($event)" #fileAddress style="display: none;">
-                            <button matFab extended (click)="fileAddress.click()" [matTooltip]="labelFileAddress()">
+                            <input type="file" class="file-input" (change)="onFileSelected($event, 'address', updatePatientAddressForm)" #fileAddress style="display: none;">
+                            <button matFab extended type="button" (click)="fileAddress.click()" [matTooltip]="labelsFiles['address']() ?? ''">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar comprovante de endereço
                             </button>
@@ -262,14 +258,10 @@
                         <mat-form-field appearance="outline">
                             <mat-label>Cidade</mat-label>
                             <input matInput type="text" formControlName="city">
-                            <mat-error>Cidade</mat-error>
                         </mat-form-field>
                         <mat-form-field appearance="outline" style="width: 20%;">
                             <mat-label>UF</mat-label>
-                            <input type="text"
-                                matInput
-                                formControlName="state"
-                                [matAutocomplete]="state">
+                            <input type="text" matInput formControlName="state" [matAutocomplete]="state">
                             <mat-autocomplete autoActiveFirstOption #state="matAutocomplete">
                             @for (option of filteredUfsOptions | async; track option) {
                                 <mat-option [value]="option">{{option}}</mat-option>
@@ -296,11 +288,11 @@
                             <input matInput type="text" formControlName="control_number">
                         </mat-form-field>
                         <div style="display: flex;">
-                            <button matFab style="margin-right: 20px;" [disabled]="data.patient.patient_info.file_protocol_id == null" (click)="download(data.patient.patient_info.file_protocol_id, 'protocolo')">
+                            <button matFab style="margin-right: 20px;" type="button" [disabled]="data.patient.patient_info?.file_protocol_id == null" (click)="download(data.patient.patient_info.file_protocol_id, 'protocolo')">
                                 <mat-icon>download</mat-icon>
                             </button>
-                            <input type="file" class="file-input" (change)="onFileProtocolSelected($event)" #fileProtocol style="display: none;">
-                            <button matFab extended (click)="fileProtocol.click()" [matTooltip]="labelFileProtocol()">
+                            <input type="file" class="file-input" (change)="onFileSelected($event, 'protocol', updatePatientInfoForm)" #fileProtocol style="display: none;">
+                            <button matFab extended type="button" (click)="fileProtocol.click()" [matTooltip]="labelsFiles['protocol']() ?? ''">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar protocolo municipal
                             </button>
@@ -312,15 +304,13 @@
     </mat-stepper>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-    <button  matButton="filled" type="button"[disabled]="updatePatientIdentificationForm.invalid || updatePatientPersonalForm.invalid || updatePatientAddressForm.invalid || wSubmit() || (updatePatientIdentificationForm.pristine && updatePatientPersonalForm.pristine && updatePatientAddressForm.pristine && updatePatientInfoForm.pristine)" (click)="onUpdatePatientSubmit()">
+    <button matButton="filled" type="button" [disabled]="updatePatientIdentificationForm.invalid || updatePatientPersonalForm.invalid || updatePatientAddressForm.invalid || isSubmitting() || (updatePatientIdentificationForm.pristine && updatePatientPersonalForm.pristine && updatePatientAddressForm.pristine && updatePatientInfoForm.pristine)" (click)="onUpdatePatientSubmit()">
         <div class="waiting">
-            @if (wSubmit()) {
+            @if (isSubmitting()) {
                 <mat-spinner matPrefix [diameter]="20"></mat-spinner>
             }
             Atualizar
         </div>
     </button>
-    <button matButton [mat-dialog-close]="false">Fechar</button>
+    <button matButton type="button" [mat-dialog-close]="false">Fechar</button>
 </mat-dialog-actions>
-
-

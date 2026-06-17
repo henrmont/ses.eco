@@ -14,8 +14,8 @@
                             }
                         </mat-form-field>
                         <div style="display: flex;">
-                            <input type="file" class="file-input" (change)="onFileCNSSelected($event)" #fileCNS style="display: none;">
-                            <button matFab extended (click)="fileCNS.click()" [matTooltip]="labelFileCNS()">
+                            <input type="file" class="file-input" (change)="onFileSelected($event, 'cns')" #fileCNS style="display: none;">
+                            <button matFab extended type="button" (click)="fileCNS.click()" [matTooltip]="labelsFiles.cns()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar CNS
                             </button>
@@ -40,8 +40,8 @@
                             }
                         </mat-form-field>
                         <div style="display: flex;">
-                            <input type="file" class="file-input" (change)="onFileDocumentSelected($event)" #fileDocument style="display: none;">
-                            <button matFab extended (click)="fileDocument.click()" [matTooltip]="labelFileDocument()">
+                            <input type="file" class="file-input" (change)="onFileSelected($event, 'document')" #fileDocument style="display: none;">
+                            <button matFab extended type="button" (click)="fileDocument.click()" [matTooltip]="labelsFiles.document()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar documento
                             </button>
@@ -59,6 +59,7 @@
                 </div>
             </form>
         </mat-step>
+
         <mat-step [stepControl]="createPatientPersonalForm">
             <ng-template matStepLabel>Dados Pessoais</ng-template>
             <form [formGroup]="createPatientPersonalForm">
@@ -102,15 +103,12 @@
                             }
                         </mat-form-field>
                         <mat-form-field appearance="outline">
-                            <mat-label>Etinia</mat-label>
+                            <mat-label>Etnia</mat-label>
                             <mat-select formControlName="ethnicity">
                                 @for (item of ethnicities; track $index) {
                                     <mat-option [value]="item">{{item}}</mat-option>
                                 }
                             </mat-select>
-                            @for (item of errorMessages['race']; track $index) {
-                                <mat-error *ngIf="createPatientPersonalForm.get('race')?.hasError(item.type)">{{item.message}}</mat-error>
-                            }
                         </mat-form-field>
                         <mat-form-field appearance="outline">
                             <mat-label>Naturalidade</mat-label>
@@ -118,10 +116,10 @@
                             @if (naturalnessLoading()) {
                                 <mat-spinner matSuffix [diameter]="30" style="margin-right: 10px;"></mat-spinner>
                             }
-                            <mat-autocomplete #naturalness="matAutocomplete" [displayWith]="displayNaturalness" (optionSelected)="onNaturalnessSelected($event.option.value)">
-                            @for (option of filteredNaturalnessOptions | async; track $index) {
-                                <mat-option [value]="option">{{option}}</mat-option>
-                            }
+                            <mat-autocomplete #naturalness="matAutocomplete" (optionSelected)="onNaturalnessSelected($event.option.value)">
+                                @for (option of filteredNaturalnessOptions | async; track $index) {
+                                    <mat-option [value]="option">{{option}}</mat-option>
+                                }
                             </mat-autocomplete>
                             @for (item of errorMessages['naturalness']; track $index) {
                                 <mat-error *ngIf="naturalnessControl.hasError(item.type)">{{item.message}}</mat-error>
@@ -138,20 +136,15 @@
                                 <mat-error *ngIf="createPatientPersonalForm.get('gender')?.hasError(item.type)">{{item.message}}</mat-error>
                             }
                         </mat-form-field>
-                        
                     </div>
                     <div class="line" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
-                        
                         <mat-form-field appearance="outline">
                             <mat-label>Profissão</mat-label>
-                            <input type="text"
-                                matInput
-                                formControlName="profession"
-                                [matAutocomplete]="profession">
+                            <input type="text" matInput formControlName="profession" [matAutocomplete]="profession">
                             <mat-autocomplete autoActiveFirstOption #profession="matAutocomplete">
-                            @for (option of filteredProfessionsOptions | async; track option) {
-                                <mat-option [value]="option">{{option}}</mat-option>
-                            }
+                                @for (option of filteredProfessionsOptions | async; track option) {
+                                    <mat-option [value]="option">{{option}}</mat-option>
+                                }
                             </mat-autocomplete>
                         </mat-form-field>
                         <mat-form-field appearance="outline">
@@ -190,8 +183,8 @@
                             </mat-select>
                         </mat-form-field>
                         <div style="display: flex;">
-                            <input type="file" class="file-input" (change)="onFileDeficiencySelected($event)" #fileDeficiency style="display: none;">
-                            <button matFab extended (click)="fileDeficiency.click()" [matTooltip]="labelFileDeficiency()">
+                            <input type="file" class="file-input" (change)="onFileSelected($event, 'deficiency')" #fileDeficiency style="display: none;">
+                            <button matFab extended type="button" (click)="fileDeficiency.click()" [matTooltip]="labelsFiles.deficiency()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar laudo
                             </button>
@@ -200,6 +193,7 @@
                 </div>
             </form>
         </mat-step>
+
         <mat-step [stepControl]="createPatientAddressForm">
             <ng-template matStepLabel>Dados de endereço</ng-template>
             <form [formGroup]="createPatientAddressForm">
@@ -213,8 +207,8 @@
                             }
                         </mat-form-field>
                         <div style="display: flex;">
-                            <input type="file" class="file-input" (change)="onFileAddressSelected($event)" #fileAddress style="display: none;">
-                            <button matFab extended (click)="fileAddress.click()" [matTooltip]="labelFileAddress()">
+                            <input type="file" class="file-input" (change)="onFileSelected($event, 'address')" #fileAddress style="display: none;">
+                            <button matFab extended type="button" (click)="fileAddress.click()" [matTooltip]="labelsFiles.address()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar comprovante de endereço
                             </button>
@@ -254,20 +248,18 @@
                         </mat-form-field>
                         <mat-form-field appearance="outline" style="width: 20%;">
                             <mat-label>UF</mat-label>
-                            <input type="text"
-                                matInput
-                                formControlName="state"
-                                [matAutocomplete]="state">
+                            <input type="text" matInput formControlName="state" [matAutocomplete]="state">
                             <mat-autocomplete autoActiveFirstOption #state="matAutocomplete">
-                            @for (option of filteredUfsOptions | async; track option) {
-                                <mat-option [value]="option">{{option}}</mat-option>
-                            }
+                                @for (option of filteredUfsOptions | async; track option) {
+                                    <mat-option [value]="option">{{option}}</mat-option>
+                                }
                             </mat-autocomplete>
                         </mat-form-field>
                     </div>
                 </div>
             </form>
         </mat-step>
+
         <mat-step [stepControl]="createPatientInfoForm">
             <ng-template matStepLabel>Dados adicionais</ng-template>
             <form [formGroup]="createPatientInfoForm">
@@ -284,8 +276,8 @@
                             <input matInput type="text" formControlName="control_number">
                         </mat-form-field>
                         <div style="display: flex;">
-                            <input type="file" class="file-input" (change)="onFileProtocolSelected($event)" #fileProtocol style="display: none;">
-                            <button matFab extended (click)="fileProtocol.click()" [matTooltip]="labelFileProtocol()">
+                            <input type="file" class="file-input" (change)="onFileSelected($event, 'protocol')" #fileProtocol style="display: none;">
+                            <button matFab extended type="button" (click)="fileProtocol.click()" [matTooltip]="labelsFiles.protocol()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar protocolo municipal
                             </button>
@@ -296,10 +288,13 @@
         </mat-step>
     </mat-stepper>
 </mat-dialog-content>
+
 <mat-dialog-actions align="end">
-    <button matButton="filled" type="button"[disabled]="createPatientIdentificationForm.invalid || createPatientPersonalForm.invalid || createPatientAddressForm.invalid || wSubmit()" (click)="onCreatePatientSubmit()">
+    <button matButton="filled" type="button" 
+            [disabled]="createPatientIdentificationForm.invalid || createPatientPersonalForm.invalid || createPatientAddressForm.invalid || isSubmitting()" 
+            (click)="onSubmit()">
         <div class="waiting">
-            @if (wSubmit()) {
+            @if (isSubmitting()) {
                 <mat-spinner matPrefix [diameter]="20"></mat-spinner>
             }
             Criar
@@ -307,7 +302,3 @@
     </button>
     <button matButton [mat-dialog-close]="false">Fechar</button>
 </mat-dialog-actions>
-
-
-
-

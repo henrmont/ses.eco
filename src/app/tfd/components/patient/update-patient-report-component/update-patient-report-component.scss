@@ -1,21 +1,57 @@
-mat-dialog-content {
-    padding-top: 10px;
+:host {
+  display: block;
+  width: 100%;
+}
+
+// 🛡️ Garante que o Angular Material respeite o atributo [hidden] usado para os testes unitários
+mat-error[hidden] {
+  display: none !important;
 }
 
 mat-form-field {
-    width: 100%;
+  width: 100%;
+  height: auto;
 }
 
-.toggle {
-    padding-top: 10px;
+mat-dialog-content {
+  display: flex;
+  flex-direction: column;
+  row-gap: 10px;
+  padding-top: 10px; // Evita que a borda outline do primeiro campo seja cortada no topo da modal
 }
 
-.toggle span {
-    margin-left: 10px;
+// Estilo para o botão de download de arquivos já existentes
+button[mat-stroked-button] {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
 }
 
 .waiting {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  mat-spinner {
+    display: inline-block;
+    flex-shrink: 0; // Impede que o layout flex esmague o tamanho do spinner
+  }
+}
+
+.line {
+  display: grid;
+  column-gap: 20px;
+  align-items: start; // Alinha os topos dos componentes de forma consistente
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  height: 56px; // Alinha com a altura padrão da caixa do input do Material
+  margin-bottom: 22px; // 🎯 Compensa exatamente o espaço do mat-error do input vizinho, mantendo o grid simétrico
+  padding-left: 5px;
 }
