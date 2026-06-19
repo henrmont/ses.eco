@@ -1,13 +1,30 @@
-<h2 mat-dialog-title>Deletar solicitação</h2>
-<mat-dialog-content>Você deseja deletar a solicitação.</mat-dialog-content>
-<mat-dialog-actions>
-    <button matButton="filled" [disabled]="wSubmit()" (click)="onDeletePatientRequestSubmit()">
-        <div class="waiting">
-            @if (wSubmit()) {
-                <mat-spinner matPrefix [diameter]="20"></mat-spinner>
-            }
-            Excluir
-        </div>
-    </button>
-    <button matButton [mat-dialog-close]="false">Fechar</button>
+<h2 mat-dialog-title>Confirmar exclusão</h2>
+
+<mat-dialog-content>
+  <div class="confirm-container">
+    <p>
+      Tem certeza de que deseja excluir a solicitação do paciente 
+      <strong>{{ data?.patient_request?.report?.patient_care?.patient?.name || 'este paciente' }}</strong>?
+    </p>
+    <p class="warning-text">Esta ação não poderá ser desfeita.</p>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button matButton [disabled]="isSubmitting()" [mat-dialog-close]="false">Cancelar</button>
+  <button 
+    matButton="filled" 
+    color="warn" 
+    [disabled]="isSubmitting()" 
+    (click)="onSubmit()">
+    
+    <div [class.waiting]="isSubmitting()">
+      @if (isSubmitting()) {
+        <mat-spinner diameter="20"></mat-spinner>
+        <span>Excluindo...</span>
+      } @else {
+        Excluir
+      }
+    </div>
+  </button>
 </mat-dialog-actions>

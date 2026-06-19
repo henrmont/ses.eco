@@ -1,63 +1,101 @@
+// Usando o seletor :host para definir o container principal da página
 :host {
     display: flex;
     justify-content: center;
+    width: 100%;
+    min-height: calc(100vh - 100px);
+    background-color: #fafafa; // Um fundo levemente cinza destaca a tabela branca
 }
 
 section {
-    margin-top: 20px;
-    width: 80%;
-}
+    margin-top: 24px;
+    width: 85%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 
-section div.search {
-    width: auto; 
-    display: flex; 
-    justify-content: space-between; 
-    gap: 60px;
-}
+    // Estilização das Abas (Tabs) do Angular Material
+    mat-tab-group {
+        width: 100%;
+        
+        .tab-icon {
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+    }
 
-mat-form-field {
-    margin: auto;
-    width: 50%;
-}
+    // Container interno de cada aba
+    // O padding impede que o overflow do mat-tab corte a sombra da tabela nas extremidades
+    div.table {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding: 20px 8px 24px 8px; 
+    }
 
-section .table {
-    width: 100%;
-    margin: auto;
-    margin-top: 30px;
-    
-}
+    // Container de busca
+    div.search {
+        display: flex; 
+        justify-content: center; 
+        width: 100%;
 
-button.add-user {
-    position: fixed; 
-    bottom: 100px; 
-    right: 100px;
-}
+        mat-form-field {
+            width: 100%;
+            max-width: 500px; // Evita que o input fique gigante em telas ultra-wide
+        }
+    }
 
-.center {
-    text-align: center;
-}
+    // Estilização da Tabela do Angular Material
+    table.mat-mdc-table {
+        width: 100%;
+        background: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        // Ajustada para uma sombra ligeiramente mais contida e segura contra cortes de overflow
+        box-shadow: 0 4px 6px -2px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 
-.center div {
-    display: flex; 
-    justify-content: center;
-}
+        // Estilo comum para células de cabeçalho e corpo
+        th.mat-mdc-header-cell, 
+        td.mat-mdc-cell {
+            padding: 12px 16px;
+            vertical-align: middle;
+        }
 
-.center div button {
-    margin: 0 10px;
-}
+        th.mat-mdc-header-cell {
+            font-weight: 600;
+            background-color: #f1f5f9; // Tom cinza moderno para o topo da tabela
+            color: #334155;
+        }
 
-.valid {
-    color: green;
-}
+        // Classes utilitárias dentro da tabela
+        .center {
+            text-align: center;
+            
+            // Container dos botões de ações
+            div {
+                display: flex; 
+                justify-content: center;
+                gap: 4px; // Espaçamento fixo e elegante para os botões de ação
+            }
+        }
 
-.invalid {
-    color: red;
-}
+        // Cor do marcador de Sobrestado (Bookmark ativo)
+        .bookmark {
+            color: #f59e0b; // Ambar/Dourado caloroso para destaque de atenção
+        }
 
-.back, .bookmark {
-    color: darkorange;
-}
+        // Cor do ícone de retorno de fluxo (Warning na coluna Status)
+        .back {
+            color: #ea580c; // Laranja escuro para indicar alerta de retorno
+        }
 
-.tab-icon {
-    margin-right: 15px;
+        // Cores dos ícones de status (Válido/Inválido) baseado no padrão Tailwind
+        .valid {
+            color: #16a34a; // Verde elegante
+        }
+
+        .invalid {
+            color: #dc2626; // Vermelho elegante
+        }
+    }
 }

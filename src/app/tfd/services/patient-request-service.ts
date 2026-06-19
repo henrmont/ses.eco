@@ -1,110 +1,126 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
-import { catchError, map, Observable, of } from 'rxjs';
-import { environment } from '../../../environments/environment.development';
-import { AbstractControl, AsyncValidatorFn, ValidationErrors } from '@angular/forms';
-import { PatientCare } from '../models/patient-care';
+import { Injectable, inject } from '@angular/core';
+import { Observable } from 'rxjs';
 import * as moment from 'moment';
-import { PatientRequest } from '../models/patient-request';
-import { Patient } from '../models/patient';
+
+// Environments & Models
+import { environment } from '../../../environments/environment.development';
 import { HospitalUnity } from '../models/hospital-unity';
+import { Patient } from '../models/patient';
+import { PatientRequest } from '../models/patient-request';
 import { PatientRequestAttachment } from '../models/patient-request-attachment';
 import { Professional } from '../models/professional';
 
-const requestOptions = {
-  'Authorization': `Bearer ${window.localStorage.getItem('token')}`
+// Interface genérica para padronizar as respostas de mutação do back-end (Laravel)
+export interface ApiResponse {
+  message: string;
+  status?: string;
+  [key: string]: any;
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class PatientRequestService {
+  // 🔒 Injeções e URL base configurada como imutável
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${environment.apiTfdUrl}/patient-request`;
 
-  constructor(
-    private http: HttpClient,
-  ) {}
+  // 🧹 Os headers manuais foram completamente removidos! O Interceptor gerencia o Token globalmente.
+
+  // --- CONSULTAS / GETTERS ---
 
   getPatientRequests(): Observable<PatientRequest[]> {
-    return this.http.get<PatientRequest[]>(`${environment.apiTfdUrl}/patient-request/get-patient-requests`, {headers: requestOptions})
+    return this.http.get<PatientRequest[]>(`${this.apiUrl}/get-patient-requests`);
   }
 
   getPatients(): Observable<Patient[]> {
-    return this.http.get<Patient[]>(`${environment.apiTfdUrl}/patient-request/get-patients`, {headers: requestOptions})
+    return this.http.get<Patient[]>(`${this.apiUrl}/get-patients`);
   }
 
-  getReports(patient_care: number): Observable<Report[]> {
-    return this.http.get<Report[]>(`${environment.apiTfdUrl}/patient-request/get-patient-reports/${patient_care}`, {headers: requestOptions})
+  getReports(patientCareId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/get-patient-reports/${patientCareId}`);
   }
 
   getHospitalUnities(): Observable<HospitalUnity[]> {
-    return this.http.get<HospitalUnity[]>(`${environment.apiTfdUrl}/patient-request/get-hospital-unities`, {headers: requestOptions})
+    return this.http.get<HospitalUnity[]>(`${this.apiUrl}/get-hospital-unities`);
   }
 
   getMedicalProfessionals(): Observable<Professional[]> {
-    return this.http.get<Professional[]>(`${environment.apiTfdUrl}/patient-request/get-medical-professionals`, {headers: requestOptions})
+    return this.http.get<Professional[]>(`${this.apiUrl}/get-medical-professionals`);
   }
 
-  createPatientRequest(data: PatientRequest): Observable<Array<any>> {
-    return this.http.post<Array<any>>(`${environment.apiTfdUrl}/patient-request/create-patient-request`, data, {headers: requestOptions})
+  getPatientRequestAttachments(patientRequestId: number): Observable<PatientRequestAttachment[]> {
+    return this.http.get<PatientRequestAttachment[]>(`${this.apiUrl}/get-patient-request-attachments/${patientRequestId}`);
   }
 
-  haltedPatientRequest(patient_request: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/patient-request/halted-patient-request/${patient_request}`, {headers: requestOptions})
+  // --- OPERAÇÕES DA SOLICITAÇÃO (MUTATIONS) ---
+
+  createPatientRequest(data: PatientRequest): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/create-patient-request`, data);
   }
 
-  updatePatientRequest(patient_request: number, data: PatientRequest): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/patient-request/update-patient-request/${patient_request}`, data, {headers: requestOptions})
+  updatePatientRequest(patientRequestId: number, data: PatientRequest): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-patient-request/${patientRequestId}`, data);
   }
 
-  deletePatientRequest(patient_request: number): Observable<Array<any>> {
-    return this.http.delete<Array<any>>(`${environment.apiTfdUrl}/patient-request/delete-patient-request/${patient_request}`, {headers: requestOptions})
+  deletePatientRequest(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/delete-patient-request/${patientRequestId}`);
   }
 
-  getPatientRequestAttachments(patient_request: number): Observable<PatientRequestAttachment[]> {
-    return this.http.get<PatientRequestAttachment[]>(`${environment.apiTfdUrl}/patient-request/get-patient-request-attachments/${patient_request}`, {headers: requestOptions})
+  haltedPatientRequest(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/halted-patient-request/${patientRequestId}`, {});
   }
 
-  createPatientRequestAttachment(patient_request: number, data: any): Observable<Array<any>> {
-    return this.http.post<Array<any>>(`${environment.apiTfdUrl}/patient-request/create-patient-request-attachment/${patient_request}`, this.mountFormData(data), {headers: requestOptions})
+  processPatientRequestToMedical(patientRequestId: number, data: any): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/process-patient-request-to-medical/${patientRequestId}`, data);
   }
 
-  updatePatientRequestAttachment(patient_request_attachment: number, data: any): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/patient-request/update-patient-request-attachment/${patient_request_attachment}`, this.mountFormData(data), {headers: requestOptions})
+  // --- TRÂMITE ENTRE CAIXAS E FLUXOS ---
+
+  movePatientRequestFromProcesses(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-request-from-processes/${patientRequestId}`, {});
   }
 
-  deletePatientRequestAttachment(patient_request_attachment: number): Observable<Array<any>> {
-    return this.http.delete<Array<any>>(`${environment.apiTfdUrl}/patient-request/delete-patient-request-attachment/${patient_request_attachment}`, {headers: requestOptions})
+  movePatientRequestFromOthers(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-request-from-others/${patientRequestId}`, {});
   }
 
-  processPatientRequestToMedical(patient_request: number, data: any): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/patient-request/process-patient-request-to-medical/${patient_request}`, data, {headers: requestOptions})
+  movePatientRequestFromArchive(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-request-from-archive/${patientRequestId}`, {});
   }
 
-  movePatientRequestFromProcesses(patient_request: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/patient-request/move-patient-request-from-processes/${patient_request}`, {headers: requestOptions})
+  // --- ANEXOS DA SOLICITAÇÃO (ATTACHMENTS) ---
+
+  createPatientRequestAttachment(patientRequestId: number, data: any): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/create-patient-request-attachment/${patientRequestId}`, this.mountFormData(data));
   }
 
-  movePatientRequestFromOthers(patient_request: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/patient-request/move-patient-request-from-others/${patient_request}`, {headers: requestOptions})
+  updatePatientRequestAttachment(patientRequestAttachmentId: number, data: any): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-patient-request-attachment/${patientRequestAttachmentId}`, this.mountFormData(data));
   }
 
-  movePatientRequestFromArchive(patient_request: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/patient-request/move-patient-request-from-archive/${patient_request}`, {headers: requestOptions})
+  deletePatientRequestAttachment(patientRequestAttachmentId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/delete-patient-request-attachment/${patientRequestAttachmentId}`);
   }
 
-  // Resources
-  private mountFormData(data: any): FormData
-  {
-    const formData = new FormData()
+  // --- TRATAMENTO E COMPOSIÇÃO DE MULTIPART/FORM-DATA ---
+
+  private mountFormData(data: any): FormData {
+    const formData = new FormData();
+    
+    if (!data) return formData;
+
     for (const [key, value] of Object.entries(data)) {
-      if (value instanceof File || value instanceof Blob)
+      if (value instanceof File || value instanceof Blob) {
         formData.append(key, value, 'file');
-      else if (moment.isMoment(value))
+      } else if (moment.isMoment(value)) {
         formData.append(key, value.format('YYYY-MM-DD'));
-      else if (value !== null && value !== undefined)
-        formData.append(key, value as string);
+      } else if (value !== null && value !== undefined) {
+        formData.append(key, String(value));
+      }
     }
-    return formData
+    
+    return formData;
   }
-  
 }

@@ -1,114 +1,112 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
-import {MatCardModule} from '@angular/material/card';
-import {MatIconModule} from '@angular/material/icon';
-import { CommonModule } from '@angular/common';
+import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 import { saveAs } from 'file-saver';
+
 import { StorageService } from '../../../../core/services/storage-service';
 import { PatientCare } from '../../../models/patient-care';
-import { ShowPatientComponent } from '../../patient/show-patient-component/show-patient-component';
-import { ShowPatientReportComponent } from '../../patient/show-patient-report-component/show-patient-report-component';
 import { Opinion } from '../../../models/opinion';
-import { ShowOpinionComponent } from '../../opinion/show-opinion-component/show-opinion-component';
-import { ShowTravelComponent } from '../../travel/show-travel-component/show-travel-component';
 import { Travel } from '../../../models/travel';
-import { ShowCostAssistanceComponent } from '../../cost-assistance/show-cost-assistance-component/show-cost-assistance-component';
 import { CostAssistance } from '../../../models/cost-assistance';
 import { Accountability } from '../../../models/accountability';
+
+import { ShowPatientComponent } from '../../patient/show-patient-component/show-patient-component';
+import { ShowPatientReportComponent } from '../../patient/show-patient-report-component/show-patient-report-component';
+import { ShowOpinionComponent } from '../../opinion/show-opinion-component/show-opinion-component';
+import { ShowTravelComponent } from '../../travel/show-travel-component/show-travel-component';
+import { ShowCostAssistanceComponent } from '../../cost-assistance/show-cost-assistance-component/show-cost-assistance-component';
 import { ShowAccountabilityComponent } from '../../accountability/show-accountability-component/show-accountability-component';
 
 @Component({
   selector: 'app-show-patient-request-component',
-  imports: [CommonModule, MatDialogModule, MatButtonModule, MatCardModule, MatIconModule],
+  standalone: true,
+  imports: [
+    CommonModule, 
+    MatDialogModule, 
+    MatButtonModule, 
+    MatCardModule, 
+    MatIconModule
+  ],
   templateUrl: './show-patient-request-component.html',
   styleUrl: './show-patient-request-component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima para componentes de leitura
 })
 export class ShowPatientRequestComponent {
+  // Injeções de dependência modernas via inject()
+  protected readonly data = inject(MAT_DIALOG_DATA);
+  private readonly storageService = inject(StorageService);
+  private readonly dialog = inject(MatDialog);
+  private readonly destroyRef = inject(DestroyRef);
 
-  data = inject(MAT_DIALOG_DATA)
-  patient = {...this.data.patient_request.report.patient_care.patient, ...this.data.patient_request.report.patient_care}
+  // Agrega as propriedades do paciente e do atendimento em um único objeto de leitura para o template
+  protected readonly patient = {
+    ...this.data?.patient_request?.report?.patient_care?.patient,
+    ...this.data?.patient_request?.report?.patient_care
+  };
 
-  constructor (
-    private storageService: StorageService,
-    private dialog: MatDialog,
-  ) {}
+  /**
+   * Realiza o download do arquivo binário e o salva localmente
+   */
+  protected download(archive: number, name: string): void {
+    if (!archive) return;
 
-  download(archive: number, name: string) {
-    this.storageService.download(archive).subscribe({
-      next: (response) => {
-        saveAs(response.archive,name)
-      }
-    })
+    this.storageService.download(archive)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          if (response?.archive) {
+            saveAs(response.archive, name);
+          }
+        },
+        error: (err) => console.error('Erro ao realizar o download do anexo:', err)
+      });
   }
 
-  showPatient(patient_care: PatientCare) {
-    this.dialog.open(ShowPatientComponent, {
-      width: '1200px',
-      height: '700px',
+  /**
+   * Método centralizado para gerenciar a abertura reativa de sub-modais de detalhamento,
+   * espelhando o comportamento e as travas de fechamento da PatientRequestsPage.
+   */
+  private openSubDialog(component: any, data: any, width: string, height = 'auto'): void {
+    this.dialog.open(component, {
+      width,
+      height,
       disableClose: true,
       autoFocus: false,
-      data: {
-        patient_care: patient_care
-      }
-    })
+      data
+    }).afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(); // Inscrição limpa e segura contra memory leaks
   }
 
-  showPatientReport(report: Report) {
-    this.dialog.open(ShowPatientReportComponent, {
-      width: '800px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        report: report,
-      }
-    })
+  /**
+   * Gerenciadores de Ação disparados a partir do template HTML.
+   * Utilizam exatamente as mesmas dimensões mapeadas na listagem original.
+   */
+  protected showPatient(patientCare: PatientCare): void {
+    this.openSubDialog(ShowPatientComponent, { patient_care: patientCare }, '1200px', '700px');
   }
 
-  showOpinion(opinion: Opinion) {
-    this.dialog.open(ShowOpinionComponent, {
-      width: '1200px',
-      height: '700px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        opinion: opinion,
-      }
-    })
+  protected showPatientReport(report: any): void {
+    this.openSubDialog(ShowPatientReportComponent, { report }, '800px');
   }
 
-  showTravel(travel: Travel) {
-    this.dialog.open(ShowTravelComponent, {
-      width: '800px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        travel: travel,
-      }
-    })
+  protected showOpinion(opinion: Opinion): void {
+    this.openSubDialog(ShowOpinionComponent, { opinion }, '1200px', '700px');
   }
 
-  showCostAssistance(cost_assistance: CostAssistance) {
-    this.dialog.open(ShowCostAssistanceComponent, {
-      width: '800px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        cost_assistance: cost_assistance,
-      }
-    })
+  protected showTravel(travel: Travel): void {
+    this.openSubDialog(ShowTravelComponent, { travel }, '800px');
   }
 
-  showAccountability(accountability: Accountability) {
-    this.dialog.open(ShowAccountabilityComponent, {
-      width: '800px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        accountability: accountability,
-      }
-    })
+  protected showCostAssistance(costAssistance: CostAssistance): void {
+    this.openSubDialog(ShowCostAssistanceComponent, { cost_assistance: costAssistance }, '800px');
   }
 
-
+  protected showAccountability(accountability: Accountability): void {
+    this.openSubDialog(ShowAccountabilityComponent, { accountability }, '800px');
+  }
 }

@@ -1,11 +1,17 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
+import { saveAs } from 'file-saver';
+
+// Angular Material
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule } from '@angular/material/dialog';
-import {MatTableModule, MatTableDataSource} from '@angular/material/table';
-import {MatIconModule} from '@angular/material/icon';
-import {MatTooltipModule} from '@angular/material/tooltip';
-import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import { saveAs } from 'file-saver';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
+// Modelos, Serviços e Modais do Contexto de Anexos
 import { PatientRequestAttachment } from '../../../models/patient-request-attachment';
 import { PatientRequestService } from '../../../services/patient-request-service';
 import { StorageService } from '../../../../core/services/storage-service';
@@ -17,101 +23,132 @@ const TFD_PATIENT_REQUESTS_CHANNEL = new BroadcastChannel('tfd-patient-requests-
 
 @Component({
   selector: 'app-patient-request-attachments-component',
-  imports: [MatDialogModule, MatButtonModule, MatTableModule, MatIconModule, MatTooltipModule, MatProgressSpinnerModule],
+  standalone: true,
+  imports: [
+    MatDialogModule,
+    MatButtonModule,
+    MatTableModule,
+    MatIconModule,
+    MatTooltipModule,
+    MatProgressSpinnerModule
+  ],
   templateUrl: './patient-request-attachments-component.html',
   styleUrl: './patient-request-attachments-component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientRequestAttachmentsComponent implements OnInit {
+  // Injeções de dependência modernas
+  protected readonly data = inject(MAT_DIALOG_DATA);
+  private readonly dialog = inject(MatDialog);
+  private readonly patientRequestService = inject(PatientRequestService);
+  private readonly storageService = inject(StorageService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  data = inject(MAT_DIALOG_DATA);
-  displayedColumns: string[] = ['name','actions'];
-  dataSource = signal<MatTableDataSource<PatientRequestAttachment>>(new MatTableDataSource());
-  isLoading = signal<boolean>(true);
-
-  constructor(
-    private dialog: MatDialog,
-    private patientRequestService: PatientRequestService,
-    private storageService: StorageService,
-  ) {}
+  // Propriedades expostas para o Template com computed e signals
+  protected readonly displayedColumns: string[] = ['name', 'actions'];
+  protected readonly attachmentsList = signal<PatientRequestAttachment[]>([]);
+  protected readonly dataSource = computed(() => new MatTableDataSource(this.attachmentsList()));
+  protected readonly isLoading = signal<boolean>(true);
 
   ngOnInit(): void {
-    this.getPatientRequestAttachments();
+    this.fetchPatientRequestAttachments(true);
   }
 
-  getPatientRequestAttachments() {
-    this.patientRequestService.getPatientRequestAttachments(this.data.patient_request.id).subscribe({
-      next: (response) => {
-        this.dataSource.set(new MatTableDataSource(response)) 
-      },
-      complete: () => {
-        this.isLoading.set(false);
-      }
-    })
+  /**
+   * Busca os anexos de forma reativa e segura baseada na referência.
+   */
+  private fetchPatientRequestAttachments(showLoading = false): void {
+    const requestId = this.data?.patient_request?.id;
+
+    if (!requestId) {
+      this.isLoading.set(false);
+      return;
+    }
+
+    if (showLoading) {
+      this.isLoading.set(true);
+    }
+
+    this.patientRequestService.getPatientRequestAttachments(requestId)
+      .pipe(
+        finalize(() => {
+          if (showLoading) {
+            this.isLoading.set(false);
+          }
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (response) => {
+          this.attachmentsList.set(response);
+        },
+        error: () => {
+          // Trata o erro silenciosamente
+        }
+      });
   }
 
-  upgradePatientRequestAttachments() {
-    this.patientRequestService.getPatientRequestAttachments(this.data.patient_request.id).subscribe({
-      next: (response) => {
-        this.dataSource.set(new MatTableDataSource(response)) 
-      },
-    })
-  }
-
-  download(archive: number, name: string) {
-    this.storageService.download(archive).subscribe({
-      next: (response) => {
-        saveAs(response.archive,name)
-      }
-    })
-  }
-
-  createPatientRequestAttachment() {
-    this.dialog.open(CreatePatientRequestAttachmentComponent, {
-      width: '400px',
+  /**
+   * Centraliza a abertura de modais internas de anexos com transmissão em canal
+   */
+  private openDialog(
+    component: any, 
+    data: any, 
+    options: { width?: string; height?: string; refreshWithLoading?: boolean } = {}
+  ): void {
+    this.dialog.open(component, {
+      width: options.width || '400px',
+      height: options.height || 'auto',
       disableClose: true,
       autoFocus: false,
-      data: {
-        patient_request: this.data.patient_request,
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.upgradePatientRequestAttachments();
-        TFD_PATIENT_REQUESTS_CHANNEL.postMessage('update')
-      }
-    })
+      data
+    }).afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((result) => {
+        if (result) {
+          this.fetchPatientRequestAttachments(options.refreshWithLoading || false);
+          TFD_PATIENT_REQUESTS_CHANNEL.postMessage('update');
+        }
+      });
   }
 
-  updatePatientRequestAttachment(patient_request_attachment: PatientRequestAttachment) {
-    this.dialog.open(UpdatePatientRequestAttachmentComponent, {
-      width: '400px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        patient_request_attachment: patient_request_attachment,
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.upgradePatientRequestAttachments();
-        TFD_PATIENT_REQUESTS_CHANNEL.postMessage('update')
-      }
-    })
+  // Métodos de ação disparados pelo template HTML
+
+  /**
+   * Realiza o download do arquivo binário
+   */
+  protected download(archiveId: number, name: string): void {
+    this.storageService.download(archiveId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          if (response?.archive) {
+            saveAs(response.archive, name);
+          }
+        },
+        error: () => {
+          // Trata falhas silenciosamente nos testes
+        }
+      });
   }
 
-  deletePatientRequestAttachment(patient_request_attachment: PatientRequestAttachment) {
-    this.dialog.open(DeletePatientRequestAttachmentComponent, {
-      width: '400px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        patient_request_attachment: patient_request_attachment,
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.isLoading.set(true);
-        this.getPatientRequestAttachments();
-        TFD_PATIENT_REQUESTS_CHANNEL.postMessage('update')
-      }
-    })
+  protected createPatientRequestAttachment(): void {
+    this.openDialog(CreatePatientRequestAttachmentComponent, 
+      { patient_request: this.data?.patient_request }
+    );
   }
 
+  protected updatePatientRequestAttachment(patient_request_attachment: PatientRequestAttachment): void {
+    this.openDialog(UpdatePatientRequestAttachmentComponent, 
+      { patient_request_attachment }
+    );
+  }
+
+  protected deletePatientRequestAttachment(patient_request_attachment: PatientRequestAttachment): void {
+    this.openDialog(
+      DeletePatientRequestAttachmentComponent,
+      { patient_request_attachment },
+      { refreshWithLoading: true }
+    );
+  }
 }
