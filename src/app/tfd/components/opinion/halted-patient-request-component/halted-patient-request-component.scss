@@ -1,0 +1,31 @@
+// Garante o alinhamento do texto com o spinner dentro do botão de ação
+.waiting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  // Ajuste fino para o mat-spinner não distorcer a altura do botão
+  mat-spinner {
+    margin: 0;
+  }
+}
+
+// Layout e tipografia para o texto descritivo da modal
+mat-dialog-content {
+  padding: 16px 24px;
+  line-height: 1.5;
+  color: #555; // Tom suave para o texto de aviso
+  
+  strong {
+    color: var(--mdc-theme-text-primary-on-background, #333);
+    font-weight: 600;
+  }
+}
+
+// Alinhamento e espaçamento dinâmico entre os botões de ação
+mat-dialog-actions {
+  padding: 12px 24px 16px;
+  gap: 12px; // Cria um distanciamento elegante entre os botões
+  border-top: 1px solid rgba(0, 0, 0, 0.04); // Linha divisória sutil idêntica às outras modais
+}

@@ -1,31 +1,73 @@
-:host ::ng-deep .NgxEditor__Content {
-    height: 350px !important;
+:host {
+  display: block;
+  width: 100%;
 }
 
-mat-dialog-content {
-    padding-top: 10px;
+// 🛡️ Garante que o Angular Material respeite o atributo [hidden] usado para os testes unitários
+mat-error[hidden] {
+  display: none !important;
 }
 
 mat-form-field {
-    width: 100%;
+  width: 100%;
+  height: auto;
 }
 
-.toggle {
-    padding-top: 10px;
-}
-
-.toggle span {
-    margin-left: 10px;
-}
-
-.line {
-    display: grid; 
-    grid-template-columns: 1fr; 
-    column-gap: 20px; 
+mat-dialog-content {
+  display: flex;
+  flex-direction: column;
+  row-gap: 10px;
+  padding-top: 10px; // Evita que a borda outline do primeiro campo seja cortada no topo da modal
 }
 
 .waiting {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  mat-spinner {
+    display: inline-block;
+    flex-shrink: 0; // Impede que o layout flex esmague o tamanho do spinner
+  }
+}
+
+.line {
+  display: grid;
+  column-gap: 20px;
+  align-items: start; // Alinha os topos dos componentes de forma limpa
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  height: 56px; // Alinha perfeitamente com a altura padrão da caixa de input outline do Material
+  margin-bottom: 22px; // 🎯 Compensa milimetricamente o espaço do mat-error do input vizinho
+  padding-left: 5px;
+}
+
+// Estilização customizada e isolada para o contêiner do NgxEditor
+.my-custom-editor {
+  .NgxEditor__Wrapper {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #ffffff;
+    overflow: hidden;
+    min-height: 390px !important; // Garante altura mínima consistente para o editor na edição
+    
+    &:focus-within {
+      border-color: #3f51b5; // Cor de destaque ao focar no editor (Primary padrão)
+      box-shadow: 0 0 0 1px #3f51b5;
+    }
+    
+    .NgxEditor__MenuBar {
+      background-color: #f1f5f9; // Tom slate-100 moderno combinado com as tabelas
+      border-bottom: 1px solid #ccc;
+    }
+    
+    .NgxEditor {
+      min-height: 200px;
+      padding: 12px;
+    }
+  }
 }

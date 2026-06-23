@@ -1,13 +1,20 @@
 <h2 mat-dialog-title>Arquivar solicitação</h2>
-<mat-dialog-content>Você deseja arquivar a solicitação?</mat-dialog-content>
-<mat-dialog-actions>
-    <button matButton="filled" [disabled]="wSubmit()" (click)="onArchivePatientRequestSubmit()">
-      <div class="waiting">
-          @if (wSubmit()) {
-              <mat-spinner matPrefix [diameter]="20"></mat-spinner>
-          }
-          Arquivar
-      </div>
-    </button>
-  <button matButton [mat-dialog-close]="false">Fechar</button>
+
+<mat-dialog-content>
+  <p>Você tem certeza que deseja arquivar a solicitação do paciente <strong>{{ data?.patient_request?.report?.patient_care?.patient?.name || 'este paciente' }}</strong>?</p>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button [disabled]="isSubmitting()" [mat-dialog-close]="false">
+    Cancelar
+  </button>
+
+  <button mat-flat-button color="primary" [disabled]="isSubmitting()" (click)="onSubmit()">
+    <div class="waiting">
+      @if (isSubmitting()) {
+        <mat-spinner [diameter]="20"></mat-spinner>
+      }
+      <span>{{ isSubmitting() ? 'Arquivando...' : 'Confirmar' }}</span>
+    </div>
+  </button>
 </mat-dialog-actions>

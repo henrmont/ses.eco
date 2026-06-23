@@ -1,87 +1,122 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
+import { saveAs } from 'file-saver';
+
+// Angular Material
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule } from '@angular/material/dialog';
-import {MatIconModule} from '@angular/material/icon';
-import {MatTooltipModule} from '@angular/material/tooltip';
-import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import {MatExpansionModule} from '@angular/material/expansion';
-import { CommonModule } from '@angular/common';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCardModule } from '@angular/material/card';
-import { saveAs } from 'file-saver';
+
+// Modelos, Serviços e Componentes Relacionados
 import { PatientRequest } from '../../../models/patient-request';
+import { Opinion } from '../../../models/opinion';
 import { OpinionService } from '../../../services/opinion-service';
 import { StorageService } from '../../../../core/services/storage-service';
 import { ShowPatientRequestComponent } from '../../patient-request/show-patient-request-component/show-patient-request-component';
 import { ShowOpinionComponent } from '../show-opinion-component/show-opinion-component';
-import { Opinion } from '../../../models/opinion';
 
 @Component({
   selector: 'app-history-patient-request-component',
-  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule, MatTooltipModule, MatProgressSpinnerModule, MatExpansionModule, MatCardModule],
+  standalone: true,
+  imports: [
+    CommonModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatIconModule,
+    MatTooltipModule,
+    MatProgressSpinnerModule,
+    MatExpansionModule,
+    MatCardModule
+  ],
   templateUrl: './history-patient-request-component.html',
   styleUrl: './history-patient-request-component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class HistoryPatientRequestComponent {
+export class HistoryPatientRequestComponent implements OnInit {
+  // Injeções de dependência modernas via inject()
+  protected readonly data = inject(MAT_DIALOG_DATA);
+  private readonly dialog = inject(MatDialog);
+  private readonly opinionService = inject(OpinionService);
+  private readonly storageService = inject(StorageService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  data = inject(MAT_DIALOG_DATA);
-  isLoading = true;
-  patient_requests = signal<PatientRequest[]>([])
-
-  constructor(
-    private dialog: MatDialog,
-    private opinionService: OpinionService,
-    private storageService: StorageService
-  ) {}
+  // Propriedades reativas expostas para o Template via Signals
+  protected readonly isLoading = signal<boolean>(true);
+  protected readonly patient_requests = signal<PatientRequest[]>([]);
 
   ngOnInit(): void {
     this.getHistoryPatientRequests();
   }
 
-  getHistoryPatientRequests() {
-    this.opinionService.getHistoryPatientRequests(this.data.patient_request.report.id, this.data.patient_request.id).subscribe({
-      next: (response) => {
-        this.patient_requests.set(response)
-      },
-      complete: () => {
-        this.isLoading = false;
-      }
-    })
+  /**
+   * Busca o histórico de requisições de forma reativa e segura.
+   */
+  private getHistoryPatientRequests(): void {
+    const reportId = this.data?.patient_request?.report?.id;
+    const requestId = this.data?.patient_request?.id;
+
+    if (!reportId || !requestId) {
+      this.isLoading.set(false);
+      return;
+    }
+
+    this.isLoading.set(true);
+
+    this.opinionService.getHistoryPatientRequests(reportId, requestId)
+      .pipe(
+        finalize(() => this.isLoading.set(false)),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (response) => {
+          this.patient_requests.set(response || []);
+        },
+        error: () => {}
+      });
   }
 
-  download(archive: number, name: string) {
-    this.storageService.download(archive).subscribe({
-      next: (response) => {
-        saveAs(response.archive,name)
-      }
-    })
+  /**
+   * Centraliza a abertura de modais com tipagem genérica básica para reutilização limpa.
+   */
+  private openDialog(component: any, data: any, options: { width?: string; height?: string } = {}): void {
+    this.dialog.open(component, {
+      width: options.width || '1200px',
+      height: options.height || '700px',
+      disableClose: true,
+      autoFocus: false,
+      data
+    });
   }
 
-  clickEvent(event: MouseEvent) {
+  // Métodos de ação disparados pelo template HTML (Modificadores Protected)
+  protected download(archive: number, name: string): void {
+    this.storageService.download(archive)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          if (response?.archive) {
+            saveAs(response.archive, name);
+          }
+        },
+        error: () => {}
+      });
+  }
+
+  protected clickEvent(event: MouseEvent): void {
     event.stopPropagation();
   }
 
-  showPatientRequest(patient_request: PatientRequest) {
-    this.dialog.open(ShowPatientRequestComponent, {
-      width: '1000px',
-      height: 'auto',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        patient_request: patient_request
-      }
-    })
+  protected showPatientRequest(patient_request: PatientRequest): void {
+    this.openDialog(ShowPatientRequestComponent, { patient_request }, { width: '1000px', height: 'auto' });
   }
 
-  showOpinion(opinion: Opinion) {
-    this.dialog.open(ShowOpinionComponent, {
-      width: '1200px',
-      height: '700px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        opinion: opinion,
-      }
-    })
+  protected showOpinion(opinion: Opinion): void {
+    this.openDialog(ShowOpinionComponent, { opinion });
   }
-
 }

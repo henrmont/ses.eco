@@ -1,41 +1,67 @@
 <h2 mat-dialog-title>Novo parecer</h2>
-<form [formGroup]="createOpinionForm" (ngSubmit)="onCreateOpinionSubmit()">
-    <mat-dialog-content>
-        <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
-            <div class="line" style="grid-template-columns: 2fr 1fr;">
-                <mat-form-field appearance="outline">
-                    <mat-label>Nome</mat-label>
-                    <input matInput type="text" formControlName="name">
-                    @for (item of errorMessages['name']; track $index) {
-                        <mat-error *ngIf="createOpinionForm.get('name')?.hasError(item.type)">{{item.message}}</mat-error>
-                    }
-                </mat-form-field>
-                <div class="toggle">
-                    <mat-slide-toggle formControlName="is_approved"><span>Parecer favorável</span></mat-slide-toggle>
-                </div>
-            </div>
-            <div style="grid-template-columns: 1fr;" class="my-custom-editor line">
-                <div class="NgxEditor__Wrapper">
-                    <ngx-editor-menu [editor]="editor" [toolbar]="toolbar"> </ngx-editor-menu>
-                    <ngx-editor
-                        [editor]="editor"
-                        formControlName="content"
-                        placeholder="Parecer..."
-                        outputFormat="html"
-                    ></ngx-editor>
-                </div>
-            </div>
+
+<form [formGroup]="createOpinionForm" (ngSubmit)="onSubmit()">
+  <mat-dialog-content>
+    <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+      
+      <div class="line" style="grid-template-columns: 2fr 1fr;">
+        <mat-form-field appearance="outline">
+          <mat-label>Nome</mat-label>
+          <input matInput type="text" formControlName="name">
+          
+          @for (item of errorMessages['name']; track $index) {
+            <mat-error [hidden]="!createOpinionForm.get('name')?.hasError(item.type)">
+              {{ item.message }}
+            </mat-error>
+          }
+        </mat-form-field>
+
+        <div class="toggle">
+          <mat-slide-toggle formControlName="is_approved">
+            <span>Parecer favorável</span>
+          </mat-slide-toggle>
         </div>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-        <button matButton="filled" type="submit" [disabled]="createOpinionForm.invalid || wSubmit()">
-            <div class="waiting">
-                @if (wSubmit()) {
-                    <mat-spinner matPrefix [diameter]="20"></mat-spinner>
-                }
-                Criar
-            </div>
-        </button>
-        <button matButton [mat-dialog-close]="false">Fechar</button>
-    </mat-dialog-actions>
+      </div>
+
+      <div class="line" style="grid-template-columns: 1fr;" class="my-custom-editor line">
+        <div class="NgxEditor__Wrapper" style="width: 100%;">
+          <ngx-editor-menu [editor]="editor" [toolbar]="toolbar"></ngx-editor-menu>
+          <ngx-editor
+            [editor]="editor"
+            formControlName="content"
+            placeholder="Parecer..."
+            outputFormat="html"
+          ></ngx-editor>
+        </div>
+        
+        @for (item of errorMessages['content']; track $index) {
+          @if (createOpinionForm.get('content')?.touched && createOpinionForm.get('content')?.hasError(item.type)) {
+            <small class="mat-mdc-form-field-error" style="color: #f44336; font-size: 75%; padding: 0 16px;">
+              {{ item.message }}
+            </small>
+          }
+        }
+      </div>
+
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button matButton type="button" [mat-dialog-close]="false">
+      Fechar
+    </button>
+    
+    <button 
+      matButton="filled" 
+      type="submit" 
+      [disabled]="createOpinionForm.invalid || createOpinionForm.pending || isSubmitting()"
+    >
+      <div class="waiting">
+        @if (isSubmitting()) {
+          <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+        }
+        Criar
+      </div>
+    </button>
+  </mat-dialog-actions>
 </form>
