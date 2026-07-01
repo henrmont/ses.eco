@@ -1,19 +1,53 @@
-mat-dialog-content {
-    padding-top: 10px;
+:host {
+  display: block;
+  width: 100%;
+}
+
+// 🛡️ Garante que o Angular Material respeite o atributo [hidden] usado para validações e testes unitários
+mat-error[hidden] {
+  display: none !important;
 }
 
 mat-form-field {
-    width: 100%;
+  width: 100%;
+  height: auto;
 }
 
+mat-dialog-content {
+  display: flex;
+  flex-direction: column;
+  row-gap: 10px;
+  padding-top: 10px; // Evita que a borda outline do primeiro campo seja cortada no topo da modal
+}
+
+// Layout de Grid compartilhado para alinhamento dos campos
 .line {
-    display: grid; 
-    grid-template-columns: 1fr; 
-    column-gap: 20px; 
+  display: grid;
+  column-gap: 20px;
+  align-items: start; // Alinha os topos dos componentes de forma consistente
 }
 
+// Alinhamento dinâmico do spinner com o texto dentro do botão de submissão
 .waiting {
-    display: flex;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  mat-spinner {
+    display: inline-block;
+    flex-shrink: 0; // Impede que o layout flex esmague o tamanho do spinner
+  }
+}
+
+// Estilização customizada para a exibição de contadores (chips) dentro do Autocomplete se necessário
+mat-option {
+  mat-chip {
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.8rem;
+    background-color: rgba(0, 0, 0, 0.06);
+  }
 }

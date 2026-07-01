@@ -1,81 +1,88 @@
 <h2 mat-dialog-title>Detalhes da viagem</h2>
+
 <mat-dialog-content>
-    <mat-card appearance="outlined">
-        <mat-card-header>
-            <mat-card-title>Dados viagem</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <div class="line" style="grid-template-columns: 1fr 1fr;">
-                <div>
-                    <strong>Transporte: </strong>{{data.travel.transportation}}
-                </div>
-                <div>
-                    <strong>OS:</strong>{{data.travel.os ?? 'Não informado'}}
-                </div>
+  <mat-card appearance="outlined" class="travel-card">
+    <mat-card-header>
+      <mat-card-title>Dados da viagem</mat-card-title>
+    </mat-card-header>
+    
+    <mat-card-content>
+      <div class="line grid-2-col">
+        <div>
+          <strong>Transporte:</strong> {{ data?.travel?.transportation }}
+        </div>
+        <div>
+          <strong>OS:</strong> {{ data?.travel?.os ?? 'Não informado' }}
+        </div>
+      </div>
+
+      <div class="line grid-2-col">
+        <div>
+          <strong>Origem:</strong> {{ data?.travel?.origin ?? 'Não informado' }}
+        </div>
+        <div>
+          <strong>Destino:</strong> {{ data?.travel?.destination ?? 'Não informado' }}
+        </div>
+      </div>
+
+      <div class="line grid-2-col">
+        <div>
+          <strong>Data de embarque:</strong> 
+          {{ data?.travel?.departure_date ? (data.travel.departure_date | date: 'dd/MM/yyyy') : 'Não informado' }}
+        </div>
+        <div>
+          <strong>Data de retorno:</strong> 
+          {{ data?.travel?.return_date ? (data.travel.return_date | date: 'dd/MM/yyyy') : 'Não informado' }}
+        </div>
+      </div>
+
+      <div class="line grid-1-col">
+        <div class="description-block">
+          <strong>Descrição:</strong> {{ data?.travel?.description ?? 'Não informado' }}
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card appearance="outlined" class="passengers-card">
+    <mat-card-header>
+      <mat-card-title>Passageiros</mat-card-title>
+    </mat-card-header>
+    
+    <mat-card-content>
+      @for (item of data?.travel?.passengers; track item.id || $index) {
+        <div class="line grid-3-col passenger-row">
+          @if (item.is_patient) {
+            <div class="passenger-name">
+              {{ item.patient?.name }}
             </div>
-            <div class="line" style="grid-template-columns: 1fr 1fr;">
-                <div>
-                    <strong>Origem: </strong>{{data.travel.origin ?? 'Não informado'}}
-                </div>
-                <div>
-                    <strong>Destino:</strong>{{data.travel.destination ?? 'Não informado'}}
-                </div>
+            <div class="passenger-type type-patient">
+              PACIENTE
             </div>
-            <div class="line" style="grid-template-columns: 1fr 1fr;">
-                <div>
-                    <strong>Data de embarque: </strong>{{data.travel.departure_date ? (data.travel.departure_date | date: 'dd/MM/y') : 'Não informado'}}
-                </div>
-                <div>
-                    <strong>Data de retorno:</strong>{{data.travel.return_date ? (data.travel.return_date | date: 'dd/MM/y') : 'Não informado'}}
-                </div>
+            <div class="passenger-doc">
+              {{ item.patient?.document | mask: '000.000.000-00' }}
             </div>
-            <div class="line" style="grid-template-columns: 1fr;">
-                <div style="display: flex; align-items: flex-start;">
-                    <strong>Descrição: </strong>{{data.travel.description ?? 'Não informado'}}
-                </div>
+          } @else {
+            <div class="passenger-name">
+              {{ item.escort?.name }}
             </div>
-        </mat-card-content>
-    </mat-card>
-    <mat-card appearance="outlined" style="margin-top: 30px;">
-        <mat-card-header>
-            <mat-card-title>Passageiros</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            @for (item of data.travel.passengers; track $index) {
-                <div class="line" style="grid-template-columns: 1fr 1fr 1fr;">
-                @if (item.is_patient) {
-                        <div>
-                            {{item.patient.name}}
-                        </div>
-                        <div>
-                            PACIENTE
-                        </div>
-                        <div>
-                            {{item.patient.document | mask:'000.000.000-00'}}
-                        </div>
-                } @else {
-                        <div>
-                            {{item.escort.name}}
-                        </div>
-                        <div>
-                            ACOMPANHANTE
-                        </div>
-                        <div>
-                            {{item.escort.document | mask:'000.000.000-00'}}
-                        </div>
-                    }
-                </div>
-            } @empty {
-                <div style="text-align: center; width: 100%;">
-                    Nenhum passageiro vinculado à viagem.
-                </div>
-            }
-        </mat-card-content>
-    </mat-card>
+            <div class="passenger-type type-escort">
+              ACOMPANHANTE
+            </div>
+            <div class="passenger-doc">
+              {{ item.escort?.document | mask: '000.000.000-00' }}
+            </div>
+          }
+        </div>
+      } @empty {
+        <div class="line empty-row">
+          Nenhum passageiro vinculado à viagem.
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
 </mat-dialog-content>
+
 <mat-dialog-actions align="end">
-    <button matButton [mat-dialog-close]="false">Fechar</button>
+  <button mat-button [mat-dialog-close]="false">Fechar</button>
 </mat-dialog-actions>
-
-
-

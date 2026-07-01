@@ -1,40 +1,59 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { PatientRequestService } from '../../../services/patient-request-service';
-import { MessageService } from '../../../../core/services/message-service';
+import { finalize } from 'rxjs';
 import { TravelService } from '../../../services/travel-service';
+import { MessageService } from '../../../../core/services/message-service';
 
 @Component({
   selector: 'app-halted-patient-request-component',
-  imports: [MatDialogModule, MatButtonModule, MatProgressSpinnerModule],
+  standalone: true,
+  imports: [
+    MatDialogModule, 
+    MatButtonModule, 
+    MatProgressSpinnerModule
+  ],
   templateUrl: './halted-patient-request-component.html',
   styleUrl: './halted-patient-request-component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima com OnPush + Signals
 })
 export class HaltedPatientRequestComponent {
+  // Injeções de Dependência modernas via inject()
+  protected readonly data = inject(MAT_DIALOG_DATA);
+  private readonly travelService = inject(TravelService);
+  private readonly messageService = inject(MessageService);
+  private readonly dialogRef = inject(MatDialogRef<HaltedPatientRequestComponent>);
 
-  data = inject(MAT_DIALOG_DATA);
-    
-  constructor(
-    private travelService: TravelService,
-    private messageService: MessageService,
-    private dialogRef: MatDialogRef<HaltedPatientRequestComponent>,
-  ) {}
+  // Estado de submissão reativo
+  protected readonly isSubmitting = signal<boolean>(false);
 
-  wSubmit = signal<boolean>(false)
-  haltedPatientRequest() {
-    this.wSubmit.set(true)
-    this.travelService.haltedPatientRequest(this.data.patient_request.id).subscribe({
-      next: (response: any) => {
-        this.messageService.showMessage(response.message)
-        this.dialogRef.close(true)
-      },
-      error: (err) => {
-        this.messageService.showMessage(err.error.message)
-        this.wSubmit.set(false)
-      },
-    })
+  /**
+   * Dispara a requisição para paralisar/sobrestar a solicitação de viagem do paciente
+   */
+  protected onSubmit(): void {
+    const requestId = this.data?.patient_request?.id;
+
+    if (!requestId) {
+      this.messageService.showMessage('Erro: Identificador da solicitação não encontrado.');
+      return;
+    }
+
+    this.isSubmitting.set(true);
+
+    this.travelService.haltedPatientRequest(requestId)
+      .pipe(
+        finalize(() => this.isSubmitting.set(false)) // Garante que o loading apague em sucesso ou erro
+      )
+      .subscribe({
+        next: (response: any) => {
+          this.messageService.showMessage(response.message || 'Status de sobrestamento atualizado!');
+          this.dialogRef.close(true); // Retorna sinal positivo para atualizar a grid na TravelsPage
+        },
+        error: (err) => {
+          const errorMessage = err?.error?.message || 'Ocorreu um erro operacional ao atualizar o sobrestamento.';
+          this.messageService.showMessage(errorMessage);
+        },
+      });
   }
-
 }

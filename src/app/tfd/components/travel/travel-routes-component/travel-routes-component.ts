@@ -1,103 +1,140 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
+import { CommonModule } from '@angular/common';
+
+// Angular Material
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule } from '@angular/material/dialog';
-import {MatTableModule, MatTableDataSource} from '@angular/material/table';
-import {MatIconModule} from '@angular/material/icon';
-import {MatTooltipModule} from '@angular/material/tooltip';
-import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import { CommonModule } from '@angular/common';
-import { Travel } from '../../../models/travel';
-import { TravelService } from '../../../services/travel-service';
-import { CreatePassengerComponent } from '../create-passenger-component/create-passenger-component';
-import { UpdatePassengerComponent } from '../update-passenger-component/update-passenger-component';
-import { Passenger } from '../../../models/passenger';
-import { DeletePassengerComponent } from '../delete-passenger-component/delete-passenger-component';
-import { CreateRouteComponent } from '../create-route-component/create-route-component';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
+// Models e Serviços
 import { Route } from '../../../models/route';
+import { TravelService } from '../../../services/travel-service';
+
+// Modais do Contexto de Rotas
+import { CreateRouteComponent } from '../create-route-component/create-route-component';
 import { UpdateRouteComponent } from '../update-route-component/update-route-component';
 import { DeleteRouteComponent } from '../delete-route-component/delete-route-component';
 
 @Component({
   selector: 'app-travel-routes-component',
-  imports: [CommonModule, MatDialogModule, MatButtonModule, MatTableModule, MatIconModule, MatTooltipModule, MatProgressSpinnerModule],
+  standalone: true,
+  imports: [
+    CommonModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatTableModule,
+    MatIconModule,
+    MatTooltipModule,
+    MatProgressSpinnerModule
+  ],
   templateUrl: './travel-routes-component.html',
   styleUrl: './travel-routes-component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima unindo OnPush + Signals + Computed
 })
 export class TravelRoutesComponent implements OnInit {
+  // Injeções de dependência modernas
+  protected readonly data = inject(MAT_DIALOG_DATA);
+  private readonly dialog = inject(MatDialog);
+  private readonly travelService = inject(TravelService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  data = inject(MAT_DIALOG_DATA);
-  displayedColumns: string[] = ['origin','destination','distance','actions'];
-  dataSource = signal<MatTableDataSource<Travel>>(new MatTableDataSource());
-  isLoading = signal<boolean>(true);
-  totalDistance = signal<number>(0)
+  // Propriedades expostas para o Template com computed e signals
+  protected readonly displayedColumns: string[] = ['origin', 'destination', 'distance', 'actions'];
+  protected readonly routesList = signal<Route[]>([]);
+  protected readonly isLoading = signal<boolean>(true);
 
-  constructor(
-    private dialog: MatDialog,
-    private travelService: TravelService,
-  ) {}
+  // Fonte de dados reativa vinculada diretamente à lista base via Computed
+  protected readonly dataSource = computed(() => new MatTableDataSource<Route>(this.routesList()));
+
+  // Calcula a distância total global somando de maneira limpa e automática sempre que a lista mudar
+  protected readonly totalDistance = computed(() => 
+    this.routesList().reduce((acc, item) => acc + (Number(item.distance) || 0), 0)
+  );
 
   ngOnInit(): void {
-    this.getRoutes();
+    this.fetchRoutes(true);
   }
 
-  getRoutes() {
-    this.travelService.getRoutes(this.data.travel.id).subscribe({
-      next: (response) => {
-        this.totalDistance.set(response.map((item: any) => item.distance).reduce((acc: any, value: any) => acc + value, 0))
-        this.dataSource.set(new MatTableDataSource(response))
-      },
-      complete: () => {
-        this.isLoading.set(false);
-      }
-    })
+  /**
+   * Busca as rotas vinculadas à viagem de forma reativa e segura.
+   */
+  private fetchRoutes(showLoading = false): void {
+    const travelId = this.data?.travel?.id;
+
+    if (!travelId) {
+      this.isLoading.set(false);
+      return;
+    }
+
+    if (showLoading) {
+      this.isLoading.set(true);
+    }
+
+    this.travelService.getRoutes(travelId)
+      .pipe(
+        finalize(() => {
+          if (showLoading) {
+            this.isLoading.set(false);
+          }
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (response) => {
+          this.routesList.set(response || []);
+        },
+        error: () => {
+          // Trata falhas de rede de forma silenciosa e limpa
+        }
+      });
   }
 
-  createRoute() {
-    this.dialog.open(CreateRouteComponent, {
-      width: '400px',
+  /**
+   * Centraliza a abertura das modais internas de rota com atualização do estado pós-fechamento
+   */
+  private openDialog(
+    component: any, 
+    data: any, 
+    options: { width?: string; refreshWithLoading?: boolean } = {}
+  ): void {
+    this.dialog.open(component, {
+      width: options.width || '400px',
       disableClose: true,
       autoFocus: false,
-      data: {
-        travel: this.data.travel,
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.isLoading.set(true);
-        this.getRoutes()
-      }
-    })
+      data
+    }).afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((result) => {
+        if (result) {
+          this.fetchRoutes(options.refreshWithLoading || false);
+        }
+      });
   }
 
-  updateRoute(route: Route) {
-    this.dialog.open(UpdateRouteComponent, {
-      width: '400px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        route: route,
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.isLoading.set(true);
-        this.getRoutes()
-      }
-    })
+  // Métodos de ação disparados pelo template HTML (Modificadores Protected)
+  protected createRoute(): void {
+    this.openDialog(CreateRouteComponent, 
+      { travel: this.data.travel }, 
+      { refreshWithLoading: true }
+    );
   }
 
-  deleteRoute(route: Route) {
-    this.dialog.open(DeleteRouteComponent, {
-      width: '400px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        route: route,
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.isLoading.set(true);
-        this.getRoutes()
-      }
-    })
+  protected updateRoute(route: Route): void {
+    this.openDialog(UpdateRouteComponent, 
+      { route }, 
+      { refreshWithLoading: true }
+    );
   }
 
+  protected deleteRoute(route: Route): void {
+    this.openDialog(DeleteRouteComponent, 
+      { route }, 
+      { refreshWithLoading: true }
+    );
+  }
 }
