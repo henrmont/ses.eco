@@ -1,20 +1,28 @@
-import { Component, OnInit, signal, viewChild } from '@angular/core';
-import {MatTableDataSource, MatTableModule} from '@angular/material/table';
-import {MatInputModule} from '@angular/material/input';
-import {MatFormFieldModule} from '@angular/material/form-field';
-import {MatButtonModule} from '@angular/material/button';
-import {MatIconModule} from '@angular/material/icon';
-import {MatTooltipModule} from '@angular/material/tooltip';
-import { MatTabsModule } from '@angular/material/tabs';
-import {MatSort, MatSortModule} from '@angular/material/sort';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
+
+// Angular Material
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { NgxMaskPipe } from 'ngx-mask';
+
+// Core, Modelos e Serviços
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
 import { PatientRequest } from '../../models/patient-request';
 import { Permission } from '../../models/permission';
 import { CostAssistanceService } from '../../services/cost-assistance-service';
+
+// Modais (Dialogs)
 import { HaltedPatientRequestComponent } from '../../components/cost-assistance/halted-patient-request-component/halted-patient-request-component';
 import { ShowPatientRequestComponent } from '../../components/patient-request/show-patient-request-component/show-patient-request-component';
 import { PatientRequestAttachmentsComponent } from '../../components/patient-request/patient-request-attachments-component/patient-request-attachments-component';
@@ -30,139 +38,139 @@ const TFD_COST_ASSISTANCES_CHANNEL = new BroadcastChannel('tfd-cost-assistances-
 
 @Component({
   selector: 'app-cost-assistances-page',
-  imports: [CommonModule, MatFormFieldModule, MatInputModule, MatTableModule, MatButtonModule, MatIconModule, MatTooltipModule, MatSortModule, MatTabsModule, NgxMaskPipe],
+  standalone: true,
+  imports: [
+    CommonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatTableModule,
+    MatButtonModule,
+    MatIconModule,
+    MatTooltipModule,
+    MatSortModule,
+    MatTabsModule,
+    MatDialogModule,
+    NgxMaskPipe
+  ],
   templateUrl: './cost-assistances-page.html',
   styleUrl: './cost-assistances-page.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class CostAssistancesPage implements OnInit {
+export class CostAssistancesPage implements OnInit, OnDestroy {
+  // 🔒 Injeções de dependência modernas via inject()
+  private readonly costAssistanceService = inject(CostAssistanceService);
+  private readonly dialog = inject(MatDialog);
+  private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
 
-  sort = viewChild.required(MatSort);
-    
-  displayedOwnerColumns: string[] = ['bookmark','patient','cns','type','consultation_date','status','actions'];
-  ownerDataSource = signal<MatTableDataSource<PatientRequest>>(new MatTableDataSource());
-  applyOwnerFilter(event: Event) {
-    const FILTER_VALUE = (event.target as HTMLInputElement).value;
-    this.ownerDataSource().filter = FILTER_VALUE.trim().toLowerCase();
-  }
+  // Captura do MatSort do template via Signal reativo
+  protected readonly sort = viewChild.required(MatSort);
 
-  displayedProcessColumns: string[] = ['patient','cns','type','consultation_date','responsible','actions'];
-  processDataSource = signal<MatTableDataSource<PatientRequest>>(new MatTableDataSource());
-  applyProcessFilter(event: Event) {
-    const FILTER_VALUE = (event.target as HTMLInputElement).value;
-    this.processDataSource().filter = FILTER_VALUE.trim().toLowerCase();
-  }
+  private loadingDialog!: MatDialogRef<LoadingComponent>;
+  private readonly currentUser = this.route.parent?.parent?.snapshot.data['user'];
 
-  displayedOthersColumns: string[] = ['patient','cns','type','consultation_date','responsible','actions'];
-  othersDataSource = signal<MatTableDataSource<PatientRequest>>(new MatTableDataSource());
-  applyOthersFilter(event: Event) {
-    const FILTER_VALUE = (event.target as HTMLInputElement).value;
-    this.othersDataSource().filter = FILTER_VALUE.trim().toLowerCase();
-  }
+  // Definições de colunas das tabelas baseadas nas abas de Ajuda de Custo
+  protected readonly displayedOwnerColumns: string[] = ['bookmark', 'patient', 'cns', 'type', 'consultation_date', 'status', 'actions'];
+  protected readonly displayedProcessColumns: string[] = ['patient', 'cns', 'type', 'consultation_date', 'responsible', 'actions'];
+  protected readonly displayedOthersColumns: string[] = ['patient', 'cns', 'type', 'consultation_date', 'responsible', 'actions'];
 
-  constructor(
-    private costAssistanceService: CostAssistanceService,
-    private dialog: MatDialog,
-    private route: ActivatedRoute
-  ) {
-    TFD_COST_ASSISTANCES_CHANNEL.onmessage = (message) => {
-      if (message.data === 'update') {
-        this.upgradePatientRequests()
-      }
-    }
-  }
+  // Signals para armazenamento do estado bruto dos dados
+  private readonly rawOwnerList = signal<PatientRequest[]>([]);
+  private readonly rawProcessList = signal<PatientRequest[]>([]);
+  private readonly rawOthersList = signal<PatientRequest[]>([]);
+
+  // ⚡ Computed signals injetando dados e acoplando ordenação nativa reativa em TODAS as abas
+  protected readonly ownerDataSource = computed(() => {
+    const dataSource = new MatTableDataSource(this.rawOwnerList());
+    dataSource.sort = this.sort();
+    return dataSource;
+  });
+
+  protected readonly processDataSource = computed(() => {
+    const dataSource = new MatTableDataSource(this.rawProcessList());
+    dataSource.sort = this.sort();
+    return dataSource;
+  });
+
+  protected readonly othersDataSource = computed(() => {
+    const dataSource = new MatTableDataSource(this.rawOthersList());
+    dataSource.sort = this.sort();
+    return dataSource;
+  });
 
   ngOnInit(): void {
-    this.getPatientRequests()
-  }
+    this.fetchPatientRequests(true);
 
-  getPatientRequests() {
-    this.loading()
-    this.costAssistanceService.getPatientRequests().subscribe({
-      next: (response) => {
-        this.ownerDataSource.set(new MatTableDataSource(response
-          .filter((patient_request: any) => (!patient_request.payment_professional || patient_request.back_to_cost_assistance) && patient_request.cost_assistance)
-          .map((item: any) => {return {
-            name: item.report.patient_care.patient.name,
-            cns: item.report.patient_care.patient.cns,
-            type: item.type,
-            consultation_date: item.consultation_date,
-            status: item.status,
-            ...item
-          }})
-        ))
-        this.othersDataSource.set(new MatTableDataSource(response
-          .filter((patient_request: any) => !patient_request.cost_assistance)
-          .map((item: any) => {return {
-            name: item.report.patient_care.patient.name,
-            cns: item.report.patient_care.patient.cns,
-            type: item.type,
-            consultation_date: item.consultation_date,
-            status: item.status,
-            ...item
-          }})
-        ))
-        this.processDataSource.set(new MatTableDataSource(response
-          .filter((patient_request: any) => patient_request.payment_professional && patient_request.cost_assistance && !patient_request.back_to_cost_assistance)
-          .map((item: any) => {return {
-            name: item.report.patient_care.patient.name,
-            cns: item.report.patient_care.patient.cns,
-            type: item.type,
-            consultation_date: item.consultation_date,
-            status: item.status,
-            ...item
-          }})
-        ))
-        this.othersDataSource().sort = this.sort()
-      },
-      complete: () => {
-        this.loadingDialog.close()
+    TFD_COST_ASSISTANCES_CHANNEL.onmessage = (message) => {
+      if (message.data === 'update') {
+        this.fetchPatientRequests(false);
       }
-    })
+    };
   }
 
-  upgradePatientRequests() {
-    this.costAssistanceService.getPatientRequests().subscribe({
-      next: (response) => {
-        this.ownerDataSource.set(new MatTableDataSource(response
-          .filter((patient_request: any) => (!patient_request.payment_professional || patient_request.back_to_cost_assistance) && patient_request.cost_assistance)
-          .map((item: any) => {return {
-            name: item.report.patient_care.patient.name,
-            cns: item.report.patient_care.patient.cns,
-            type: item.type,
-            consultation_date: item.consultation_date,
-            status: item.status,
-            ...item
-          }})
-        ))
-        this.othersDataSource.set(new MatTableDataSource(response
-          .filter((patient_request: any) => !patient_request.cost_assistance)
-          .map((item: any) => {return {
-            name: item.report.patient_care.patient.name,
-            cns: item.report.patient_care.patient.cns,
-            type: item.type,
-            consultation_date: item.consultation_date,
-            status: item.status,
-            ...item
-          }})
-        ))
-        this.processDataSource.set(new MatTableDataSource(response
-          .filter((patient_request: any) => patient_request.payment_professional && patient_request.cost_assistance && !patient_request.back_to_cost_assistance)
-          .map((item: any) => {return {
-            name: item.report.patient_care.patient.name,
-            cns: item.report.patient_care.patient.cns,
-            type: item.type,
-            consultation_date: item.consultation_date,
-            status: item.status,
-            ...item
-          }})
-        ))
-        this.othersDataSource().sort = this.sort()
-      },
-    })
+  ngOnDestroy(): void {
+    TFD_COST_ASSISTANCES_CHANNEL.close();
   }
 
-  loadingDialog!: MatDialogRef<LoadingComponent>
-  loading() {
+  // Filtros locais e rápidos de busca nas tabelas acessando os computeds
+  protected applyOwnerFilter(event: Event): void {
+    const filterValue = (event.target as HTMLInputElement).value;
+    this.ownerDataSource().filter = filterValue.trim().toLowerCase();
+  }
+
+  protected applyProcessFilter(event: Event): void {
+    const filterValue = (event.target as HTMLInputElement).value;
+    this.processDataSource().filter = filterValue.trim().toLowerCase();
+  }
+
+  protected applyOthersFilter(event: Event): void {
+    const filterValue = (event.target as HTMLInputElement).value;
+    this.othersDataSource().filter = filterValue.trim().toLowerCase();
+  }
+
+  /**
+   * Busca centralizada, mapeamento e separação lógica das requisições de ajuda de custo
+   */
+  private fetchPatientRequests(showLoading = false): void {
+    if (showLoading) this.openLoading();
+
+    this.costAssistanceService.getPatientRequests()
+      .pipe(
+        finalize(() => {
+          if (showLoading && this.loadingDialog) {
+            this.loadingDialog.close();
+          }
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (response) => {
+          const rawList = response || [];
+
+          // Nivelamento estrutural igual ao modelo para exibição facilitada
+          const normalizedRequests = rawList.map((item: any) => ({
+            ...item,
+            name: item.report?.patient_care?.patient?.name || '',
+            cns: item.report?.patient_care?.patient?.cns || '',
+            type: item.type,
+            consultation_date: item.consultation_date,
+            status: item.status
+          }));
+
+          // Distribuição exata seguindo as regras de negócio de ajuda de custo
+          const owners = normalizedRequests.filter((req: any) => (!req.payment_professional || req.back_to_cost_assistance) && req.cost_assistance);
+          const processes = normalizedRequests.filter((req: any) => req.payment_professional && req.cost_assistance && !req.back_to_cost_assistance);
+          const others = normalizedRequests.filter((req: any) => !req.cost_assistance);
+
+          this.rawOwnerList.set(owners);
+          this.rawProcessList.set(processes);
+          this.rawOthersList.set(others);
+        },
+        error: () => {}
+      });
+  }
+
+  private openLoading(): void {
     this.loadingDialog = this.dialog.open(LoadingComponent, {
       height: '200px',
       disableClose: true,
@@ -170,167 +178,89 @@ export class CostAssistancesPage implements OnInit {
     });
   }
 
-  checkPermissions(name: string) {
-    const ROLES = this.route.parent?.parent?.snapshot.data['user'].roles
-    for (const item of ROLES) {
-      if (item.permissions.filter((permission: Permission) => permission.name == name).length > 0)
-        return false 
-    }
-    return true
+  /**
+   * Inversão lógica estável: Retorna 'true' caso o usuário NÃO possua a permissão requerida
+   */
+  protected checkPermissions(permissionName: string): boolean {
+    if (!this.currentUser?.roles) return true;
+
+    const hasPermission = this.currentUser.roles.some((role: any) =>
+      role.permissions?.some((perm: Permission) => perm.name === permissionName)
+    );
+
+    return !hasPermission;
   }
 
-  checkStatus(patient_request: PatientRequest) {
-    if (patient_request.medical_status && patient_request.social_status)
-      return true
-    return false
+  protected checkStatus(patient_request: PatientRequest): boolean {
+    return !!(patient_request.medical_status && patient_request.social_status);
   }
 
-  haltedPatientRequest(patient_request: PatientRequest) {
-    this.dialog.open(HaltedPatientRequestComponent, {
-      width: '400px',
-      height: 'auto',
+  /**
+   * Método privado e único para abertura e monitoramento do retorno de modais interativas
+   */
+  private openDialog(component: any, data: any, width = '400px', height = 'auto', requiresRefresh = true): void {
+    this.dialog.open(component, {
+      width,
+      height,
       disableClose: true,
       autoFocus: false,
-      data: {
-        patient_request: patient_request
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.upgradePatientRequests()
-        TFD_COST_ASSISTANCES_CHANNEL.postMessage('update')
-      }
-    })
+      data
+    }).afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(result => {
+        if (result && requiresRefresh) {
+          this.handleRequestsChange();
+        }
+      });
   }
 
-  patientRequestAttachments(patient_request: PatientRequest) {
-    this.dialog.open(PatientRequestAttachmentsComponent, {
-      width: '600px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        patient_request: patient_request,
-      }
-    })
+  private handleRequestsChange(): void {
+    this.fetchPatientRequests(false);
+    TFD_COST_ASSISTANCES_CHANNEL.postMessage('update');
   }
 
-  costAssistances(patient_request: PatientRequest) {
-    this.dialog.open(PatientRequestCostAssistancesComponent, {
-      width: '1200px',
-      height: 'auto',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        patient_request: patient_request,
-        permissions: this.route.parent?.parent?.snapshot.data['user'].roles
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.upgradePatientRequests()
-        TFD_COST_ASSISTANCES_CHANNEL.postMessage('update')
-      }
-    })
+  // --- MÉTODOS DE AÇÃO DO TEMPLATE HTML ---
+
+  protected haltedPatientRequest(patient_request: PatientRequest): void {
+    this.openDialog(HaltedPatientRequestComponent, { patient_request }, '400px');
   }
 
-  history(patient_request: PatientRequest) {
-    this.dialog.open(HistoryPatientRequestComponent, {
-      width: '1000px',
-      height: 'auto',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        patient_request: patient_request,
-      }
-    })
+  protected patientRequestAttachments(patient_request: PatientRequest): void {
+    this.openDialog(PatientRequestAttachmentsComponent, { patient_request }, '600px', 'auto', false);
   }
 
-  undoPatientRequest(patient_request: PatientRequest) {
-    this.dialog.open(UndoPatientRequestComponent, {
-      width: '500px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        patient_request: patient_request
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.upgradePatientRequests()
-        TFD_COST_ASSISTANCES_CHANNEL.postMessage('update')
-      }
-    })
+  protected costAssistances(patient_request: PatientRequest): void {
+    this.openDialog(PatientRequestCostAssistancesComponent, {
+      patient_request,
+      permissions: this.currentUser?.roles
+    }, '1200px', 'auto');
   }
 
-  processPatientRequest(patient_request: PatientRequest) {
-    this.dialog.open(ProcessPatientRequestToPaymentComponent, {
-      width: '500px',
-      height: 'auto',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        patient_request: patient_request,
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.upgradePatientRequests()
-        TFD_COST_ASSISTANCES_CHANNEL.postMessage('update')
-      }
-    })
+  protected history(patient_request: PatientRequest): void {
+    this.openDialog(HistoryPatientRequestComponent, { patient_request }, '1000px', 'auto', false);
   }
 
-  movePatientRequestFromProcesses(patient_request: PatientRequest) {
-    this.dialog.open(MovePatientRequestFromProcessesComponent, {
-      width: '400px',
-      height: 'auto',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        patient_request: patient_request
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.upgradePatientRequests()
-        TFD_COST_ASSISTANCES_CHANNEL.postMessage('update')
-      }
-    })
+  protected undoPatientRequest(patient_request: PatientRequest): void {
+    this.openDialog(UndoPatientRequestComponent, { patient_request }, '500px');
   }
 
-  movePatientRequestFromOthers(patient_request: PatientRequest) {
-    this.dialog.open(MovePatientRequestFromOthersComponent, {
-      width: '400px',
-      height: 'auto',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        patient_request: patient_request
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.upgradePatientRequests()
-        TFD_COST_ASSISTANCES_CHANNEL.postMessage('update')
-      }
-    })
+  protected processPatientRequest(patient_request: PatientRequest): void {
+    this.openDialog(ProcessPatientRequestToPaymentComponent, { patient_request }, '500px');
   }
 
-  showPatientRequest(patient_request: PatientRequest) {
-    this.dialog.open(ShowPatientRequestComponent, {
-      width: '1000px',
-      height: 'auto',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        patient_request: patient_request
-      }
-    })
+  protected movePatientRequestFromProcesses(patient_request: PatientRequest): void {
+    this.openDialog(MovePatientRequestFromProcessesComponent, { patient_request }, '400px');
   }
 
-  undoMessage(message: string) {
-    this.dialog.open(UndoMessageComponent, {
-      width: '400px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        message: message
-      }
-    })
+  protected movePatientRequestFromOthers(patient_request: PatientRequest): void {
+    this.openDialog(MovePatientRequestFromOthersComponent, { patient_request }, '400px');
   }
 
+  protected showPatientRequest(patient_request: PatientRequest): void {
+    this.openDialog(ShowPatientRequestComponent, { patient_request }, '1000px', 'auto', false);
+  }
+
+  protected undoMessage(message: string): void {
+    this.openDialog(UndoMessageComponent, { message }, '400px', 'auto', false);
+  }
 }

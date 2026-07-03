@@ -1,16 +1,111 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow: hidden; 
+}
+
+h2[mat-dialog-title] {
+  margin: 0;
+  padding: 16px 24px;
+  flex-shrink: 0; 
+}
+
+mat-dialog-content {
+  flex: 1;                  
+  overflow-y: auto !important; 
+  max-height: none !important; 
+  padding: 16px 24px;
+}
+
+mat-dialog-actions {
+  margin: 0;
+  padding: 12px 24px 16px;
+  flex-shrink: 0; 
+  border-top: 1px solid rgba(0, 0, 0, 0.08); 
+}
+
+// Estilização e espaçamento dos Cards de detalhamento da ajuda de custo
+mat-card {
+  background: #ffffff;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px -2px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+
+  mat-card-header {
+    padding: 16px 16px 8px;
+    
+    mat-card-title {
+      font-weight: 600;
+      color: #334155;
+      font-size: 1.1rem;
+    }
+  }
+
+  mat-card-content {
+    padding: 0 16px 16px;
+  }
+}
+
+// Simulador de Linha/Grid para dados gerais e diárias
 .line {
-    display: grid; 
-    grid-template-columns: 1fr; 
-    column-gap: 20px; 
-    margin-top: 10px;
-    min-height: 40px;
-}
+  display: grid;
+  gap: 16px;
+  padding: 12px 16px;
+  align-items: center;
+  font-size: 0.95rem;
+  color: #334155;
 
-.line div {
-    display: flex; 
-    align-items: center;
-}
+  strong {
+    color: #475569;
+    font-weight: 600;
+  }
 
-strong {
-    margin-right: 5px;
+  &:last-child {
+    border-bottom: none;
+  }
+
+  // Usado para blocos de mensagens únicas ou linhas sem divisores
+  &.grid-1-col {
+    grid-template-columns: 1fr;
+    border-bottom: none;
+  }
+
+  // Perfeito para o bloco superior (Nome + Total, Tipo + Criação)
+  &.grid-2-col {
+    grid-template-columns: 2fr 1fr;
+  }
+
+  // Layout simétrico e interativo para a listagem de diárias (Nome, Valor, Qtd, Subtotal)
+  &.grid-4-col {
+    grid-template-columns: 3fr 1fr 1fr 1fr;
+    transition: background-color 0.2s ease;
+    border-radius: 6px;
+
+    &:hover {
+      background-color: #f8fafc;
+    }
+  }
+
+  // Feedback visual customizado quando não houver registros
+  &.empty-row {
+    grid-template-columns: 1fr !important;
+    text-align: center;
+    color: #94a3b8;
+    font-style: italic;
+    padding: 24px 0;
+    border-bottom: none;
+
+    &:hover {
+      background-color: transparent;
+    }
+  }
+
+  // Responsividade inteligente (Media Query unificada conforme a referência)
+  @media (max-width: 600px) {
+    &.grid-2-col, &.grid-4-col {
+      grid-template-columns: 1fr !important;
+      gap: 8px;
+      padding: 12px;
+    }
+  }
 }

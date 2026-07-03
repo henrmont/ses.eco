@@ -1,14 +1,22 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
+import { CommonModule } from '@angular/common';
+
+// Angular Material
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule } from '@angular/material/dialog';
-import {MatTableModule, MatTableDataSource} from '@angular/material/table';
-import {MatIconModule} from '@angular/material/icon';
-import {MatTooltipModule} from '@angular/material/tooltip';
-import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import { CommonModule } from '@angular/common';
-import { CostAssistanceService } from '../../../services/cost-assistance-service';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
+// Models e Serviços do Contexto de Auxílios
 import { CostAssistance } from '../../../models/cost-assistance';
 import { Permission } from '../../../models/permission';
+import { CostAssistanceService } from '../../../services/cost-assistance-service';
+
+// Modais do Contexto de Auxílios
 import { CreateCostAssistanceComponent } from '../create-cost-assistance-component/create-cost-assistance-component';
 import { UpdateCostAssistanceComponent } from '../update-cost-assistance-component/update-cost-assistance-component';
 import { DeleteCostAssistanceComponent } from '../delete-cost-assistance-component/delete-cost-assistance-component';
@@ -17,129 +25,158 @@ import { ShowCostAssistanceComponent } from '../show-cost-assistance-component/s
 
 @Component({
   selector: 'app-patient-request-cost-assistances-component',
-  imports: [CommonModule, MatDialogModule, MatButtonModule, MatTableModule, MatIconModule, MatTooltipModule, MatProgressSpinnerModule],
+  standalone: true,
+  imports: [
+    CommonModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatTableModule,
+    MatIconModule,
+    MatTooltipModule,
+    MatProgressSpinnerModule
+  ],
   templateUrl: './patient-request-cost-assistances-component.html',
   styleUrl: './patient-request-cost-assistances-component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima unindo OnPush + Signals + Computed
 })
 export class PatientRequestCostAssistancesComponent implements OnInit {
+  // Injeções de dependência modernas via inject()
+  protected readonly data = inject(MAT_DIALOG_DATA);
+  private readonly dialog = inject(MatDialog);
+  private readonly costAssistanceService = inject(CostAssistanceService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  data = inject(MAT_DIALOG_DATA);
-  displayedColumns: string[] = ['name','type','created_at','dailies','actions'];
-  dataSource = signal<MatTableDataSource<any>>(new MatTableDataSource());
-  isLoading = signal<boolean>(true);
-  totalValue = signal<number>(0)
-
-  constructor(
-    private dialog: MatDialog,
-    private costAssistanceService: CostAssistanceService,
-  ) {}
+  // Propriedades expostas para o Template com computed e signals
+  protected readonly displayedColumns: string[] = ['name', 'type', 'created_at', 'dailies', 'actions'];
+  protected readonly costAssistancesList = signal<CostAssistance[]>([]);
+  protected readonly dataSource = computed(() => new MatTableDataSource(this.costAssistancesList()));
+  protected readonly isLoading = signal<boolean>(true);
+  protected readonly totalValue = signal<number>(0);
 
   ngOnInit(): void {
-    this.getCostAssistances();
-    this.getBalance()
+    this.refreshData(true);
   }
 
-  getCostAssistances() {
-    this.costAssistanceService.getCostAssistances(this.data.patient_request.id).subscribe({
-      next: (response) => {
-        this.dataSource.set(new MatTableDataSource(response))
-      },
-      complete: () => {
-        this.isLoading.set(false);
-      }
-    })
+  /**
+   * Dispara a atualização síncrona da listagem e do saldo do atendimento
+   */
+  private refreshData(showLoading = false): void {
+    this.fetchCostAssistances(showLoading);
+    this.fetchBalance();
   }
 
-  getBalance() {
-    this.costAssistanceService.getBalance(this.data.patient_request.report.patient_care.id).subscribe({
-      next: (response) => {
-        this.totalValue.set(response)
-      }
-    })
-  }
+  /**
+   * Busca os auxílios financeiros de forma reativa, performática e segura.
+   */
+  private fetchCostAssistances(showLoading = false): void {
+    const requestId = this.data?.patient_request?.id;
 
-  checkPermissions(name: string) {
-    const ROLES = this.data.permissions
-    for (const item of ROLES) {
-      if (item.permissions.filter((permission: Permission) => permission.name == name).length > 0)
-        return false 
+    if (!requestId) {
+      this.isLoading.set(false);
+      return;
     }
-    return true
-  }
-  
-  costAssistanceDailies(cost_assistance: CostAssistance) {
-    this.dialog.open(CostAssistanceDailiesComponent, {
-      width: '1000px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        cost_assistance: cost_assistance,
-        permissions: this.data.permissions
-      }
-    }).afterClosed().subscribe(result => {
-        this.isLoading.set(true);
-        this.getCostAssistances()
-        this.getBalance()
-    })
+
+    if (showLoading) {
+      this.isLoading.set(true);
+    }
+
+    this.costAssistanceService.getCostAssistances(requestId)
+      .pipe(
+        finalize(() => {
+          if (showLoading) {
+            this.isLoading.set(false);
+          }
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (response) => {
+          this.costAssistancesList.set(response);
+        },
+        error: () => {
+          // Evita estouro de exceções soltas na aplicação e nos testes
+        }
+      });
   }
 
-  showCostAssistance(cost_assistance: CostAssistance) {
-    this.dialog.open(ShowCostAssistanceComponent, {
-      width: '800px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        cost_assistance: cost_assistance
-      }
-    })
+  /**
+   * Obtém o saldo (balanço) atualizado baseado no atendimento do paciente
+   */
+  private fetchBalance(): void {
+    const careId = this.data?.patient_request?.report?.patient_care?.id;
+    if (!careId) return;
+
+    this.costAssistanceService.getBalance(careId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.totalValue.set(response);
+        },
+        error: () => {}
+      });
   }
 
-  createCostAssistance() {
-    this.dialog.open(CreateCostAssistanceComponent, {
-      width: '400px',
+  /**
+   * Centraliza a abertura de modais com tratamento automático reativo pós-fechamento
+   */
+  private openDialog(
+    component: any, 
+    data: any, 
+    options: { width?: string; refreshWithLoading?: boolean; updateBalance?: boolean } = {}
+  ): void {
+    this.dialog.open(component, {
+      width: options.width || '800px',
       disableClose: true,
       autoFocus: false,
-      data: {
-        patient_request: this.data.patient_request,
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.isLoading.set(true);
-        this.getCostAssistances()
-      }
-    })
+      data
+    }).afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((result) => {
+        // Se a modal retornar true ou se for a modal de diárias (que atualiza dados independentemente do confirm)
+        if (result || options.updateBalance) {
+          this.refreshData(options.refreshWithLoading || false);
+        }
+      });
   }
 
-  updateCostAssistance(cost_assistance: CostAssistance) {
-    this.dialog.open(UpdateCostAssistanceComponent, {
-      width: '500px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        cost_assistance: cost_assistance,
+  /**
+   * Verifica se a permissão informada NÃO existe nos papéis recebidos.
+   */
+  protected checkPermissions(name: string): boolean {
+    const roles = this.data?.permissions || [];
+    for (const item of roles) {
+      const hasPermission = item.permissions?.some((p: Permission) => p.name === name);
+      if (hasPermission) {
+        return false;
       }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.isLoading.set(true);
-        this.getCostAssistances()
-      }
-    })
+    }
+    return true;
   }
 
-  deleteCostAssistance(cost_assistance: CostAssistance) {
-    this.dialog.open(DeleteCostAssistanceComponent, {
-      width: '400px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        cost_assistance: cost_assistance,
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.isLoading.set(true);
-        this.getCostAssistances()
-      }
-    })
+  // Métodos de ação disparados pelo template HTML (Modificadores Protected)
+  protected createCostAssistance(): void {
+    this.openDialog(CreateCostAssistanceComponent, 
+      { patient_request: this.data.patient_request },
+      { width: '400px', refreshWithLoading: true }
+    );
   }
 
+  protected showCostAssistance(costAssistance: CostAssistance): void {
+    this.openDialog(ShowCostAssistanceComponent, { cost_assistance: costAssistance });
+  }
+
+  protected updateCostAssistance(costAssistance: CostAssistance): void {
+    this.openDialog(UpdateCostAssistanceComponent, { cost_assistance: costAssistance }, { width: '500px', refreshWithLoading: true });
+  }
+
+  protected deleteCostAssistance(costAssistance: CostAssistance): void {
+    this.openDialog(DeleteCostAssistanceComponent, { cost_assistance: costAssistance }, { width: '400px', refreshWithLoading: true });
+  }
+
+  protected costAssistanceDailies(costAssistance: CostAssistance): void {
+    this.openDialog(CostAssistanceDailiesComponent, 
+      { cost_assistance: costAssistance, permissions: this.data?.permissions }, 
+      { width: '1000px', refreshWithLoading: true, updateBalance: true }
+    );
+  }
 }

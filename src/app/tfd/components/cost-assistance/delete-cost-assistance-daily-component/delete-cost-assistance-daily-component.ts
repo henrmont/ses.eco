@@ -1,39 +1,57 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MessageService } from '../../../../core/services/message-service';
+
+// Serviços
 import { CostAssistanceService } from '../../../services/cost-assistance-service';
+import { MessageService } from '../../../../core/services/message-service';
 
 @Component({
   selector: 'app-delete-cost-assistance-daily-component',
-  imports: [MatButtonModule, MatDialogModule, MatProgressSpinnerModule],
+  standalone: true,
+  imports: [
+    MatDialogModule, 
+    MatButtonModule, 
+    MatProgressSpinnerModule
+  ],
   templateUrl: './delete-cost-assistance-daily-component.html',
   styleUrl: './delete-cost-assistance-daily-component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima com OnPush + Signals
 })
 export class DeleteCostAssistanceDailyComponent {
+  // Injeções de Dependência modernas via inject()
+  protected readonly data = inject(MAT_DIALOG_DATA);
+  private readonly costAssistanceService = inject(CostAssistanceService);
+  private readonly messageService = inject(MessageService);
+  private readonly dialogRef = inject(MatDialogRef<DeleteCostAssistanceDailyComponent>);
 
-  data = inject(MAT_DIALOG_DATA);
-    
-  constructor(
-    private costAssistanceService: CostAssistanceService,
-    private messageService: MessageService,
-    private dialogRef: MatDialogRef<DeleteCostAssistanceDailyComponent>,
-  ) {}
+  // Estado de submissão reativo
+  protected readonly isSubmitting = signal<boolean>(false);
 
-  wSubmit = signal<boolean>(false)
-  onSubmit() {
-    this.wSubmit.set(true)
-    this.costAssistanceService.deleteCostAssistanceDaily(this.data.cost_assistance_daily.id).subscribe({
+  /**
+   * Dispara a requisição para remover a diária da ajuda de custo
+   */
+  protected onSubmit(): void {
+    const dailyId = this.data?.cost_assistance_daily?.id;
+
+    if (!dailyId) {
+      this.messageService.showMessage('Erro: Identificador da diária não encontrado.');
+      return;
+    }
+
+    this.isSubmitting.set(true);
+
+    this.costAssistanceService.deleteCostAssistanceDaily(dailyId).subscribe({
       next: (response: any) => {
-        this.messageService.showMessage(response.message)
-        this.dialogRef.close(true)
+        this.messageService.showMessage(response?.message || 'Diária removida com sucesso!');
+        this.dialogRef.close(true); // Retorna true para sinalizar sucesso à listagem pai
       },
       error: (err) => {
-        this.messageService.showMessage(err.error.message)
-        this.wSubmit.set(false)
+        const errorMessage = err?.error?.message || 'Ocorreu um erro ao tentar remover a diária.';
+        this.messageService.showMessage(errorMessage);
+        this.isSubmitting.set(false);
       },
-    })
+    });
   }
-
 }

@@ -6,6 +6,7 @@ export interface CostAssistanceDaily {
     cost_assistance_id: number,
     daily_cost_id: number,
     amount: number,
+    partial?: number,
     cost_assistance: CostAssistance,
     daily_cost: DailyCost
 }
