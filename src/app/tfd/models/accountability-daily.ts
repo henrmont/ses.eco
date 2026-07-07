@@ -6,6 +6,7 @@ export interface AccountabilityDaily {
     accountability_id: number,
     daily_cost_id: number,
     amount: number,
+    partial?: number,
     accountability: Accountability,
     daily_cost: DailyCost
 }

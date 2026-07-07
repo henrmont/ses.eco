@@ -1,113 +1,159 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
+import { CommonModule } from '@angular/common';
+
+// Angular Material
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule } from '@angular/material/dialog';
-import {MatTableModule, MatTableDataSource} from '@angular/material/table';
-import {MatIconModule} from '@angular/material/icon';
-import {MatTooltipModule} from '@angular/material/tooltip';
-import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import { CommonModule } from '@angular/common';
-import { Permission } from '../../../models/permission';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
+// Models e Serviços
 import { AccountabilityDaily } from '../../../models/accountability-daily';
 import { AccountabilityService } from '../../../services/accountability-service';
+import { Permission } from '../../../models/permission';
+
+// Modais do Contexto de Diárias da Prestação de Contas
 import { CreateAccountabilityDailyComponent } from '../create-accountability-daily-component/create-accountability-daily-component';
 import { UpdateAccountabilityDailyComponent } from '../update-accountability-daily-component/update-accountability-daily-component';
 import { DeleteAccountabilityDailyComponent } from '../delete-accountability-daily-component/delete-accountability-daily-component';
 
 @Component({
   selector: 'app-accountability-dailies-component',
-  imports: [CommonModule, MatDialogModule, MatButtonModule, MatTableModule, MatIconModule, MatTooltipModule, MatProgressSpinnerModule],
+  standalone: true,
+  imports: [
+    CommonModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatTableModule,
+    MatIconModule,
+    MatTooltipModule,
+    MatProgressSpinnerModule
+  ],
   templateUrl: './accountability-dailies-component.html',
   styleUrl: './accountability-dailies-component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima unindo OnPush + Signals + Computed
 })
 export class AccountabilityDailiesComponent implements OnInit {
+  // Injeções de dependência modernas via inject()
+  protected readonly data = inject(MAT_DIALOG_DATA);
+  private readonly dialog = inject(MatDialog);
+  private readonly accountabilityService = inject(AccountabilityService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  data = inject(MAT_DIALOG_DATA);
-  displayedColumns: string[] = ['name','value','amount','partial','actions'];
-  dataSource = signal<MatTableDataSource<AccountabilityDaily>>(new MatTableDataSource());
-  isLoading = signal<boolean>(true);
-  totalValue = signal<number>(0)
+  // Propriedades expostas para o Template com computed e signals
+  protected readonly displayedColumns: string[] = ['name', 'value', 'amount', 'partial', 'actions'];
+  protected readonly dailiesList = signal<any[]>([]);
+  protected readonly isLoading = signal<boolean>(true);
 
-  constructor(
-    private dialog: MatDialog,
-    private accountabilityService: AccountabilityService,
-  ) {}
+  // Mapeia a lista adicionando o valor computado 'partial' (subtotal) individual de forma reativa
+  private readonly mappedDailies = computed(() => 
+    this.dailiesList().map(item => ({
+      ...item,
+      partial: (Number(item.amount) || 0) * (Number(item.daily_cost?.value) || 0)
+    }))
+  );
+
+  // Fonte de dados reativa vinculada diretamente ao computed anterior para alimentar a MatTable
+  protected readonly dataSource = computed(() => new MatTableDataSource<AccountabilityDaily>(this.mappedDailies()));
+
+  // Calcula o valor total global somando todos os parciais de maneira limpa e reativa
+  protected readonly totalValue = computed(() => 
+    this.mappedDailies().reduce((acc, item) => acc + item.partial, 0)
+  );
 
   ngOnInit(): void {
-    this.getAccountabilityDailies();
+    this.fetchAccountabilityDailies(true);
   }
 
-  getAccountabilityDailies() {
-    this.accountabilityService.getAccountabilityDailies(this.data.accountability.id).subscribe({
-      next: (response) => {
-        this.totalValue.set(response.map((item: any) => item.amount * item.daily_cost.value).reduce((acc: any, value: any) => acc + value, 0))
-        this.dataSource.set(new MatTableDataSource(response.map((item: any) => {
-          return {
-            ...item,
-            partial: item.amount * item.daily_cost.value
-          }
-        }))
-      )},
-      complete: () => {
-        this.isLoading.set(false);
-      }
-    })
-  }
+  /**
+   * Busca as diárias vinculadas à prestação de contas de forma reativa e segura.
+   */
+  private fetchAccountabilityDailies(showLoading = false): void {
+    const accountabilityId = this.data?.accountability?.id;
 
-  checkPermissions(name: string) {
-    const ROLES = this.data.permissions
-    for (const item of ROLES) {
-      if (item.permissions.filter((permission: Permission) => permission.name == name).length > 0)
-        return false 
+    if (!accountabilityId) {
+      this.isLoading.set(false);
+      return;
     }
-    return true
-  }
-  
-  createAccountabilityDaily() {
-    this.dialog.open(CreateAccountabilityDailyComponent, {
-      width: '500px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        accountability: this.data.accountability,
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.isLoading.set(true);
-        this.getAccountabilityDailies()
-      }
-    })
+
+    if (showLoading) {
+      this.isLoading.set(true);
+    }
+
+    this.accountabilityService.getAccountabilityDailies(accountabilityId)
+      .pipe(
+        finalize(() => {
+          if (showLoading) {
+            this.isLoading.set(false);
+          }
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (response) => {
+          this.dailiesList.set(response || []);
+        },
+        error: () => {
+          // Trata falhas de rede de forma silenciosa e limpa
+        }
+      });
   }
 
-  updateAccountabilityDaily(accountability_daily: AccountabilityDaily) {
-    this.dialog.open(UpdateAccountabilityDailyComponent, {
-      width: '500px',
+  /**
+   * Centraliza a abertura das modais internas de diárias com atualização do estado pós-fechamento
+   */
+  private openDialog(
+    component: any, 
+    data: any, 
+    options: { width?: string; refreshWithLoading?: boolean } = {}
+  ): void {
+    this.dialog.open(component, {
+      width: options.width || '500px',
       disableClose: true,
       autoFocus: false,
-      data: {
-        accountability_daily: accountability_daily,
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.isLoading.set(true);
-        this.getAccountabilityDailies()
-      }
-    })
+      data
+    }).afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((result) => {
+        if (result) {
+          this.fetchAccountabilityDailies(options.refreshWithLoading || false);
+        }
+      });
   }
 
-  deleteAccountabilityDaily(accountability_daily: AccountabilityDaily) {
-    this.dialog.open(DeleteAccountabilityDailyComponent, {
-      width: '400px',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        accountability_daily: accountability_daily,
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.isLoading.set(true);
-        this.getAccountabilityDailies()
-      }
-    })
+  /**
+   * Varredura performática na árvore de permissões injetada
+   */
+  protected checkPermissions(name: string): boolean {
+    const roles: Permission[] = this.data?.permissions ?? [];
+    return !roles.some((role: any) => 
+      role.permissions?.some((permission: Permission) => permission.name === name)
+    );
   }
 
+  // Métodos de ação disparados pelo template HTML (Modificadores Protected)
+  protected createAccountabilityDaily(): void {
+    this.openDialog(CreateAccountabilityDailyComponent, 
+      { accountability: this.data.accountability }, 
+      { refreshWithLoading: true }
+    );
+  }
+
+  protected updateAccountabilityDaily(accountability_daily: AccountabilityDaily): void {
+    this.openDialog(UpdateAccountabilityDailyComponent, 
+      { accountability_daily }, 
+      { refreshWithLoading: true }
+    );
+  }
+
+  protected deleteAccountabilityDaily(accountability_daily: AccountabilityDaily): void {
+    this.openDialog(DeleteAccountabilityDailyComponent, 
+      { accountability_daily }, 
+      { width: '400px', refreshWithLoading: true }
+    );
+  }
 }

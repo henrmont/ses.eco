@@ -1,27 +1,36 @@
 <h2 mat-dialog-title>Nova prestação de contas</h2>
-<form [formGroup]="createCostAssistanceForm" (ngSubmit)="onCreateCostAssistanceSubmit()">
-    <mat-dialog-content>
-        <div class="line" style="grid-template-columns: 1fr;">
-            <mat-form-field appearance="outline">
-                <mat-label>Nome</mat-label>
-                <input matInput type="text" formControlName="name">
-                @for (item of errorMessages['name']; track $index) {
-                    <mat-error *ngIf="createCostAssistanceForm.get('name')?.hasError(item.type)">{{item.message}}</mat-error>
-                }
-            </mat-form-field>
-        </div>
-    </mat-dialog-content>
-    <mat-dialog-actions>
-    <button matButton="filled" [disabled]="createCostAssistanceForm.invalid || wSubmit()">
-        <div class="waiting">
-            @if (wSubmit()) {
-                <mat-spinner matPrefix [diameter]="20"></mat-spinner>
-            }
-            Criar
-        </div>
+
+<form [formGroup]="createAccountabilityForm" (ngSubmit)="onSubmit()">
+  <mat-dialog-content>
+    
+    <div class="line">
+      <mat-form-field appearance="outline">
+        <mat-label>Nome</mat-label>
+        <input matInput type="text" formControlName="name">
+        
+        @for (item of errorMessages['name']; track $index) {
+          <mat-error [hidden]="!createAccountabilityForm.get('name')?.hasError(item.type)">
+            {{ item.message }}
+          </mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button matButton type="button" [mat-dialog-close]="false">Fechar</button>
+    <button 
+      matButton="filled" 
+      type="submit" 
+      [disabled]="createAccountabilityForm.invalid || createAccountabilityForm.pending || isSubmitting()"
+    >
+      <div class="waiting">
+        @if (isSubmitting()) {
+          <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+        }
+        Criar
+      </div>
     </button>
-    <button matButton [mat-dialog-close]="false">Fechar</button>
-    </mat-dialog-actions>
+  </mat-dialog-actions>
 </form>
-
-

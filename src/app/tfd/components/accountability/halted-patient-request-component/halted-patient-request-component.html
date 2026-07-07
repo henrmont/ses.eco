@@ -1,13 +1,20 @@
-<h2 mat-dialog-title>{{ data.patient_request.is_accountability_bookmark ? 'Desmarcar sobrestado' : 'Marcar sobrestado' }}</h2>
-<mat-dialog-content>{{ data.patient_request.is_accountability_bookmark ? 'Você deseja desmarcar em sobrestado?' : 'Você deseja marcar em sobrestado?' }}</mat-dialog-content>
+<h2 mat-dialog-title>
+  {{ data?.patient_request?.is_accountability_bookmark ? 'Desmarcar sobrestado' : 'Marcar sobrestado' }}
+</h2>
+
+<mat-dialog-content>
+  Você deseja {{ data?.patient_request?.is_accountability_bookmark ? 'desmarcar' : 'marcar' }} em sobrestado a solicitação do paciente <strong>{{ data?.patient_request?.report?.patient_care?.patient?.name }}</strong>?
+</mat-dialog-content>
+
 <mat-dialog-actions>
-    <button matButton="filled" [disabled]="wSubmit()" (click)="haltedPatientRequest()">
-        <div class="waiting">
-            @if (wSubmit()) {
-                <mat-spinner matPrefix [diameter]="20"></mat-spinner>
-            }
-            {{ data.patient_request.is_accountability_bookmark ? 'Desmarcar' : 'Marcar' }}
-        </div>
-    </button>
-    <button matButton [mat-dialog-close]="false">Fechar</button>
+  <button matButton [mat-dialog-close]="false">Fechar</button>
+  
+  <button matButton="filled" [disabled]="isSubmitting()" (click)="onSubmit()">
+    <div class="waiting">
+      @if (isSubmitting()) {
+        <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+      }
+      {{ data?.patient_request?.is_accountability_bookmark ? 'Desmarcar' : 'Marcar' }}
+    </div>
+  </button>
 </mat-dialog-actions>
