@@ -57,7 +57,9 @@ export class RolesUserComponent {
     this.userService.getRoles()
       .pipe(finalize(() => this.isLoading.set(false))) // 👈 Garante que o loading pare independente de sucesso ou falha
       .subscribe({
-        next: (response) => this.roles.set(response),
+        next: (response) => {
+          this.roles.set(response)
+        },
         error: () => this.messageService.showMessage('Erro ao carregar a lista de permissões.')
       });
   }

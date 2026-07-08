@@ -7,14 +7,17 @@ import { SpecialistCareData } from '../../dashboard/tfd/specialist-care-data/spe
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Chart } from 'chart.js';
 import { ActivatedRoute } from '@angular/router';
-import { JudicializedData } from '../../dashboard/homecare/judicialized-data/judicialized-data';
-import { SpecialistTransplantData } from '../../dashboard/homecare/specialist-transplant-data/specialist-transplant-data';
+import { JudicializedData } from '../../dashboard/transplante/judicialized-data/judicialized-data';
+import { SpecialistTransplantData } from '../../dashboard/transplante/specialist-transplant-data/specialist-transplant-data';
+import { HomecareLiteralData } from '../../dashboard/homecare/homecare-literal-data/homecare-literal-data';
+import { PatientMonthCostData } from '../../dashboard/homecare/patient-month-cost-data/patient-month-cost-data';
+import { OperationalEfficiencyData } from '../../dashboard/homecare/operational-efficiency-data/operational-efficiency-data';
 
 Chart.register(ChartDataLabels);
 
 @Component({
   selector: 'app-dashboard-page',
-  imports: [LiteralData, PatientRequestData, TravelMonthData, CostAssistanceVsAccountabilityData, SpecialistCareData, JudicializedData, SpecialistTransplantData],
+  imports: [LiteralData, PatientRequestData, TravelMonthData, CostAssistanceVsAccountabilityData, SpecialistCareData, JudicializedData, SpecialistTransplantData, HomecareLiteralData, PatientMonthCostData, OperationalEfficiencyData],
   templateUrl: './dashboard-page.html',
   styleUrl: './dashboard-page.scss',
 })

@@ -13,6 +13,15 @@
         </div>
     }
     @if (module() == 'homecare') {
+        <div>
+            <app-homecare-literal-data></app-homecare-literal-data>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; column-gap: 20px;">
+            <app-patient-month-cost-data></app-patient-month-cost-data>
+            <app-operational-efficiency-data></app-operational-efficiency-data>
+        </div>
+    }
+    @if (module() == 'transplante') {
         <div style="display: grid; grid-template-columns: 1fr 1fr; column-gap: 20px;">
             <app-specialist-transplant-data></app-specialist-transplant-data>
             <app-judicialized-data></app-judicialized-data>
