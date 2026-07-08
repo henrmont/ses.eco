@@ -11,6 +11,7 @@ import { LoadingComponent } from '../../../core/components/loading-component/loa
 import { User } from '../../models/user';
 import { Permission } from '../../models/permission';
 import { UserService } from '../../services/user-service';
+import { RolesUserComponent } from '../../components/user/roles-user-component/roles-user-component';
 
 // 🌟 Importações presumidas dos seus componentes do Homecare (Ajuste os caminhos se necessário)
 // import { LockUserComponent } from '../user/lock-user-component/lock-user-component';
@@ -162,7 +163,7 @@ export class UsersPage implements OnInit, OnDestroy {
 
   rolesUser(user: User): void {
     // Quando criar o componente, descomente a linha abaixo:
-    // this.openModalAndListen(RolesUserComponent, user);
+    this.openModalAndListen(RolesUserComponent, user);
   }
 
   updateUser(user: User): void {

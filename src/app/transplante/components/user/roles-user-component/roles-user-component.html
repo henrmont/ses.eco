@@ -1,0 +1,43 @@
+<h2 mat-dialog-title>Gerenciar Permissões</h2>
+
+<mat-dialog-content>
+  @if (isLoading()) {
+    <div class="loading-shade">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  } @else {
+    <p class="subtitle">Ajuste os papéis de acesso para o usuário: <strong>{{ data.user.professional.name }}</strong></p>
+    
+    <mat-list class="roles-list">
+      @for (item of roles(); track item.id) {
+        <mat-list-item class="role-item">
+          <div class="role-row">
+            <span class="role-name">{{ formatRoleName(item.name) }}</span>
+            <mat-slide-toggle
+              [checked]="checkRole(item.id)"
+              (change)="toggleRole(item)"
+              color="primary">
+            </mat-slide-toggle>
+          </div>
+        </mat-list-item>
+      } @empty {
+        <p class="empty-msg">Nenhuma permissão disponível encontrada.</p>
+      }
+    </mat-list>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button matButton [mat-dialog-close]="false" [disabled]="isSubmitting()">Fechar</button>
+  <button 
+    matButton="filled" 
+    color="primary" 
+    (click)="onSubmit()" 
+    [disabled]="rolesUserForm.invalid || isSubmitting() || rolesUserForm.pristine">
+    @if (isSubmitting()) {
+      Aguarde...
+    } @else {
+      Salvar Alterações
+    }
+  </button>
+</mat-dialog-actions>

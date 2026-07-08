@@ -7,6 +7,7 @@ import { authGuard } from './core/guards/auth-guard';
 import { TfdLayout } from './tfd/layouts/tfd-layout/tfd-layout';
 import { moduleGuard } from './core/guards/module-guard';
 import { HomecareLayout } from './homecare/layouts/homecare-layout/homecare-layout';
+import { TransplanteLayout } from './transplante/layouts/transplante-layout/transplante-layout';
 
 export const routes: Routes = [
     {
@@ -118,6 +119,33 @@ export const routes: Routes = [
                     {
                         path: 'regras',
                         loadComponent: () => import('./homecare/pages/roles-page/roles-page').then( m => m.RolesPage)
+                    },
+                    {
+                        path: 'pacientes',
+                        loadComponent: () => import('./homecare/pages/patients-page/patients-page').then( m => m.PatientsPage)
+                    },
+                ]
+            },
+            {
+                path: 'transplante',
+                component: TransplanteLayout,
+                canActivateChild: [moduleGuard],
+                children: [
+                    {
+                        path: '',
+                        loadComponent: () => import('./transplante/pages/index-page/index-page').then( m => m.IndexPage)
+                    },
+                    {
+                        path: 'usuarios',
+                        loadComponent: () => import('./transplante/pages/users-page/users-page').then( m => m.UsersPage)
+                    },
+                    {
+                        path: 'regras',
+                        loadComponent: () => import('./transplante/pages/roles-page/roles-page').then( m => m.RolesPage)
+                    },
+                    {
+                        path: 'pacientes',
+                        loadComponent: () => import('./transplante/pages/patients-page/patients-page').then( m => m.PatientsPage)
                     },
                 ]
             }

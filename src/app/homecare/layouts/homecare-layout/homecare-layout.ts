@@ -8,8 +8,12 @@ import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MessageService } from '../../../core/services/message-service';
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
 import { CreateUserComponent } from '../../components/user/create-user-component/create-user-component';
+import { CreateRoleComponent } from '../../components/role/create-role-component/create-role-component';
+import { CreatePatientComponent } from '../../components/patient/create-patient-component/create-patient-component';
 
 const HOMECARE_USERS_CHANNEL = new BroadcastChannel('homecare-users-channel');
+const HOMECARE_ROLES_CHANNEL = new BroadcastChannel('homecare-roles-channel');
+const HOMECARE_PATIENTS_CHANNEL = new BroadcastChannel('homecare-patients-channel');
 
 @Component({
   selector: 'app-homecare-layout',
@@ -48,6 +52,29 @@ export class HomecareLayout {
       if (result)
         HOMECARE_USERS_CHANNEL.postMessage('update')
     })
+  }
+
+  createRole() {
+    this.dialog.open(CreateRoleComponent, {
+      width: '700px',
+      disableClose: true,
+      autoFocus: false,
+    }).afterClosed().subscribe(result => {
+      if (result)
+        HOMECARE_ROLES_CHANNEL.postMessage('update')
+    })
+  }
+
+  createPatient(): void {
+    this.dialog.open(CreatePatientComponent, {
+      width: '1200px',
+      height: '700px',
+      disableClose: true,
+      autoFocus: false,
+    }).afterClosed().subscribe(result => {
+      if (result)
+        HOMECARE_PATIENTS_CHANNEL.postMessage('update')
+    });
   }
 
 }
