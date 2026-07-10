@@ -1,68 +1,42 @@
 <mat-drawer-container>
   <mat-drawer mode="side" opened>
     <mat-action-list>
-        <!-- Usuários -->
-        @if (checkPermission(['usuário listar','usuário criar'])) {
-          <div mat-subheader>Usuários</div>
+      
+      @for (group of menuGroups; track group.subHeader) {
+        @if (checkPermission(group.requiredRoles)) {
+          
+          <div mat-subheader>{{ group.subHeader }}</div>
+          
+          @for (item of group.items; track item.label) {
+            @if (checkPermission(item.permissions)) {
+              
+              @if (item.routerLink) {
+                <button mat-list-item [routerLink]="item.routerLink" routerLinkActive="active">
+                  <div class="link">
+                    <mat-icon>{{ item.icon }}</mat-icon>
+                    <div>{{ item.label }}</div>
+                  </div>
+                </button>
+              }
+              
+              @if (item.action) {
+                <button mat-list-item (click)="item.action()">
+                  <div class="link">
+                    <mat-icon>{{ item.icon }}</mat-icon>
+                    <div>{{ item.label }}</div>
+                  </div>
+                </button>
+              }
+
+            }
+          }
+
         }
-        @if (checkPermission(['usuário listar'])) {
-          <button mat-list-item [routerLink]="['usuarios']">
-            <div class="link">
-              <mat-icon>groups</mat-icon>
-              <div>Usuários</div>
-            </div>
-          </button>
-        }
-        @if (checkPermission(['usuário criar'])) {
-          <button mat-list-item (click)="createUser()">
-            <div class="link">
-              <mat-icon>person_add</mat-icon>
-              <div>Novo usuário</div>
-            </div>
-          </button>
-        }
-        <!-- Regras -->
-        @if (checkPermission(['regra listar','regra criar'])) {
-          <div mat-subheader>Regras</div>
-        }
-        @if (checkPermission(['regra listar'])) {
-          <button mat-list-item [routerLink]="['regras']">
-            <div class="link">
-              <mat-icon>security</mat-icon>
-              <div>Regras</div>
-            </div>
-          </button>
-        }
-        @if (checkPermission(['regra criar'])) {
-          <button mat-list-item (click)="createRole()">
-            <div class="link">
-              <mat-icon>add_moderator</mat-icon>
-              <div>Nova regra</div>
-            </div>
-          </button>
-        }
-        <!-- Pacientes -->
-         @if (checkPermission(['paciente listar','paciente criar'])) {
-          <div mat-subheader>Pacientes</div>
-        }
-        @if (checkPermission(['paciente listar'])) {
-          <button mat-list-item [routerLink]="['pacientes']" routerLinkActive="active">
-            <div class="link">
-              <mat-icon>personal_injury</mat-icon>
-              <div>Pacientes</div>
-            </div>
-          </button>
-        }
-        @if (checkPermission(['paciente criar'])) {
-          <button mat-list-item (click)="createPatient()">
-            <div class="link">
-              <mat-icon>person_add</mat-icon>
-              <div>Novo paciente</div>
-            </div>
-          </button>
-        }
-      </mat-action-list>
+      }
+
+    </mat-action-list>
   </mat-drawer>
+
   <mat-drawer-content>
     <router-outlet></router-outlet>
   </mat-drawer-content>
