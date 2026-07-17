@@ -165,7 +165,7 @@ export class PatientsPage implements OnInit {
 
           // Filtra e mapeia os pacientes Titulares
           const owners: PatientCare[] = rawData
-            .filter((item: PatientCare) => !item.is_archived && item.owner)
+            .filter((item: PatientCare) => item.owner)
             .map((item: PatientCare) => ({
               ...item,
               name: item.patient?.name,
@@ -176,7 +176,7 @@ export class PatientsPage implements OnInit {
 
           // Filtra e mapeia os pacientes de outros Profissionais
           const others: PatientCare[] = rawData
-            .filter((item: PatientCare) => !item.is_archived && !item.owner)
+            .filter((item: PatientCare) => !item.owner)
             .map((item: PatientCare) => ({
               ...item,
               name: item.patient?.name,

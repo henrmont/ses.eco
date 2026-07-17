@@ -1,31 +1,26 @@
-// Garante o alinhamento do texto com o spinner dentro do botão de confirmação
+@use 'variables' as *;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+mat-dialog-content {
+  span {
+    color: $color-danger; // Destaca visualmente a mensagem de ação irreversível
+    font-size: 13px;
+  }
+}
+
+// Container de estado de carregamento durante a ação no modal
 .waiting {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: $spacing-form-gap; // 10px padronizados do design system
 
-  // Ajuste fino para o mat-spinner não distorcer a altura do botão
   mat-spinner {
-    margin: 0;
+    display: inline-block;
+    flex-shrink: 0; // Impede que o layout flex esmague o spinner
   }
-}
-
-// Layout e tipografia para o texto descritivo da modal
-mat-dialog-content {
-  padding: 16px 24px;
-  line-height: 1.5;
-  color: #555;
-  
-  strong {
-    color: var(--mdc-theme-text-primary-on-background, #333);
-    font-weight: 600;
-  }
-}
-
-// Alinhamento e espaçamento dinâmico entre os botões de ação
-mat-dialog-actions {
-  padding: 12px 24px 16px;
-  gap: 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.04);
 }

@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import {MatSidenavModule} from '@angular/material/sidenav';
 import {MatListModule} from '@angular/material/list';
@@ -13,14 +13,15 @@ import { Module } from '../../models/module';
 import { ChangeProfileModuleComponent } from '../../components/change-profile-module-component/change-profile-module-component';
 import { ChangeProfileImageComponent } from '../../components/change-profile-image-component/change-profile-image-component';
 import { ChangeProfileInfoComponent } from '../../components/change-profile-info-component/change-profile-info-component';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-core-layout',
-  imports: [RouterModule, MatSidenavModule, MatListModule, MatIconModule, MatToolbarModule, MatMenuModule, MatButtonModule],
+  imports: [CommonModule, RouterModule, MatSidenavModule, MatListModule, MatIconModule, MatToolbarModule, MatMenuModule, MatButtonModule],
   templateUrl: './core-layout.html',
   styleUrl: './core-layout.scss',
 })
-export class CoreLayout {
+export class CoreLayout implements OnInit {
 
   user = signal<User>({} as User);
   module = signal<Module>({} as Module);
@@ -29,9 +30,11 @@ export class CoreLayout {
     private route: ActivatedRoute,
     private authService: AuthService,
     private dialog: MatDialog,
-  ) {
+  ) {}
+
+  ngOnInit(): void {
     this.user.set(this.route.snapshot.data['user'])
-    this.module.set(this.route.snapshot.data['user'].module)
+    this.module.set(this.route.snapshot.data['user']?.module)
   }
 
   logout() {

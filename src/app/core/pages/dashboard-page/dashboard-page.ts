@@ -28,7 +28,7 @@ export class DashboardPage {
   constructor(
     private route: ActivatedRoute
   ) {
-    this.module.set(this.route.parent?.snapshot.data['user'].module.name) 
+    this.module.set(this.route.parent?.snapshot.data['user'].module?.name) 
   }
 
 }

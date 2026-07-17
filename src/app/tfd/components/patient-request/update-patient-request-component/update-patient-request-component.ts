@@ -15,7 +15,6 @@ import { map, startWith, finalize } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MAT_DATE_LOCALE, MatNativeDateModule } from '@angular/material/core';
 
-// Importação segura do Moment para evitar problemas de assinatura e chamadas em tempo de execução
 import * as _moment from 'moment';
 const moment = (_moment as any).default || _moment;
 
@@ -25,6 +24,7 @@ import { PatientRequestType } from '../../../enums/patient-request-type';
 
 @Component({
   selector: 'app-update-patient-request-component',
+  standalone: true,
   imports: [
     CommonModule,
     FormsModule,
@@ -77,7 +77,6 @@ export class UpdatePatientRequestComponent implements OnInit {
   protected readonly hospitalLoading = signal<boolean>(false);
   protected readonly hospitalReadOnly = signal<boolean>(true);
 
-  // Armazena as flags do relatório selecionado para aplicar as regras de bloqueio
   protected readonly currentReportFlags = signal<{ lawsuit: boolean; hasEntranceOrLawsuit: boolean } | null>(null);
 
   // --- LISTAGEM E FILTROS DE AUTOCOMPLETE ---
@@ -89,7 +88,6 @@ export class UpdatePatientRequestComponent implements OnInit {
   protected filteredCidOptions!: Observable<any[]>;
   protected filteredHospitalOptions!: Observable<any[]>;
 
-  // 🎯 MAPEAMENTO LOCAL DAS MENSAGENS DE ERRO PADRONIZADO PARA A UI
   protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
     patient_control: [{ type: 'required', message: 'A seleção do paciente é obrigatória.' }],
     cid_control: [{ type: 'required', message: 'A seleção de um CID/Laudo é obrigatória.' }],
@@ -105,8 +103,6 @@ export class UpdatePatientRequestComponent implements OnInit {
     this.registerCleaners();
   }
 
-  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO E SUPORTE ---
-
   private initForm(): void {
     const request = this.data.patient_request;
     const initialDate = request.consultation_date ? new Date(request.consultation_date) : null;
@@ -120,11 +116,7 @@ export class UpdatePatientRequestComponent implements OnInit {
     });
   }
 
-  /**
-   * Monitora se o usuário limpou o texto dos autocompletes para invalidar o formulário principal
-   */
   private registerCleaners(): void {
-    // Cleaner do Paciente
     this.patientControl.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => {
@@ -132,9 +124,7 @@ export class UpdatePatientRequestComponent implements OnInit {
           this.cidControl.setValue('');
           this.patientRequestForm.get('report_id')?.setValue(null);
           this.patientRequestForm.markAsDirty();
-          
           this.patientRequestForm.get('type')?.disable();
-          
           this.cidOptions = [];
           this.cidReadOnly.set(true);
           this.currentReportFlags.set(null);
@@ -143,23 +133,19 @@ export class UpdatePatientRequestComponent implements OnInit {
         }
       });
 
-    // Cleaner do CID / Laudo
     this.cidControl.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => {
         if (!value) {
           this.patientRequestForm.get('report_id')?.setValue(null);
           this.patientRequestForm.markAsDirty();
-          
           this.patientRequestForm.get('type')?.disable();
-          
           this.currentReportFlags.set(null);
           this.resetTypeSelection();
           this.cdr.markForCheck();
         }
       });
 
-    // Cleaner da Unidade Hospitalar
     this.hospitalControl.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => {
@@ -170,7 +156,6 @@ export class UpdatePatientRequestComponent implements OnInit {
       });
   }
 
-  // Reseta a seleção do tipo de solicitação quando as condições do CID mudarem ou forem limpas
   private resetTypeSelection(): void {
     const typeControl = this.patientRequestForm.get('type');
     const dateControl = this.patientRequestForm.get('consultation_date');
@@ -186,8 +171,6 @@ export class UpdatePatientRequestComponent implements OnInit {
     }
     this.isScheduling.set(false);
   }
-
-  // --- CONTROLE DE ALTERAÇÃO DE TIPO (REATIVO) ---
 
   protected onTypeSelectionChange(value: string): void {
     const isSched = value === 'Agendamento' || value === 'Ação Judicial';
@@ -208,9 +191,6 @@ export class UpdatePatientRequestComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
-  /**
-   * Tratamento de mudança de data baseado na implementação padronizada
-   */
   protected setConsultationDate(event: MatDatepickerInputEvent<Date>): void {
     if (event.value) {
       const parsedDate = moment(event.value);
@@ -219,9 +199,6 @@ export class UpdatePatientRequestComponent implements OnInit {
     }
   }
 
-  /**
-   * Evita a digitação manual de caracteres indesejados no campo de data
-   */
   protected onlyNumbersAndSlashes(event: KeyboardEvent): boolean {
     const charCode = event.key;
     const allowedCharacters = /^[0-9\/]$/;
@@ -232,8 +209,6 @@ export class UpdatePatientRequestComponent implements OnInit {
     }
     return true;
   }
-
-  // --- CARREGAMENTO INICIAL DOS DADOS ---
 
   private loadInitialDialogData(): void {
     this.patientLoading.set(true);
@@ -257,7 +232,6 @@ export class UpdatePatientRequestComponent implements OnInit {
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
       next: (res) => {
-        // 1. Processamento e Bind de Pacientes
         this.patientOptions = (res.patients || [])
           .filter((item: any) => item.status && item.is_valid)
           .map((item: any) => ({ name: item.patient.name, ...item }));
@@ -265,13 +239,11 @@ export class UpdatePatientRequestComponent implements OnInit {
         this.patientControl.setValue(request.report?.patient_care?.patient);
         this.patientReadOnly.set(false);
 
-        // 2. Processamento e Bind de Hospitais
         this.hospitalOptions = res.hospitals || [];
         this.configureHospitalFilter();
         this.hospitalControl.setValue(request.hospital_unity);
         this.hospitalReadOnly.set(false);
 
-        // 3. Processamento e Bind de CIDs do Laudo
         if (currentPatientCareId) {
           this.cidOptions = (res.cids || []).map((item: any) => ({
             ...item.cid,
@@ -286,12 +258,10 @@ export class UpdatePatientRequestComponent implements OnInit {
             const reportToUse = currentCid || request.report;
             this.cidControl.setValue(reportToUse);
 
-            // Mapeia e define as flags de negócio do CID carregado inicialmente
             const lawsuit = !!reportToUse.lawsuit;
             const hasEntranceOrLawsuit = !!reportToUse.has_entrance_or_lawsuit;
             this.currentReportFlags.set({ lawsuit, hasEntranceOrLawsuit });
 
-            // Aciona o comportamento para avaliar data de consulta
             this.onTypeSelectionChange(request.type);
           }
           this.cidReadOnly.set(false);
@@ -305,8 +275,6 @@ export class UpdatePatientRequestComponent implements OnInit {
       }
     });
   }
-
-  // --- FILTROS DE AUTOCOMPLETE (DECLARATIVOS E SEGUROS) ---
 
   private configurePatientFilter(): void {
     this.filteredPatientOptions = this.patientControl.valueChanges.pipe(
@@ -358,8 +326,6 @@ export class UpdatePatientRequestComponent implements OnInit {
       .slice(0, 10);
   }
 
-  // --- ATUALIZAÇÃO DINÂMICA DE CID EM MUDANÇA DE PACIENTE ---
-
   private fetchCidsForPatient(patientCareId: number): void {
     this.cidLoading.set(true);
     this.cidReadOnly.set(true);
@@ -386,8 +352,6 @@ export class UpdatePatientRequestComponent implements OnInit {
       });
   }
 
-  // --- SELEÇÕES E SELETORES DO TEMPLATE (PROTECTED) ---
-
   protected displayPatient(patient: any): string {
     return patient?.name || '';
   }
@@ -413,31 +377,37 @@ export class UpdatePatientRequestComponent implements OnInit {
 
   protected onCidSelected(report: any): void {
     if (report?.id_report) {
+      const originalRequest = this.data.patient_request;
       this.patientRequestForm.get('report_id')?.setValue(report.id_report);
       this.patientRequestForm.markAsDirty();
 
       const lawsuit = !!report.lawsuit;
       const hasEntranceOrLawsuit = !!report.has_entrance_or_lawsuit;
-
       this.currentReportFlags.set({ lawsuit, hasEntranceOrLawsuit });
 
-      // --- DETERMINAÇÃO DO AUTOFILL COM BASE NAS REGRAS ---
-      let autoValue: string | null = null;
+      const typeCtrl = this.patientRequestForm.get('type');
 
-      if (hasEntranceOrLawsuit) {
-        autoValue = 'Agendamento';
+      // 🛡️ REGRA DE PROTEÇÃO NA EDIÇÃO: Só altera o tipo se o usuário estiver trocando para um CID diferente do original
+      if (report.id_report !== originalRequest.report_id) {
+        let autoValue: string | null = null;
+
+        if (hasEntranceOrLawsuit) {
+          autoValue = 'Agendamento';
+        } else {
+          autoValue = lawsuit ? 'Ação Judicial' : 'Entrada';
+        }
+
+        if (autoValue) {
+          typeCtrl?.setValue(autoValue);
+          typeCtrl?.markAsDirty();
+          typeCtrl?.disable();
+          this.onTypeSelectionChange(autoValue);
+        }
       } else {
-        autoValue = lawsuit ? 'Ação Judicial' : 'Entrada';
-      }
-
-      if (autoValue) {
-        const typeCtrl = this.patientRequestForm.get('type');
-        typeCtrl?.setValue(autoValue);
-        typeCtrl?.markAsDirty();
-        
+        // Se voltou pro CID original do registro, restaura o tipo salvo no banco e mantém bloqueado
+        typeCtrl?.setValue(originalRequest.type);
         typeCtrl?.disable();
-
-        this.onTypeSelectionChange(autoValue);
+        this.onTypeSelectionChange(originalRequest.type);
       }
 
       this.cdr.markForCheck();
@@ -450,8 +420,6 @@ export class UpdatePatientRequestComponent implements OnInit {
       this.patientRequestForm.markAsDirty();
     }
   }
-
-  // --- SUBMISSÃO E PERSISTÊNCIA ---
 
   protected onSubmit(): void {
     const patientRequestId = this.data?.patient_request?.id;
@@ -472,7 +440,6 @@ export class UpdatePatientRequestComponent implements OnInit {
     this.isSubmitting.set(true);
     this.cdr.markForCheck();
 
-    // Captura com getRawValue() pois o campo 'type' e 'consultation_date' podem estar disabled
     this.patientRequestService.updatePatientRequest(patientRequestId, this.patientRequestForm.getRawValue())
       .pipe(
         finalize(() => {

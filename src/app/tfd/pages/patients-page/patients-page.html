@@ -48,7 +48,7 @@
                                             type="button"
                                             [matTooltip]="element.is_valid ? 'Inativar paciente' : 'Ativar paciente'" 
                                             (click)="validatePatient(element)" 
-                                            [disabled]="!checkPermissions('tfd/paciente validar')">
+                                            [disabled]="checkPermissions('tfd/paciente validar')">
                                         <mat-icon [className]="element.is_valid ? 'valid' : 'invalid'">
                                             {{ element.is_valid ? 'check' : 'close' }}
                                         </mat-icon>
@@ -97,7 +97,7 @@
                                     type="button"
                                     matTooltip="Arquivar" 
                                     (click)="archivePatient(element)" 
-                                    [disabled]="!element.status || !checkPermissions('tfd/paciente atualizar')">
+                                    [disabled]="!element.status || checkPermissions('tfd/paciente atualizar')">
                                 <mat-icon>inventory_2</mat-icon>
                             </button>
                         </td>
