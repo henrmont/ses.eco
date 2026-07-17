@@ -1,24 +1,18 @@
+@use 'variables' as *;
+
 // Usando o seletor :host para definir o container principal da página
 :host {
     display: flex;
     justify-content: center;
     width: 100%;
     min-height: calc(100vh - 100px);
-    background-color: #fafafa; // Um fundo levemente cinza destaca a tabela branca
+    background-color: $color-page-bg; // Um fundo levemente cinza destaca a tabela branca
 }
 
-.page-content {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+section {
+  margin-top: $spacing-xxl; // 24px
+  width: 75%;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl; // 20px
 }

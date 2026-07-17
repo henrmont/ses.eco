@@ -1,6 +1,8 @@
+@use 'variables' as *;
+
 :host {
-    display: block;
-    width: 100%;
+  display: block;
+  width: 100%;
 }
 
 // Garante que o Angular Material respeite o atributo [hidden] do HTML
@@ -16,15 +18,16 @@ mat-form-field {
 mat-dialog-content {
   display: flex;
   flex-direction: column;
-  row-gap: 10px;
-  padding-top: 10px; // Evita que a borda outline do primeiro campo seja cortada no topo do modal
+  row-gap: $spacing-form-gap;    // 10px padronizados
+  padding-top: $spacing-form-gap; // Evita o corte do outline do primeiro campo
 }
 
+// Container de estado de carregamento / envio do formulário
 .waiting {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: $spacing-form-gap; // 10px
 
   mat-spinner {
     display: inline-block;
@@ -32,8 +35,13 @@ mat-dialog-content {
   }
 }
 
+// Grid original restaurado para campos na mesma linha
 .line {
   display: grid;
   grid-template-columns: 1fr;
-  column-gap: 20px;
+  column-gap: $spacing-xl; // 20px
+
+  &.double-columns {
+    grid-template-columns: 1fr 1fr;
+  }
 }

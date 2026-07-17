@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs';
 
-// Angular Material
+// Angular Material & CDK
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -11,6 +11,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSort, MatSortModule } from '@angular/material/sort'; 
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator'; 
+import { Overlay } from '@angular/cdk/overlay';
 
 // Core & Shared
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
@@ -18,7 +21,7 @@ import { Permission } from '../../models/permission';
 import { Role } from '../../models/role';
 import { RoleService } from '../../services/role-service';
 
-// Componentes de Dialogs (Alinhados com a nova estrutura)
+// Components (Dialogs)
 import { DeleteRoleComponent } from '../../components/role/delete-role-component/delete-role-component';
 import { UpdateRoleComponent } from '../../components/role/update-role-component/update-role-component';
 
@@ -26,62 +29,79 @@ const TFD_ROLES_CHANNEL = new BroadcastChannel('tfd-roles-channel');
 
 @Component({
   selector: 'app-roles-page',
+  standalone: true,
   imports: [
     MatFormFieldModule, 
     MatInputModule, 
     MatTableModule, 
     MatButtonModule, 
     MatIconModule, 
-    MatTooltipModule
+    MatTooltipModule,
+    MatSortModule,
+    MatPaginatorModule
   ],
   templateUrl: './roles-page.html',
   styleUrl: './roles-page.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ OnPush para máxima performance com Signals
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RolesPage implements OnInit, OnDestroy {
-  // 🔒 Injeções de dependência imutáveis e modernas via inject()
+  // Injeções de dependência Dinâmicas
   private readonly roleService = inject(RoleService);
   private readonly dialog = inject(MatDialog);
+  private readonly overlay = inject(Overlay);
   private readonly route = inject(ActivatedRoute);
-  private readonly destroyRef = inject(DestroyRef); // Controle automático de desassinatura
+  private readonly destroyRef = inject(DestroyRef);
 
   private loadingDialog!: MatDialogRef<LoadingComponent>;
-  
-  // Cache das informações do usuário logado para evitar loops custosos no HTML
   private readonly currentUser = this.route.parent?.parent?.snapshot.data['user'];
 
-  // Propriedades expostas para o Template
+  // Capturas nomeadas e isoladas das diretivas do template HTML
+  private readonly roleSort = viewChild<MatSort>('roleSort');
+  private readonly rolePaginator = viewChild<MatPaginator>('rolePaginator');
+  
+  // Definições de Estrutura de Colunas expostas ao Template
   protected readonly displayedColumns: string[] = ['name', 'actions'];
   
-  // Lista bruta armazenada em um Signal puro
-  protected readonly rolesList = signal<Role[]>([]);
+  // Signals internos para gerenciamento do estado bruto
+  private readonly rawList = signal<Role[]>([]);
 
-  // Computed Signal: Recria e atualiza o DataSource de forma reativa e performática
-  protected readonly dataSource = computed(() => new MatTableDataSource(this.rolesList()));
+  // Computed signals criando os DataSources e acoplando o Sort/Paginator de forma reativa
+  protected readonly dataSource = computed(() => {
+    const dataSource = new MatTableDataSource(this.rawList());
+    const sortRef = this.roleSort();
+    const paginatorRef = this.rolePaginator();
+
+    if (sortRef) dataSource.sort = sortRef;
+    if (paginatorRef) dataSource.paginator = paginatorRef;
+
+    return dataSource;
+  });
 
   ngOnInit(): void {
-    this.getRoles(true); // Ativa o loading na primeira carga
+    this.fetchRoles(true);
 
-    // Ouvindo o canal de broadcast com segurança
     TFD_ROLES_CHANNEL.onmessage = (message) => {
       if (message.data === 'update') {
-        this.getRoles(false); // Atualiza em background de forma silenciosa
+        this.fetchRoles(false);
       }
     };
   }
 
   ngOnDestroy(): void {
-    // Evita vazamento de memória fechando o canal
     TFD_ROLES_CHANNEL.close();
   }
 
+  // Métodos de Filtragem expostos para as tabelas
   protected applyFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    this.dataSource().filter = filterValue.trim().toLowerCase();
+    const dataSource = this.dataSource();
+    dataSource.filter = filterValue.trim().toLowerCase();
+    if (dataSource.paginator) {
+      dataSource.paginator.firstPage();
+    }
   }
 
-  // Busca unificada com tratamento seguro de Loading e Desassinatura
-  private getRoles(showLoading = false): void {
+  private fetchRoles(showLoading = false): void {
     if (showLoading) this.openLoading();
 
     this.roleService.getRoles()
@@ -91,14 +111,14 @@ export class RolesPage implements OnInit, OnDestroy {
             this.loadingDialog.close();
           }
         }),
-        takeUntilDestroyed(this.destroyRef) // Cancela a requisição se o usuário sair da página
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
         next: (response) => {
-          this.rolesList.set(response);
+          this.rawList.set(response || []);
         },
         error: () => {
-          // Espaço para tratamento amigável de erros se necessário
+          this.rawList.set([]);
         }
       });
   }
@@ -113,9 +133,12 @@ export class RolesPage implements OnInit, OnDestroy {
 
   protected checkPermissions(permissionName: string): boolean {
     if (!this.currentUser?.roles) return true;
-    return !this.currentUser.roles.some((role: any) => 
-      role.permissions.some((p: Permission) => p.name === permissionName)
+
+    const hasPermission = this.currentUser.roles.some((role: any) =>
+      role.permissions?.some((perm: Permission) => perm.name === permissionName)
     );
+
+    return !hasPermission;
   }
 
   protected ownerRole(role: Role): boolean {
@@ -124,28 +147,32 @@ export class RolesPage implements OnInit, OnDestroy {
     return ownerRoleNames.includes(role.name);
   }
 
-  // Centralizador de abertura de dialogs com tratamento RXJS limpo
-  private openDialog(component: any, data: any, width = '400px'): void {
+  /**
+   * Centralizador genérico para abertura de modais com recarga automatizada de dados.
+   */
+  private openDialog(component: any, data: any, width = '400px', height = 'auto', requiresRefresh = true): void {
     this.dialog.open(component, {
       width,
+      height,
       disableClose: true,
       autoFocus: false,
+      scrollStrategy: this.overlay.scrollStrategies.noop(),
       data
     }).afterClosed()
-      .pipe(takeUntilDestroyed(this.destroyRef)) // Protege o fluxo pós-fechamento
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(result => {
-        if (result) {
+        if (result && requiresRefresh) {
           this.handleRoleChange();
         }
       });
   }
 
   private handleRoleChange(): void {
-    this.getRoles(false);
+    this.fetchRoles(false);
     TFD_ROLES_CHANNEL.postMessage('update');
   }
 
-  // Métodos de ação extremamente enxutos para o HTML
+  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
   protected updateRole(role: Role): void { this.openDialog(UpdateRoleComponent, { role }, '900px'); }
-  protected deleteRole(role: Role): void { this.openDialog(DeleteRoleComponent, { role }, '400px'); }
+  protected deleteRole(role: Role): void { this.openDialog(DeleteRoleComponent, { role }); }
 }

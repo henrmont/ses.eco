@@ -1,46 +1,97 @@
-mat-dialog-content {
-  padding-top: 12px; // Leve ajuste para desgrudar do título de forma harmônica
+@use 'variables' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+// Oculta os erros estruturais do MatFormField que não estão ativos no DOM
+mat-error[hidden] {
+  display: none !important;
 }
 
 mat-form-field {
   width: 100%;
 }
 
-// Linhas em Grid para o input de nome e o bloco de botões (Download + Substituir)
+mat-dialog-content {
+  padding-top: $spacing-modal-pt;
+  overflow-y: auto;
+}
+
+// Container do formulário estruturado
+.stepper {
+  margin-top: $spacing-form-gap; 
+  display: flex; 
+  flex-direction: column; 
+  gap: $spacing-form-gap;
+}
+
+// Estrutura base de Linhas em Grid
 .line {
   display: grid; 
-  grid-template-columns: 1fr; 
-  column-gap: 20px; 
-  row-gap: 12px; // Evita que campos grudem caso quebrem de linha em telas menores
-  align-items: start; // Garante que inputs e botões alinhem pelo topo
+  grid-template-columns: var(--grid-cols, 1fr); 
+  column-gap: $spacing-xl; 
+  row-gap: $spacing-form-gap; 
+  align-items: start;
+  min-height: 56px;
 
-  // Ajuste cirúrgico para alinhar o botão de download e upload verticalmente com o input ao lado
-  div[style*="display: flex"] {
+  // Alinhamento perfeito do botão de download com o Extended FAB de anexo
+  .file-actions-cell {
+    display: flex;
     align-items: center;
-    height: 56px; // Força a mesma altura do form-field para o botão e o spinner centralizarem perfeitamente
+    column-gap: $spacing-xl; // Espaçamento elegante entre os elementos
+    height: 56px;
+    width: 100%;
+
+    // Garante que o botão de download mantenha o tamanho circular padrão
+    button[mat-icon-button] {
+      flex-shrink: 0;
+    }
+
+    // Adaptação para o botão Extended FAB não quebrar as proporções
+    button[mat-fab][extended] {
+      height: 48px;
+      border-radius: 16px; // Conforme o token de arredondamento do seu sistema
+      flex-shrink: 0;
+    }
+
+    // Estilização para o nome do arquivo anexado ao lado dos botões
+    .file-name-indicator {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--mdc-outlined-text-field-label-text-color, $color-text-label-fallback);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 250px;
+    }
   }
 }
 
-// Feedback visual do botão de atualização durante o envio reativo
+// Mapeamento semântico das colunas
+.line {
+  &.cols-1-1   { --grid-cols: 1fr 1fr; }
+  &.cols-1-col { --grid-cols: 1fr; }
+}
+
+// Feedback visual do botão de criação durante o envio
 .waiting {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: $spacing-form-gap;
 
   mat-spinner {
-    margin-right: 2px;
+    display: inline-block;
+    flex-shrink: 0;
   }
 }
 
-// Responsividade de segurança para visualização em telas reduzidas (Smartphones/Tablets)
-@media (max-width: 768px) {
-  .line {
-    grid-template-columns: 1fr !important; // Força virar coluna única em telas pequenas
-    
-    div[style*="display: flex"] {
-      justify-content: flex-start;
-      margin-bottom: 8px;
-    }
-  }
+mat-dialog-actions {
+  gap: $spacing-lg;
+  background-color: inherit;
+  margin-bottom: 0;
 }

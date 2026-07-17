@@ -1,46 +1,57 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal, ChangeDetectorRef, DestroyRef, effect } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal, ChangeDetectorRef, DestroyRef } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { STEPPER_GLOBAL_OPTIONS } from '@angular/cdk/stepper';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatDatepickerInputEvent, MatDatepickerModule } from '@angular/material/datepicker';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatSelectChange, MatSelectModule } from '@angular/material/select';
+import { MatSelectModule } from '@angular/material/select';
 import { CommonModule } from '@angular/common';
 import { map, Observable, startWith, finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MAT_DATE_LOCALE, MatNativeDateModule } from '@angular/material/core';
+
+// Importação segura do Moment para evitar problemas de assinatura e chamadas em tempo de execução
+import * as _moment from 'moment';
+const moment = (_moment as any).default || _moment;
 
 // Domínio & Infraestrutura
 import { PatientRequestType } from '../../../enums/patient-request-type';
-import { PatientRequestService, ApiResponse } from '../../../services/patient-request-service';
+import { PatientRequestService } from '../../../services/patient-request-service';
 import { MessageService } from '../../../../core/services/message-service';
+import { CustomValidators } from '../../../../core/validators/custom.validator';
 
 @Component({
   selector: 'app-create-patient-request-component',
-  standalone: true,
   imports: [
     CommonModule, 
     FormsModule, 
     ReactiveFormsModule, 
+    MatAutocompleteModule,
     MatDialogModule, 
     MatButtonModule, 
     MatFormFieldModule, 
     MatInputModule, 
-    MatAutocompleteModule, 
     MatProgressSpinnerModule, 
     MatDatepickerModule, 
+    MatNativeDateModule,
     MatChipsModule, 
     MatSelectModule
   ],
   templateUrl: './create-patient-request-component.html',
   styleUrl: './create-patient-request-component.scss',
+  providers: [
+    { provide: STEPPER_GLOBAL_OPTIONS, useValue: { showError: true } },
+    { provide: MAT_DATE_LOCALE, useValue: 'pt-BR' } 
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CreatePatientRequestComponent implements OnInit {
-  // 🔒 Injeções de Dependência
+  // Injeções de Dependência Dinâmicas
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly patientRequestService = inject(PatientRequestService);
@@ -49,13 +60,13 @@ export class CreatePatientRequestComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // 📋 Estrutura de Formulários e Controles Isolados
-  protected createPatientRequestForm!: FormGroup;
-  protected readonly patientControl = new FormControl<string | any>('');
-  protected readonly cidControl = new FormControl<string | any>('');
-  protected readonly hospitalControl = new FormControl<string | any>('');
+  // Estrutura do Formulário e Controles expostos ao template
+  protected patientRequestForm!: FormGroup;
+  protected readonly patientControl = new FormControl<string | any>('', [Validators.required]);
+  protected readonly cidControl = new FormControl<string | any>('', [Validators.required]);
+  protected readonly hospitalControl = new FormControl<string | any>('', [Validators.required]);
 
-  // 🚥 Estados Gerenciados via Signals
+  // Estados gerenciados reativamente via Signals
   protected readonly types: string[] = Object.values(PatientRequestType);
   protected readonly isScheduling = signal<boolean>(false);
   protected readonly isSubmitting = signal<boolean>(false);
@@ -69,7 +80,10 @@ export class CreatePatientRequestComponent implements OnInit {
   protected readonly hospitalLoading = signal<boolean>(false);
   protected readonly hospitalReadOnly = signal<boolean>(true);
 
-  // 🗃️ Listagens Locais e Observables de Filtros
+  // Armazena as flags do relatório selecionado para aplicar as regras de bloqueio
+  protected readonly currentReportFlags = signal<{ lawsuit: boolean; hasEntranceOrLawsuit: boolean } | null>(null);
+
+  // Listagem e Filtros de Autocomplete
   private patientOptions: any[] = [];
   private cidOptions: any[] = [];
   private hospitalOptions: any[] = [];
@@ -78,7 +92,7 @@ export class CreatePatientRequestComponent implements OnInit {
   protected filteredCidOptions!: Observable<any[]>;
   protected filteredHospitalOptions!: Observable<any[]>;
 
-  // 🎯 Mapeamento Local de Mensagens de Erro
+  // 🎯 Mapeamento local das mensagens de erro padronizado para a UI
   protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
     patient_control: [{ type: 'required', message: 'A seleção do paciente é obrigatória.' }],
     cid_control: [{ type: 'required', message: 'A seleção de um CID/Laudo é obrigatória.' }],
@@ -88,46 +102,154 @@ export class CreatePatientRequestComponent implements OnInit {
     observation: [{ type: 'required', message: 'Insira uma observação para a solicitação.' }]
   };
 
-  constructor() {
+  ngOnInit(): void {
     this.initForm();
+    this.fetchPatients();
+    this.fetchHospitalUnities();
+    this.registerCleaners();
+  }
 
-    // Reatividade controlada sobre a condicional de Agendamento/Data
-    effect(() => {
-      const dateControl = this.createPatientRequestForm.get('consultation_date');
-      if (!dateControl) return;
+  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO E SUPORTE ---
 
-      if (this.isScheduling()) {
+  private initForm(): void {
+    this.patientRequestForm = this.fb.group({
+      report_id: [null, [Validators.required]],
+      type: [{ value: null, disabled: true }, [Validators.required]],
+      consultation_date: [{ value: null, disabled: true }],
+      hospital_unity_id: [null, [Validators.required]],
+      observation: [null, [Validators.required]]
+    });
+  }
+
+  /**
+   * Monitora se o usuário limpou o texto dos autocompletes para invalidar o formulário principal
+   */
+  private registerCleaners(): void {
+    // Cleaner do Paciente
+    this.patientControl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        if (!value) {
+          this.cidControl.setValue('');
+          this.patientRequestForm.get('report_id')?.setValue(null);
+          this.patientRequestForm.get('report_id')?.markAsDirty();
+          
+          this.patientRequestForm.get('type')?.disable();
+          
+          this.cidOptions = [];
+          this.cidReadOnly.set(true);
+          this.currentReportFlags.set(null);
+          this.resetTypeSelection();
+          this.cdr.markForCheck();
+        }
+      });
+
+    // Cleaner do CID / Laudo
+    this.cidControl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        if (!value) {
+          this.patientRequestForm.get('report_id')?.setValue(null);
+          this.patientRequestForm.get('report_id')?.markAsDirty();
+          
+          this.patientRequestForm.get('type')?.disable();
+          
+          this.currentReportFlags.set(null);
+          this.resetTypeSelection();
+          this.cdr.markForCheck();
+        }
+      });
+
+    // Cleaner da Unidade Hospitalar
+    this.hospitalControl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        if (!value) {
+          this.patientRequestForm.get('hospital_unity_id')?.setValue(null);
+          this.patientRequestForm.get('hospital_unity_id')?.markAsDirty();
+        }
+      });
+  }
+
+  // Reseta a seleção do tipo de solicitação quando as condições do CID mudarem ou forem limpas
+  private resetTypeSelection(): void {
+    const typeControl = this.patientRequestForm.get('type');
+    const dateControl = this.patientRequestForm.get('consultation_date');
+    if (typeControl) {
+      typeControl.setValue(null);
+      typeControl.markAsUntouched();
+    }
+    if (dateControl) {
+      dateControl.setValue(null);
+      dateControl.disable();
+      dateControl.clearValidators();
+      dateControl.updateValueAndValidity();
+    }
+    this.isScheduling.set(false);
+  }
+
+  // --- CONTROLE DE ALTERAÇÃO DE TIPO (REATIVO) ---
+
+  protected onTypeSelectionChange(value: string): void {
+    const isSched = value === 'Agendamento' || value === 'Ação Judicial';
+    this.isScheduling.set(isSched);
+
+    const dateControl = this.patientRequestForm.get('consultation_date');
+    if (dateControl) {
+      if (isSched) {
         dateControl.enable();
-        dateControl.setValidators([Validators.required]);
+        dateControl.setValidators([Validators.required, CustomValidators.dateValidator()]);
       } else {
         dateControl.disable();
         dateControl.setValue(null);
         dateControl.clearValidators();
       }
       dateControl.updateValueAndValidity();
-      this.cdr.markForCheck();
-    });
+    }
+    this.cdr.markForCheck();
   }
 
-  ngOnInit(): void {
-    this.fetchPatients();
-    this.fetchHospitalUnities();
+  /**
+   * Tratamento de mudança de data baseado na implementação padronizada
+   */
+  protected setConsultationDate(event: MatDatepickerInputEvent<Date>): void {
+    if (event.value) {
+      const parsedDate = moment(event.value);
+      this.patientRequestForm.get('consultation_date')?.setValue(parsedDate, { emitEvent: true });
+      this.patientRequestForm.get('consultation_date')?.markAsDirty();
+    }
   }
 
-  private initForm(): void {
-    this.createPatientRequestForm = this.fb.group({
-      report_id: [null, [Validators.required]],
-      type: [null, [Validators.required]],
-      consultation_date: [null],
-      hospital_unity_id: [null, [Validators.required]],
-      observation: [null, [Validators.required]]
-    });
+  /**
+   * Evita a digitação manual de caracteres indesejados no campo de data
+   */
+  protected onlyNumbersAndSlashes(event: KeyboardEvent): boolean {
+    const charCode = event.key;
+    const allowedCharacters = /^[0-9\/]$/;
+    
+    if (!allowedCharacters.test(charCode)) {
+      event.preventDefault();
+      return false;
+    }
+    return true;
   }
 
-  // --- CONTROLE DE ALTERAÇÃO DE TIPO ---
+  /**
+   * Avalia dinamicamente se uma opção de tipo deve ser desabilitada no template.
+   */
+  protected isTypeOptionDisabled(option: string): boolean {
+    const flags = this.currentReportFlags();
+    if (!flags) return false;
 
-  protected onTypeSelectionChange(event: MatSelectChange): void {
-    this.isScheduling.set(event.value === 'Agendamento');
+    if (flags.hasEntranceOrLawsuit) {
+      return option !== 'Agendamento';
+    } else {
+      if (flags.lawsuit) {
+        return option !== 'Ação Judicial';
+      } else {
+        return option !== 'Entrada';
+      }
+    }
   }
 
   // --- FLUXO DE PACIENTES (AUTOCOMPLETE) ---
@@ -146,7 +268,7 @@ export class CreatePatientRequestComponent implements OnInit {
       )
       .subscribe({
         next: (response) => {
-          this.patientOptions = response
+          this.patientOptions = (response || [])
             .filter((p: any) => p.status && p.is_valid)
             .map((item: any) => ({
               name: item.patient?.name || '',
@@ -155,7 +277,10 @@ export class CreatePatientRequestComponent implements OnInit {
           this.configurePatientFilter();
           this.patientReadOnly.set(false);
         },
-        error: () => this.patientReadOnly.set(true)
+        error: () => {
+          this.patientReadOnly.set(true);
+          this.patientOptions = [];
+        }
       });
   }
 
@@ -188,8 +313,11 @@ export class CreatePatientRequestComponent implements OnInit {
   // --- FLUXO DE CIDS / LAUDOS (AUTOCOMPLETE) ---
 
   private fetchCidsByPatient(patientCareId: number): void {
-    this.createPatientRequestForm.patchValue({ report_id: null });
+    this.patientRequestForm.patchValue({ report_id: null });
+    this.patientRequestForm.get('type')?.disable();
     this.cidControl.setValue('');
+    this.currentReportFlags.set(null);
+    this.resetTypeSelection();
     
     this.cidLoading.set(true);
     this.cdr.markForCheck();
@@ -204,14 +332,17 @@ export class CreatePatientRequestComponent implements OnInit {
       )
       .subscribe({
         next: (response) => {
-          this.cidOptions = response.map((item: any) => ({
+          this.cidOptions = (response || []).map((item: any) => ({
             ...item.cid,
             ...item
           }));
           this.configureCidFilter();
           this.cidReadOnly.set(false);
         },
-        error: () => this.cidReadOnly.set(true)
+        error: () => {
+          this.cidReadOnly.set(true);
+          this.cidOptions = [];
+        }
       });
   }
 
@@ -239,8 +370,40 @@ export class CreatePatientRequestComponent implements OnInit {
   }
 
   protected onCidSelected(report: any): void {
+    console.log('CID/Laudo selecionado:', report);
     if (report?.id) {
-      this.createPatientRequestForm.patchValue({ report_id: report.id });
+      this.patientRequestForm.get('report_id')?.setValue(report.id);
+      this.patientRequestForm.get('report_id')?.markAsDirty();
+
+      const lawsuit = !!report.lawsuit;
+      const hasEntranceOrLawsuit = !!report.has_entrance_or_lawsuit;
+
+      this.currentReportFlags.set({ lawsuit, hasEntranceOrLawsuit });
+
+      // --- DETERMINAÇÃO DO AUTOFILL COM BASE NAS REGRAS ---
+      let autoValue: string | null = null;
+
+      if (hasEntranceOrLawsuit) {
+        autoValue = 'Agendamento';
+      } else {
+        if (lawsuit) {
+          autoValue = 'Ação Judicial';
+        } else {
+          autoValue = 'Entrada';
+        }
+      }
+
+      if (autoValue) {
+        const typeCtrl = this.patientRequestForm.get('type');
+        typeCtrl?.setValue(autoValue);
+        typeCtrl?.markAsDirty();
+        
+        typeCtrl?.disable();
+
+        this.onTypeSelectionChange(autoValue);
+      }
+
+      this.cdr.markForCheck();
     }
   }
 
@@ -260,11 +423,14 @@ export class CreatePatientRequestComponent implements OnInit {
       )
       .subscribe({
         next: (response) => {
-          this.hospitalOptions = response;
+          this.hospitalOptions = response || [];
           this.configureHospitalFilter();
           this.hospitalReadOnly.set(false);
         },
-        error: () => this.hospitalReadOnly.set(true)
+        error: () => {
+          this.hospitalReadOnly.set(true);
+          this.hospitalOptions = [];
+        }
       });
   }
 
@@ -290,27 +456,27 @@ export class CreatePatientRequestComponent implements OnInit {
 
   protected onHospitalUnitySelected(hospital: any): void {
     if (hospital?.id) {
-      this.createPatientRequestForm.patchValue({ hospital_unity_id: hospital.id });
+      this.patientRequestForm.get('hospital_unity_id')?.setValue(hospital.id);
+      this.patientRequestForm.get('hospital_unity_id')?.markAsDirty();
     }
   }
 
   // --- SUBMISSÃO DO FORMULÁRIO ---
 
   protected onSubmit(): void {
-    // Forçar validações visuais nos controles soltos de autocomplete antes de submeter
     this.patientControl.markAsTouched();
     this.cidControl.markAsTouched();
     this.hospitalControl.markAsTouched();
 
-    if (this.createPatientRequestForm.invalid || this.patientControl.invalid || this.cidControl.invalid || this.hospitalControl.invalid) {
-      this.createPatientRequestForm.markAllAsTouched();
+    if (this.patientRequestForm.invalid || this.patientControl.invalid || this.cidControl.invalid || this.hospitalControl.invalid) {
+      this.patientRequestForm.markAllAsTouched();
       return;
     }
 
     this.isSubmitting.set(true);
     this.cdr.markForCheck();
 
-    this.patientRequestService.createPatientRequest(this.createPatientRequestForm.value)
+    this.patientRequestService.createPatientRequest(this.patientRequestForm.getRawValue())
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);
@@ -319,7 +485,7 @@ export class CreatePatientRequestComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
-        next: (response: ApiResponse) => {
+        next: (response) => {
           this.messageService.showMessage(response.message || 'Solicitação criada com sucesso!');
           this.dialogRef.close(true);
         },

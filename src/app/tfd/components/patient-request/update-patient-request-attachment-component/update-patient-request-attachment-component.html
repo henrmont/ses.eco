@@ -1,57 +1,75 @@
 <h2 mat-dialog-title>Atualizar arquivo</h2>
 
-<form [formGroup]="updateAttachmentForm" (ngSubmit)="onSubmit()">
+<form [formGroup]="attachmentForm" (ngSubmit)="onSubmit()">
   <mat-dialog-content>
-    
-    <div class="line" style="grid-template-columns: 1fr;">
-      <mat-form-field appearance="outline">
-        <mat-label>Nome</mat-label>
-        <input matInput type="text" formControlName="name">
-        
-        @for (item of errorMessages['name']; track $index) {
-          <mat-error [hidden]="!updateAttachmentForm.get('name')?.hasError(item.type)">
-            {{ item.message }}
-          </mat-error>
-        }
-      </mat-form-field>
-
-      <div style="display: flex; gap: 12px;">
-        <button 
-          matFab 
-          type="button" 
-          [disabled]="!data?.patient_request_attachment?.archive_id || isDownloading()" 
-          (click)="download(data.patient_request_attachment.archive_id, data.patient_request_attachment.name)"
-          matTooltip="Baixar arquivo atual"
-        >
-          @if (isDownloading()) {
-            <mat-spinner [diameter]="24"></mat-spinner>
-          } @else {
-            <mat-icon>download</mat-icon>
+    <div class="stepper">
+      
+      <div class="line cols-1-col">
+        <mat-form-field appearance="outline">
+          <mat-label>Nome</mat-label>
+          <input matInput type="text" formControlName="name">
+          
+          @for (item of errorMessages['name']; track item.type) {
+            <mat-error [hidden]="!attachmentForm.get('name')?.hasError(item.type)">
+              {{ item.message }}
+            </mat-error>
           }
-        </button>
-
-        <input type="file" class="file-input" (change)="onFileSelected($event)" #file style="display: none;">
-        <button matFab extended type="button" (click)="file.click()" [matTooltip]="fileLabel()">
-          <mat-icon>attach_file</mat-icon>
-          Substituir arquivo
-        </button>
+        </mat-form-field>
       </div>
-    </div>
 
+      <div class="line cols-1-col">
+        <div class="file-actions-cell">
+          
+          <button 
+            class="btn-archive" 
+            type="button" 
+            mat-icon-button 
+            [disabled]="!data?.patient_request_attachment?.archive_id" 
+            (click)="download(data.patient_request_attachment.archive_id, data.patient_request_attachment.name)"
+            matTooltip="Baixar arquivo atual"
+          >
+            <mat-icon>download</mat-icon>
+          </button>
+
+          <input 
+            type="file" 
+            hidden 
+            (change)="onFileSelected($event)" 
+            #file
+          >
+
+          <button 
+            mat-raised-button
+            type="button" 
+            (click)="file.click()" 
+            [matTooltip]="fileLabel()"
+          >
+            <mat-icon>attach_file</mat-icon>
+            Anexar arquivo
+          </button>
+          
+        </div>
+      </div>
+
+    </div>
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
-    <button matButton [mat-dialog-close]="false">Fechar</button>
+    <button mat-button type="button" [disabled]="isSubmitting()" [mat-dialog-close]="false">
+      Cancelar
+    </button>
+    
     <button 
-      matButton="filled" 
+      mat-flat-button 
+      color="primary" 
       type="submit" 
-      [disabled]="updateAttachmentForm.invalid || isSubmitting() || isDownloading()"
+      [disabled]="attachmentForm.invalid || attachmentForm.pending || isFormsPristine() || isSubmitting()"
     >
       <div class="waiting">
         @if (isSubmitting()) {
-          <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+          <mat-spinner [diameter]="20"></mat-spinner>
         }
-        Atualizar
+        <span>{{ isSubmitting() ? 'Salvando...' : 'Salvar alterações' }}</span>
       </div>
     </button>
   </mat-dialog-actions>

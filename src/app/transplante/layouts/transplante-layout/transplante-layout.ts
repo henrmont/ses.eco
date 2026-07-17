@@ -127,7 +127,7 @@ export class TransplanteLayout {
   }
 
   private createRole(): void {
-    this.openDialog(CreateRoleComponent, '700px', 'auto', CHANNELS.ROLES);
+    this.openDialog(CreateRoleComponent, '900px', 'auto', CHANNELS.ROLES);
   }
 
   private createPatient(): void {

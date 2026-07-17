@@ -1,0 +1,62 @@
+@use 'variables' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow: hidden; 
+}
+
+mat-dialog-content {
+  overflow-y: auto !important; 
+  padding-top: $spacing-sm !important;
+}
+
+// Customização da área de botões do modal para manter a consistência visual
+mat-dialog-actions {
+  gap: $spacing-lg; // Espaçamento elegante de 8px entre os botões
+}
+
+// Estilização e espaçamento dos Cards de detalhamento
+mat-card {
+  background: $color-card-bg;
+  border-radius: $radius-md; // Mantido 8px conforme seu padrão de tabela
+  box-shadow: $show-card; // Sombra mais sutil e elegante
+  margin-top: $spacing-xxl; // 24px de espaçamento entre os blocos de cards
+
+  &:last-child {
+    margin-bottom: 0; // Remove do último para não empurrar as actions
+  }
+  
+  mat-card-header {
+    padding: $spacing-md $spacing-md $spacing-xs; // 16px, 16px, 8px
+  }
+
+  mat-card-content {
+    padding: 0 $spacing-md $spacing-md; // 16px nas laterais e embaixo
+  }
+}
+
+// Simulador de Linha/Grid para as propriedades dos dados do usuário
+.line {
+  display: grid;
+  gap: $spacing-md; // 16px padronizados
+  padding: $spacing-sm $spacing-md; // 12px vertical e 16px horizontal
+  align-items: center;
+  color: $color-text-main;
+
+  strong {
+    color: $color-text-variant;
+    font-weight: 600;
+  }
+
+  // Variações de colunas da Grid adaptadas da referência
+  &.grid-1-col {
+    grid-template-columns: 1fr;
+  }
+
+  &.grid-2-col {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+}

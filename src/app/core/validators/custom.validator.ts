@@ -1,4 +1,6 @@
 import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+import * as _moment from 'moment';
+const moment = (_moment as any).default || _moment;
 
 export class CustomValidators {
 
@@ -144,6 +146,55 @@ export class CustomValidators {
     const dvFormatado = dvCalculado.toString().padStart(2, '0');
 
     return dvFormatado === dvInformado;
+  }
+
+  static dateValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value = control.value;
+      if (!value) {
+        return null; // O validador 'required' trata campos vazios
+      }
+
+      // Se for um objeto do Moment
+      if (moment.isMoment(value)) {
+        if (!value.isValid()) {
+          return { invalidDate: true };
+        }
+        return null;
+      }
+
+      // Se for uma string ou Date nativo, tenta converter e validar
+      const parsed = moment(value, ['YYYY-MM-DD', 'DD/MM/YYYY'], true);
+      if (!parsed.isValid()) {
+        return { invalidDate: true };
+      }
+      return null;
+    };
+  }
+
+  static birthDateValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value = control.value;
+      if (!value) {
+        return null; // O validador 'required' trata campos vazios
+      }
+
+      // Se for um objeto do Moment
+      if (moment.isMoment(value)) {
+        // Validação opcional: não permite datas no futuro
+        if (value.isAfter(moment())) {
+          return { futureDate: true };
+        }
+        return null;
+      }
+
+      // Se for uma string ou Date nativo, tenta converter e validar
+      const parsed = moment(value, ['YYYY-MM-DD', 'DD/MM/YYYY'], true);
+      if (parsed.isAfter(moment())) {
+        return { futureDate: true };
+      }
+      return null;
+    };
   }
 
 }

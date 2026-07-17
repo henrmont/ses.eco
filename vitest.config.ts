@@ -12,4 +12,11 @@ export default defineConfig({
       exclude: ['**/*.scss', 'node_modules/**']
     }
   },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        loadPaths: ['./src/styles'] 
+      }
+    }
+  }
 });

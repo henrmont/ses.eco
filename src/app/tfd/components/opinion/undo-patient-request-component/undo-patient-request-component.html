@@ -8,7 +8,8 @@
       <mat-form-field appearance="outline">
         <mat-label>Para</mat-label>
         <mat-select formControlName="to">
-          <mat-option value="owner">{{ data?.patient_request?.owner_professional?.name }}</mat-option>
+          <mat-option value="user">{{ data?.patient_request?.report?.patient_care?.user?.professional?.name }} - PACIENTE</mat-option>
+          <mat-option value="owner">{{ data?.patient_request?.owner_professional?.name }} - SOLICITAÇÃO</mat-option>
           @if (data?.type === 'social') {
             <mat-option value="medical">{{ data?.patient_request?.medical_professional?.name }}</mat-option>
           }

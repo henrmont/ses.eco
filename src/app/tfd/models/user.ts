@@ -1,5 +1,5 @@
-import { Profession } from "../enums/profession";
 import { Module } from "./module";
+import { Professional } from "./professional";
 import { Role } from "./role";
 
 export interface User {
@@ -12,6 +12,6 @@ export interface User {
     image?: string;
     is_valid?: boolean;
     is_editable?: boolean;
-    professional?: Profession;
+    professional?: Professional;
     type?: string;
 }

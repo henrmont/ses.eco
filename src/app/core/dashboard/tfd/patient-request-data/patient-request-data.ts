@@ -29,11 +29,12 @@ export class PatientRequestData {
       ],
       barThickness: 50, // Valor fixo em pixels para barras finas
       borderRadius: 5
-    }]
+    }],
   };
 
   public barChartOptions: ChartOptions<'bar'> = {
     responsive: true,
+    maintainAspectRatio: false,
     scales: {
       y: { 
         beginAtZero: true,

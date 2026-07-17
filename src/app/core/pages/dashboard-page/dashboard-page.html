@@ -3,11 +3,11 @@
         <div>
             <app-literal-data></app-literal-data>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; column-gap: 20px;">
+        <div class="mid-graph">
             <app-patient-request-data></app-patient-request-data>
             <app-travel-month-data></app-travel-month-data>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; column-gap: 20px;">
+        <div class="mid-graph">
             <app-cost-assistance-vs-accountability-data></app-cost-assistance-vs-accountability-data>
             <app-specialist-care-data></app-specialist-care-data>
         </div>
@@ -16,13 +16,13 @@
         <div>
             <app-homecare-literal-data></app-homecare-literal-data>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; column-gap: 20px;">
+        <div class="mid-graph">
             <app-patient-month-cost-data></app-patient-month-cost-data>
             <app-operational-efficiency-data></app-operational-efficiency-data>
         </div>
     }
     @if (module() == 'transplante') {
-        <div style="display: grid; grid-template-columns: 1fr 1fr; column-gap: 20px;">
+        <div class="mid-graph">
             <app-specialist-transplant-data></app-specialist-transplant-data>
             <app-judicialized-data></app-judicialized-data>
         </div>

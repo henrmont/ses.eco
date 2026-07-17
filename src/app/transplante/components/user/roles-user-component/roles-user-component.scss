@@ -1,52 +1,103 @@
+@use 'variables' as *;
+
 :host {
-  display: block;
-  width: 100%;
-}
-
-.loading-shade {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 150px;
+  flex-direction: column;
+  width: 100%;
+  overflow: hidden; 
 }
 
+mat-dialog-content {
+  overflow-y: visible !important; // Mantém a otimização para evitar barras de rolagem
+  // padding: $spacing-sm $spacing-md !important; // 12px vertical e 16px horizontal conforme padrão
+}
+
+// Customização da área de botões do modal para manter a consistência visual
+mat-dialog-actions {
+  gap: $spacing-lg; // 8px entre os botões conforme seu padrão de referência atualizado
+}
+
+// Subtítulo descritivo do usuário
 .subtitle {
-  font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 16px;
-}
+  color: $color-text-main;
+  text-align: center;
 
-.roles-list {
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  max-height: 300px;
-  overflow-y: auto;
-  padding: 0 !important;
-}
-
-.role-item {
-  border-bottom: 1px solid #f0f0f0;
-  &:last-child {
-    border-bottom: none;
+  strong {
+    color: $color-text-variant;
+    font-weight: 600;
   }
 }
 
+// Estilização e espaçamento do Card baseado na sua referência exata
+.roles-card {
+  background: $color-card-bg;
+  border-radius: $radius-md !important; // Mantido 8px conforme seu padrão
+  box-shadow: $show-card !important; // Sombra sutil e elegante
+  margin-top: $spacing-xxl; // 24px de espaçamento
+
+  mat-card-content {
+    padding: $spacing-md !important; // 16px nas laterais e embaixo
+  }
+}
+
+// Grid estruturado em duas colunas com gap simétrico
+.roles-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); // 2 colunas com o mesmo tamanho exato
+  gap: 0 $spacing-xxl; // 24px de espaçamento perfeitamente dividido entre elas
+  padding: 0;
+  margin: 0;
+}
+
+// Item individual da lista de regras
+.role-item {
+  height: auto !important; 
+  padding: 0 !important;
+  position: relative; // Permite o posicionamento absoluto da linha divisória
+}
+
+// Linha interna que distribui o nome da regra e o botão toggle
 .role-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between; 
   width: 100%;
+  padding: $spacing-sm 0; // 12px vertical para conforto no clique
+  color: $color-text-main;
+
+  .role-name {
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
 }
 
-.role-name {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: #333;
+// Container central dos estados de carregamento
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-lg;
 }
 
+// Mensagem para lista vazia
 .empty-msg {
+  grid-column: span 2;
+  color: $color-text-variant;
   text-align: center;
-  color: #999;
-  padding: 24px;
+  padding: $spacing-md;
   font-style: italic;
+  font-size: 0.95rem;
+}
+
+// Container interno do botão de envio com spinner
+.waiting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-form-gap;
+
+  mat-spinner {
+    display: inline-block;
+    flex-shrink: 0;
+  }
 }

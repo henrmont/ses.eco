@@ -1,62 +1,88 @@
-// Usando o seletor :host para definir o container principal da página (idêntico à users-page)
+@use 'variables' as *;
+
 :host {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    min-height: calc(100vh - 100px);
-    background-color: #fafafa; // Um fundo levemente cinza destaca a tabela branca
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: calc(100vh - 100px);
+  background-color: $color-page-bg;
 }
 
 section {
-    margin-top: 24px;
-    width: 50%; // Ajustado de 50% para 85% para casar perfeitamente com a proporção de usuários
+  margin-top: $spacing-xxl; 
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl; 
+
+  // Div container interna da tabela (espelhado na referência)
+  div.table {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: $spacing-xl;
+    width: 100%;
+    padding: $spacing-lg;
+    box-sizing: border-box;
+  }
 
-    // Container de busca
-    div.search {
-        display: flex; 
-        justify-content: center; 
-        width: 100%;
+  // Container de busca
+  div.search {
+    display: flex; 
+    justify-content: center; 
+    width: 100%;
 
-        mat-form-field {
-            width: 100%;
-            max-width: 500px; // Evita que o input fique gigante em telas ultra-wide
-        }
+    mat-form-field {
+      width: 100%;
+      max-width: 500px; 
+    }
+  }
+
+  // Estilização da Tabela
+  table.mat-mdc-table {
+    margin: 0 auto $spacing-sm auto;
+    width: 100%;
+
+    background: $color-surface;
+    border-radius: $radius-md; 
+    overflow: hidden;
+    box-shadow: $shadow-card; 
+    border-collapse: separate;
+
+    th.mat-mdc-header-cell, 
+    td.mat-mdc-cell {
+      padding: $spacing-md $spacing-lg; 
+      vertical-align: middle;
     }
 
-    // Estilização da Tabela do Angular Material
-    table.mat-mdc-table {
-        width: 100%;
-        background: #ffffff;
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-
-        // Estilo comum para células de cabeçalho e corpo
-        th.mat-mdc-header-cell, 
-        td.mat-mdc-cell {
-            padding: 12px 16px;
-            vertical-align: middle;
-        }
-
-        th.mat-mdc-header-cell {
-            font-weight: 600;
-            background-color: #f1f5f9; // Tom cinza moderno herdado de usuários
-            color: #334155;
-        }
-
-        // Classes utilitárias dentro da tabela
-        .center {
-            text-align: center;
-            
-            // Container dos botões de ações
-            div {
-                display: flex; 
-                justify-content: center;
-                gap: 4px; // Espaçamento fixo e elegante herdado da nova estrutura
-            }
-        }
+    th.mat-mdc-header-cell {
+      font-weight: 600;
+      background-color: $color-table-header-bg;
+      color: $color-table-header-text;
     }
+
+    .center {
+      text-align: center;
+    }
+
+    // Customizações de Largura Substituindo os Estilos Inline anteriores
+    th.name-column-header {
+      width: 92%;
+    }
+
+    th.actions-column-header {
+      width: 8%;
+    }
+
+    td.actions-cell {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: $spacing-xs;
+    }
+  }
+}
+
+// Oculta o contador incremental de páginas conforme o padrão adotado no Paginator de referência
+::ng-deep .mat-mdc-paginator-range-label {
+  display: none !important;
 }

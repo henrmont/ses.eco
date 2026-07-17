@@ -1,95 +1,114 @@
+@use 'variables' as *;
+
 :host {
-    display: block;
-    width: 100%;
-}
-
-// Garante que o Angular Material respeite o atributo [hidden] do HTML (herdado de usuários)
-mat-error[hidden] {
-  display: none !important;
-}
-
-mat-form-field {
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  height: auto;
+  overflow: hidden; 
 }
 
 mat-dialog-content {
-  display: flex;
-  flex-direction: column;
-  row-gap: 10px;
-  padding-top: 10px; // Evita que a borda outline do primeiro campo seja cortada no topo do modal
+  overflow-y: auto !important; 
+  padding-top: $spacing-sm !important;
 }
 
-// Classe utilitária para inputs em Grid (unificada com o padrão de usuários)
+// Customização da área de botões do modal para manter a consistência visual
+mat-dialog-actions {
+  gap: $spacing-xs; // Espaçamento elegante de 8px entre os botões
+}
+
+// Estilização e espaçamento dos Cards de permissões
+mat-card {
+  // background: $bg-card;
+  border-radius: $radius-md !important;
+  box-shadow: $show-card !important; // Sombra mais sutil e elegante
+  margin-top: $spacing-lg; // 24px de espaçamento entre os blocos de cards
+
+  &:last-child {
+    margin-bottom: 0; // Remove do último para não empurrar as actions
+  }
+  
+  mat-card-header {
+    padding: $spacing-md $spacing-md $spacing-xs; // 16px, 16px, 8px
+  }
+
+  mat-card-content {
+    padding: 0 $spacing-md $spacing-md; // 16px nas laterais e embaixo
+  }
+}
+
+// Estrutura interna do cabeçalho do Card (Ícone + Título)
+.title {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs; // 8px entre o ícone e o texto
+  color: $color-text-main;
+
+  mat-icon {
+    color: $color-text-variant; // Ícone com cor de destaque
+  }
+
+  mat-card-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin: 0;
+  }
+}
+
+// Grid para renderização dos mat-slide-toggles em 3 colunas
+.group-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); // Divide o card perfeitamente em 3 colunas
+  gap: $spacing-md; // Espaçamento de 16px entre os itens do grid
+  padding: $spacing-sm 0;
+
+  .toggle-item {
+    display: flex;
+    align-items: center;
+  }
+
+  // Responsividade: Transiciona para 1 coluna em dispositivos móveis
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: $spacing-xs;
+  }
+}
+
+// Linha de entrada do input (Nome da Regra)
 .line {
   display: grid;
   grid-template-columns: 1fr;
-  column-gap: 20px;
+  padding: $spacing-sm 0;
+  align-items: center;
+
+  mat-form-field {
+    width: 100%;
+  }
 }
 
-// Estrutura do botão com Spinner de Loading (herdado de usuários)
+// Container central dos estados de carregamento
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-lg;
+}
+
+// Mensagem de erro customizada para a validação do bloco de permissões
+.permissions-error {
+  display: block;
+  margin-top: $spacing-sm;
+}
+
+// Container interno do botão de envio com spinner
 .waiting {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: $spacing-form-gap;
 
   mat-spinner {
     display: inline-block;
-    flex-shrink: 0; // Impede que o layout flex esmague o tamanho do spinner
+    flex-shrink: 0;
   }
-}
-
-// Container centralizado para o carregamento inicial das permissões
-.loading-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 200px; // Dá um respiro visual enquanto o spinner roda
-}
-
-// --- ESTRUTURA DE PERMISSÕES (Mantida e Lapidada) ---
-
-section {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-}
-
-.title {
-    display: flex; 
-    align-items: center;
-    margin-top: 30px;
-    color: #334155; // Tom de cinza moderno para casar com a identidade do sistema
-
-    mat-icon {
-        margin-right: 16px;
-        width: auto;
-        height: auto;
-        font-size: 24px; // Ajustado levemente para alinhar melhor com os textos h2
-    }
-
-    h2 {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin: 0;
-    }
-}
-
-// Grid de 3 colunas preservado com maestria
-.group {
-    display: grid; 
-    grid-template-columns: repeat(3, 1fr); 
-    gap: 12px;
-    margin-top: 8px;
-
-    div {
-        display: flex; 
-        justify-content: space-between;
-        align-items: center;
-        
-        mat-slide-toggle {
-            width: 100%;
-        }
-    }
 }

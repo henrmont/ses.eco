@@ -1,50 +1,64 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, ChangeDetectorRef, DestroyRef } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { finalize } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PatientService } from '../../../services/patient-service';
 import { MessageService } from '../../../../core/services/message-service';
 
 @Component({
   selector: 'app-delete-patient-escort-component',
-  imports: [MatDialogModule, MatButtonModule, MatProgressSpinnerModule],
+  imports: [
+    MatDialogModule,
+    MatButtonModule,
+    MatProgressSpinnerModule
+  ],
   templateUrl: './delete-patient-escort-component.html',
   styleUrl: './delete-patient-escort-component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima com OnPush + Signals
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DeletePatientEscortComponent {
-  // Injeções de Dependência modernas via inject()
+  // Injeções de Dependência Dinâmicas
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly patientService = inject(PatientService);
   private readonly messageService = inject(MessageService);
   private readonly dialogRef = inject(MatDialogRef<DeletePatientEscortComponent>);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
 
-  // Estado de submissão reativo
+  // Estados gerenciados reativamente via Signals
   protected readonly isSubmitting = signal<boolean>(false);
 
-  /**
-   * Dispara a requisição para remover o vínculo do acompanhante
-   */
+  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
+
   protected onSubmit(): void {
     const pivotId = this.data?.escort?.pivot?.id;
-
     if (!pivotId) {
-      this.messageService.showMessage('Erro: Identificador do vínculo não encontrado.');
+      this.messageService.showMessage('Identificador do vínculo não encontrado.');
       return;
     }
 
     this.isSubmitting.set(true);
+    this.cdr.markForCheck(); // Força a atualização do DOM para pintar o spinner imediatamente no OnPush
 
-    this.patientService.deletePatientEscort(pivotId).subscribe({
-      next: (response: any) => {
-        this.messageService.showMessage(response.message || 'Acompanhante removido com sucesso!');
-        this.dialogRef.close(true); // Retorna true para sinalizar sucesso à listagem pai
-      },
-      error: (err) => {
-        const errorMessage = err?.error?.message || 'Ocorreu um erro ao tentar remover o acompanhante.';
-        this.messageService.showMessage(errorMessage);
-        this.isSubmitting.set(false);
-      },
-    });
+    this.patientService.deletePatientEscort(pivotId)
+      .pipe(
+        finalize(() => {
+          this.isSubmitting.set(false);
+          this.cdr.markForCheck(); // Garante o desligamento do loading visual na tela
+        }),
+        takeUntilDestroyed(this.destroyRef) // Proteção reativa contra memory leaks se fecharem o modal rápido
+      )
+      .subscribe({
+        next: (response: any) => {
+          this.messageService.showMessage(response?.message || 'Acompanhante removido com sucesso!');
+          this.dialogRef.close(true);
+        },
+        error: (err) => {
+          const fallbackError = 'Ocorreu um erro ao tentar remover o acompanhante.';
+          this.messageService.showMessage(err?.error?.message || fallbackError);
+        },
+      });
   }
 }

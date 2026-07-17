@@ -21,7 +21,6 @@ import { finalize, forkJoin } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { PatientRequest } from '../../models/patient-request';
 import { ShowPatientRequestComponent } from '../../components/patient-request/show-patient-request-component/show-patient-request-component';
-import { MovePatientRequestFromArchiveComponent } from '../../components/patient-request/move-patient-request-from-archive-component/move-patient-request-from-archive-component';
 
 const TFD_PATIENTS_CHANNEL = new BroadcastChannel('tfd-patients-channel');
 const TFD_PATIENT_REQUESTS_CHANNEL = new BroadcastChannel('tfd-patient-requests-channel');
@@ -159,21 +158,5 @@ export class SearchArchivePage implements OnInit {
     })
   }
 
-  movePatientRequestFromArchive(patient_request: PatientRequest) {
-    this.dialog.open(MovePatientRequestFromArchiveComponent, {
-      width: '400px',
-      height: 'auto',
-      disableClose: true,
-      autoFocus: false,
-      data: {
-        patient_request: patient_request
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.getArchivedData()
-        TFD_PATIENT_REQUESTS_CHANNEL.postMessage('update')
-      }
-    })
-  }
 
 }

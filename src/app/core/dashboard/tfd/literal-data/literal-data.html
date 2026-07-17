@@ -6,17 +6,17 @@
       </mat-card-header>
       
       <mat-card-content>
-        <div style="display: flex; justify-content: space-around; align-items: center;" [style.color]="card.iconColor">
+        <div class="card-main-info" [style.color]="card.iconColor">
           <mat-icon class="icon">{{ card.icon }}</mat-icon>
           <h2>{{ card.value }}</h2>
         </div>
         
-        <div style="display: flex; flex-direction: column; align-items: flex-end;">
-          <div style="display: flex; align-items: center;" [style.color]="card.isUp ? 'green' : 'red'">
+        <div class="card-trend-info">
+          <div class="trend-badge" [ngClass]="card.isUp ? 'trend-up' : 'trend-down'">
             <mat-icon>{{ card.isUp ? 'arrow_drop_up' : 'arrow_drop_down' }}</mat-icon>
             <span>{{ card.percentage }}</span>
           </div>
-          <span>vs mês anterior</span>
+          <span class="trend-label">vs mês anterior</span>
         </div>
       </mat-card-content>
     </mat-card>

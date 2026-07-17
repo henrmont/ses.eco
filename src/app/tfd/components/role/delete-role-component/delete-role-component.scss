@@ -1,27 +1,26 @@
-// Garante o alinhamento do texto com o spinner dentro do botão
+@use 'variables' as *;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+mat-dialog-content {
+  span {
+    color: $color-danger; // Destaca a mensagem de alerta em vermelho para reforçar a ação irreversível
+    font-size: 13px;
+  }
+}
+
+// Container de estado de carregamento durante a ação no modal
 .waiting {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: $spacing-form-gap; // 10px padronizados
 
-  // Ajuste fino para o mat-spinner não distorcer o tamanho do botão
   mat-spinner {
-    margin: 0;
+    display: inline-block;
+    flex-shrink: 0; // Impede que o layout flex esmague o tamanho do spinner
   }
-}
-
-// Pequeno ajuste de layout para espaçamento do modal (Opcional, mas melhora o visual)
-mat-dialog-content {
-  padding: 16px 24px;
-  line-height: 1.5;
-  
-  strong {
-    color: var(--mdc-theme-text-primary-on-background, #333);
-  }
-}
-
-mat-dialog-actions {
-  padding: 12px 24px;
-  gap: 8px; // Cria um espaçamento elegante entre o botão "Fechar" e "Excluir"
 }

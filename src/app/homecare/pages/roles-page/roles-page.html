@@ -11,21 +11,23 @@
       
       <ng-container matColumnDef="name">
         <th mat-header-cell *matHeaderCellDef style="width: 74%;"> Nome </th>
-        <td mat-cell *matCellDef="let element"> {{ element.name.split('/')[1] }} </td>
+        <td mat-cell *matCellDef="let element"> {{ element.name.split('/').pop() }} </td>
       </ng-container>
     
       <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef class="center" style="width: 8%;"> Ações </th>
+        <th mat-header-cell *matHeaderCellDef class="center" style="width: 16%;"> Ações </th>
         <td mat-cell *matCellDef="let element" class="center" style="display: flex; justify-content: flex-end;">
             <div>
                 <button matIconButton 
                         matTooltip="Atualizar regra" 
+                        (click)="updateRole(element)"
                         [disabled]="ownerRole(element) || checkPermissions('homecare/regra atualizar')">
                     <mat-icon>drive_file_rename_outline</mat-icon>
                 </button>
                 
                 <button matIconButton 
                         matTooltip="Deletar regra" 
+                        (click)="deleteRole(element)"
                         [disabled]="ownerRole(element) || checkPermissions('homecare/regra deletar')">
                     <mat-icon>delete</mat-icon>
                 </button>

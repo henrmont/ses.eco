@@ -37,7 +37,7 @@ import { StorageService } from '../../../../core/services/storage-service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UpdateReportAttachmentComponent {
-  // Injeções de Dependência Funcionais
+  // Injeções de Dependência Dinâmicas
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly patientService = inject(PatientService);
@@ -47,30 +47,42 @@ export class UpdateReportAttachmentComponent {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Tratamento centralizado de dicionário de erros
-  protected readonly errorMessages = ERRORS;
-  protected updateAttachmentForm!: FormGroup;
+  // Estrutura do Formulário exposta ao template
+  protected attachmentForm!: FormGroup;
 
   // Estados Reativos baseados em Signals
   protected readonly isSubmitting = signal<boolean>(false);
-  protected readonly isDownloading = signal<boolean>(false);
-  protected readonly fileLabel = signal<string>('Nenhum arquivo selecionado');
+  protected readonly hasFile = signal<boolean>(false);
+  
+  // Rótulo dinâmico baseado na existência de arquivo original prévio (Alinhado com a referência)
+  protected readonly fileLabel = signal<string>(
+    this.data?.report_attachment?.archive_id 
+      ? 'Arquivo já cadastrado (Clique para alterar)' 
+      : 'Nenhum arquivo selecionado'
+  );
 
   // Referência em memória para substituição opcional do binário
   private selectedFile: File | null = null;
 
-  constructor() {
+  // 🎯 Mapeamento local das mensagens de erro padronizado para a UI
+  protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
+    name: [
+      { type: 'required', message: 'O nome do anexo é obrigatório.' }
+    ]
+  };
+
+  ngOnInit(): void {
     this.initForm();
   }
 
-  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO ---
+  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO E SUPORTE ---
 
   /**
-   * Inicializa o formulário com o estado persistido do anexo vindo da listagem
+   * Inicializa o formulário com o estado persistido do anexo
    */
   private initForm(): void {
     const currentName = this.data?.report_attachment?.name || null;
-    this.updateAttachmentForm = this.fb.group({
+    this.attachmentForm = this.fb.group({
       name: [currentName, [Validators.required]],
     });
   }
@@ -87,12 +99,14 @@ export class UpdateReportAttachmentComponent {
       const file = input.files[0];
       this.selectedFile = file;
       this.fileLabel.set(file.name);
+      this.hasFile.set(true);
 
       // UX Inteligente: Se o usuário limpou o input de texto, sugere o nome do novo arquivo sem extensão
-      const currentName = this.updateAttachmentForm.get('name')?.value;
+      const currentName = this.attachmentForm.get('name')?.value;
       if (!currentName) {
         const sanitizedName = file.name.split('.').slice(0, -1).join('.');
-        this.updateAttachmentForm.get('name')?.setValue(sanitizedName);
+        this.attachmentForm.get('name')?.setValue(sanitizedName);
+        this.attachmentForm.get('name')?.markAsDirty();
       }
 
       this.cdr.markForCheck();
@@ -102,30 +116,23 @@ export class UpdateReportAttachmentComponent {
   /**
    * Realiza o download seguro do binário existente na nuvem
    */
-  protected download(archiveId: number, fileName: string): void {
-    if (!archiveId) return;
-
-    this.isDownloading.set(true);
-    this.cdr.markForCheck();
-
+  protected download(archiveId: number, name: string): void {
     this.storageService.download(archiveId)
-      .pipe(
-        finalize(() => {
-          this.isDownloading.set(false);
-          this.cdr.markForCheck();
-        }),
-        takeUntilDestroyed(this.destroyRef)
-      )
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
           if (response?.archive) {
-            saveAs(response.archive, fileName);
+            saveAs(response.archive, name);
           }
-        },
-        error: () => {
-          this.messageService.showMessage('Falha ao tentar baixar o arquivo.');
         }
       });
+  }
+
+  /**
+   * Controla se o formulário não recebeu alteração nenhuma (Evita requisições desnecessárias)
+   */
+  protected isFormsPristine(): boolean {
+    return this.attachmentForm.pristine && !this.hasFile();
   }
 
   /**
@@ -134,8 +141,8 @@ export class UpdateReportAttachmentComponent {
   protected onSubmit(): void {
     const attachmentId = this.data?.report_attachment?.id;
 
-    if (this.updateAttachmentForm.invalid || !attachmentId) {
-      this.updateAttachmentForm.markAllAsTouched();
+    if (this.attachmentForm.invalid || !attachmentId) {
+      this.attachmentForm.markAllAsTouched();
       return;
     }
 
@@ -143,7 +150,7 @@ export class UpdateReportAttachmentComponent {
     this.cdr.markForCheck();
 
     const attachmentPayload = {
-      ...this.updateAttachmentForm.value,
+      ...this.attachmentForm.value,
       file: this.selectedFile // Se mantido null, o backend atualiza apenas o nome textual
     };
 

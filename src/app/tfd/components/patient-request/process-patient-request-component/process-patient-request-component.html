@@ -1,55 +1,60 @@
 <h2 mat-dialog-title>Tramitar solicitação</h2>
 
-<form [formGroup]="tramitPatientRequestForm" (ngSubmit)="onSubmit()">
+<form [formGroup]="patientRequestForm" (ngSubmit)="onSubmit()">
   <mat-dialog-content>
-    
-    <div class="line" style="grid-template-columns: 1fr;">
-      <mat-form-field appearance="outline">
-        <mat-label>Médico</mat-label>
-        <input 
-          matInput 
-          type="text" 
-          [formControl]="medicalProfessionalControl" 
-          [matAutocomplete]="medicalProfessional" 
-          [readonly]="medicalProfessionalReadOnly() || isSubmitting()"
-        >
-        
-        @if (medicalProfessionalLoading()) {
-          <mat-spinner matSuffix [diameter]="25" style="margin-right: 10px;"></mat-spinner>
-        }
-
-        <mat-autocomplete #medicalProfessional="matAutocomplete" [displayWith]="displayMedicalProfessional">
-          @for (option of filteredMedicalProfessionalOptions | async; track option.id) {
-            <mat-option [value]="option" (onSelectionChange)="setMedicalProfessional(option)">
-              <mat-chip style="margin-right: 20px;">{{ option?.patient_medical_requests_count || 0 }}</mat-chip>
-              <span>{{ option?.name }}</span>
-            </mat-option>
+    <div class="stepper">
+      
+      <div class="line cols-1-col">
+        <mat-form-field appearance="outline">
+          <mat-label>Médico</mat-label>
+          <input 
+            type="text" 
+            matInput 
+            [formControl]="medicalProfessionalControl" 
+            [matAutocomplete]="medicalProfessional" 
+            [readonly]="medicalProfessionalReadOnly()"
+          >
+          
+          @if (medicalProfessionalLoading()) {
+            <mat-spinner matSuffix [diameter]="25" style="margin-right: 10px;"></mat-spinner>
           }
-        </mat-autocomplete>
 
-        @for (item of errorMessages['medical_professional_id']; track $index) {
-          <mat-error [hidden]="!tramitPatientRequestForm.get('medical_professional_id')?.hasError(item.type)">
-            {{ item.message }}
-          </mat-error>
-        }
-      </mat-form-field>
+          <mat-autocomplete #medicalProfessional="matAutocomplete" [displayWith]="displayMedicalProfessional">
+            @for (option of filteredMedicalProfessionalOptions | async; track option.id) {
+              <mat-option [value]="option" (onSelectionChange)="onMedicalProfessionalSelected(option)">
+                <mat-chip style="margin-right: 20px;">{{ option?.patient_medical_requests_count ?? 0 }}</mat-chip>
+                <span>{{ option?.name }}</span>
+              </mat-option>
+            }
+          </mat-autocomplete>
+
+          @for (item of errorMessages['medical_professional_control']; track item.type) {
+            <mat-error [hidden]="!medicalProfessionalControl.hasError('required')">
+              {{ item.message }}
+            </mat-error>
+          }
+        </mat-form-field>
+      </div>
+
     </div>
-
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
-    <button mat-button [mat-dialog-close]="false">Fechar</button>
+    <button mat-button type="button" [disabled]="isSubmitting()" [mat-dialog-close]="false">
+      Cancelar
+    </button>
+    
     <button 
       mat-flat-button
       color="primary"
       type="submit" 
-      [disabled]="tramitPatientRequestForm.invalid || tramitPatientRequestForm.pending || isSubmitting() || medicalProfessionalLoading()"
+      [disabled]="patientRequestForm.invalid || medicalProfessionalControl.invalid || patientRequestForm.pending || isSubmitting() || medicalProfessionalLoading()"
     >
       <div class="waiting">
         @if (isSubmitting()) {
-          <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+          <mat-spinner [diameter]="20"></mat-spinner>
         }
-        Tramitar
+        <span>{{ isSubmitting() ? 'Tramitando...' : 'Tramitar' }}</span>
       </div>
     </button>
   </mat-dialog-actions>

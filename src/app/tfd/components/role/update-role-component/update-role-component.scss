@@ -1,95 +1,114 @@
+@use 'variables' as *;
+
 :host {
-    display: block;
-    width: 100%;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow: hidden; 
 }
 
-// Garante que o Angular Material respeite o atributo [hidden] do HTML (herdado de usuários)
+// Garante que o Angular Material respeite o atributo [hidden] do HTML
 mat-error[hidden] {
   display: none !important;
 }
 
-mat-form-field {
-  width: 100%;
-  height: auto;
+mat-dialog-content {
+  overflow-y: auto !important; 
+  padding-top: $spacing-sm !important;
 }
 
-mat-dialog-content {
+mat-dialog-actions {
+  gap: $spacing-lg; 
+}
+
+.details-container {
+  padding: $spacing-sm 0 0;
   display: flex;
   flex-direction: column;
-  row-gap: 10px;
-  padding-top: 10px; // Evita que a borda outline do primeiro campo seja cortada no topo do modal
+  gap: $spacing-md; // Espaçamento consistente entre os blocos de cartões
 }
 
-// Classe utilitária para inputs em Grid (unificada com o padrão de usuários)
+mat-card {
+  background: $color-card-bg;
+  border-radius: $radius-md; 
+  box-shadow: $show-card; 
+  
+  mat-card-header {
+    padding: $spacing-md $spacing-md $spacing-xs; 
+  }
+
+  mat-card-content {
+    padding: 0 $spacing-md $spacing-md; 
+  }
+}
+
+// Estrutura interna do cabeçalho do Card (Ícone + Título)
+.title-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs; 
+  color: $color-text-main;
+
+  mat-icon {
+    color: $color-text-variant; 
+  }
+
+  mat-card-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin: 0;
+  }
+}
+
+// Grid estável para os mat-slide-toggles divididos em 3 colunas paralelas
+.group-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); 
+  gap: $spacing-md; 
+  padding: $spacing-sm 0;
+
+  .toggle-item {
+    display: flex;
+    align-items: center;
+  }
+}
+
+// Definição Semântica padrão adotada nos inputs do sistema
 .line {
   display: grid;
-  grid-template-columns: 1fr;
-  column-gap: 20px;
+  gap: $spacing-xl; 
+  align-items: center;
+
+  &.cols-1-col { 
+    grid-template-columns: 1fr; 
+  }
 }
 
-// Estrutura do botão com Spinner de Loading (herdado de usuários)
+// Container central de carregamento
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  width: 100%;
+}
+
+// Mensagem de erro customizada para as permissões
+.permissions-error {
+  display: block;
+  margin-top: $spacing-sm;
+  padding: 0 $spacing-xs;
+}
+
+// Container interno do botão com spinner
 .waiting {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: $spacing-form-gap; 
 
   mat-spinner {
     display: inline-block;
-    flex-shrink: 0; // Impede que o layout flex esmague o tamanho do spinner
+    flex-shrink: 0; 
   }
-}
-
-// Container centralizado para o carregamento inicial das permissões
-.loading-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 200px; // Dá um respiro visual enquanto o spinner roda
-}
-
-// --- ESTRUTURA DE PERMISSÕES (Mantida e Lapidada) ---
-
-section {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-}
-
-.title {
-    display: flex; 
-    align-items: center;
-    margin-top: 30px;
-    color: #334155; // Tom de cinza moderno para casar com a identidade do sistema
-
-    mat-icon {
-        margin-right: 16px;
-        width: auto;
-        height: auto;
-        font-size: 24px; // Ajustado levemente para alinhar melhor com os textos h2
-    }
-
-    h2 {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin: 0;
-    }
-}
-
-// Grid de 3 colunas preservado com maestria
-.group {
-    display: grid; 
-    grid-template-columns: repeat(3, 1fr); 
-    gap: 12px;
-    margin-top: 8px;
-
-    div {
-        display: flex; 
-        justify-content: space-between;
-        align-items: center;
-        
-        mat-slide-toggle {
-            width: 100%;
-        }
-    }
 }

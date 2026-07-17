@@ -38,8 +38,8 @@ export class PatientService {
     return this.http.post<ApiResponse>(`${this.apiUrl}/create-patient`, this.mountFormData(data));
   }
 
-  updatePatient(patientId: number, data: any): Observable<ApiResponse> {
-    return this.http.post<ApiResponse>(`${this.apiUrl}/update-patient/${patientId}`, this.mountFormData(data));
+  updatePatient(patientCareId: number, data: any): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/update-patient/${patientCareId}`, this.mountFormData(data));
   }
 
   archivePatient(patientCareId: number): Observable<ApiResponse> {
@@ -118,6 +118,14 @@ export class PatientService {
 
   // --- CONSULTAS DIRETAS (CHECKS) ---
 
+  getPatientCns(cns: number): Observable<Patient> {
+    return this.http.get<Patient>(`${this.checksUrl}/get-patient-cns/${cns}`);
+  }
+
+  getPatientDocument(document: number): Observable<Patient> {
+    return this.http.get<Patient>(`${this.checksUrl}/get-patient-document/${document}`);
+  }
+
   getEscortCns(cns: number): Observable<Escort> {
     return this.http.get<Escort>(`${this.checksUrl}/get-escort-cns/${cns}`);
   }
@@ -125,6 +133,8 @@ export class PatientService {
   getEscortDocument(document: number): Observable<Escort> {
     return this.http.get<Escort>(`${this.checksUrl}/get-escort-document/${document}`);
   }
+
+
   
   // --- VALIDATORS ASSÍNCRONOS BLINDADOS ---
 

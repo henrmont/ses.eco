@@ -1,67 +1,89 @@
-mat-dialog-content {
-  padding-top: 12px; // Leve ajuste para desgrudar do título de forma harmônica
+@use 'variables' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+mat-error[hidden] {
+  display: none !important;
 }
 
 mat-form-field {
   width: 100%;
 }
 
-// Alinhamento vertical do slide toggle (Usar o endereço do paciente)
-.toggle {
-  display: flex;
-  align-items: center;
-  height: 56px; // Mesma altura padrão do mat-form-field outline para alinhar na linha
-
-  span {
-    margin-left: 10px;
-    font-size: 14px;
-    color: var(--mdc-outlined-text-field-label-text-color, rgba(0, 0, 0, 0.6));
-  }
+mat-dialog-content {
+  padding-top: $spacing-modal-pt;
+  overflow-y: auto;
 }
 
-// Container de cada passo do Stepper
 .stepper {
-  margin-top: 12px; 
+  margin-top: $spacing-form-gap; 
   display: flex; 
   flex-direction: column; 
-  gap: 12px;
+  gap: $spacing-form-gap;
 }
 
-// Linhas em Grid
 .line {
   display: grid; 
-  grid-template-columns: 1fr; 
-  column-gap: 20px; 
-  row-gap: 12px; // Evita que campos grudem caso quebrem de linha em telas menores
-  align-items: start; // Garante que inputs e botões alinhem pelo topo
+  grid-template-columns: var(--grid-cols, 1fr); 
+  column-gap: $spacing-xl; 
+  row-gap: $spacing-form-gap; 
+  align-items: start;
+  min-height: 56px;
 
-  // Ajuste cirúrgico para centralizar os botões de "Anexar" verticalmente com o input ao lado
-  div[style*="display: flex"] {
+  .file-upload-cell {
+    display: flex;
     align-items: center;
-    height: 56px; // Força a mesma altura do form-field para o botão estender perfeitamente
+    height: 56px;
+  }
+
+  .toggle-cell {
+    display: flex;
+    align-items: center;
+    height: 56px;
+
+    mat-slide-toggle {
+      font-size: 14px;
+      color: var(--mdc-outlined-text-field-label-text-color, $color-text-label-fallback);
+    }
   }
 }
 
-// Feedback visual do botão de criação durante o envio
+// --- Definições Semânticas das Colunas da Grid ---
+.line {
+  &.cols-1-col     { --grid-cols: 1fr; }
+  &.cols-1-1       { --grid-cols: 1fr 1fr; }
+}
+
+.uf-container {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+
+  .uf-field {
+    width: 40%;
+    min-width: 80px;
+  }
+}
+
 .waiting {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: $spacing-form-gap;
 
   mat-spinner {
-    margin-right: 2px;
+    display: inline-block;
+    flex-shrink: 0;
   }
 }
 
-// Responsividade básica de segurança (caso a modal abra em telas muito pequenas/tablets)
-@media (max-width: 768px) {
-  .line {
-    grid-template-columns: 1fr !important; // Força virar coluna única em telas pequenas
-    
-    div[style*="display: flex"] {
-      justify-content: flex-start;
-      margin-bottom: 8px;
-    }
-  }
+mat-dialog-actions {
+  gap: $spacing-lg;
+  background-color: inherit;
+  margin-bottom: 0;
 }

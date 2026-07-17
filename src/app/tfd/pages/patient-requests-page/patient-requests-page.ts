@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, comp
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs';
-import { CommonModule } from '@angular/common'; // 👈 Adicione este import no topo
+import { CommonModule } from '@angular/common';
 
 // Angular Material
 import { MatButtonModule } from '@angular/material/button';
@@ -10,10 +10,11 @@ import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator'; // ➕ Importação do Paginator
 import { NgxMaskPipe } from 'ngx-mask';
 
 // Core & Shared
@@ -32,6 +33,7 @@ import { ProcessPatientRequestComponent } from '../../components/patient-request
 import { ShowPatientRequestComponent } from '../../components/patient-request/show-patient-request-component/show-patient-request-component';
 import { UpdatePatientRequestComponent } from '../../components/patient-request/update-patient-request-component/update-patient-request-component';
 import { UndoMessageComponent } from '../../components/shared/undo-message-component/undo-message-component';
+import { Overlay } from '@angular/cdk/overlay';
 
 const TFD_PATIENT_REQUESTS_CHANNEL = new BroadcastChannel('tfd-patient-requests-channel');
 
@@ -46,8 +48,9 @@ const TFD_PATIENT_REQUESTS_CHANNEL = new BroadcastChannel('tfd-patient-requests-
     MatButtonModule,
     MatIconModule,
     MatTooltipModule,
-    MatSortModule,
     MatTabsModule,
+    MatSortModule,
+    MatPaginatorModule, // ➕ Adicionado aos imports
     NgxMaskPipe
   ],
   templateUrl: './patient-requests-page.html',
@@ -55,44 +58,67 @@ const TFD_PATIENT_REQUESTS_CHANNEL = new BroadcastChannel('tfd-patient-requests-
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientRequestsPage implements OnInit, OnDestroy {
-  // Injeções de dependência modernas
+  // Injeções de Dependência Dinâmicas
   private readonly patientRequestService = inject(PatientRequestService);
   private readonly dialog = inject(MatDialog);
+  private readonly overlay = inject(Overlay);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
-
-  // ViewChild para captura do MatSort do template (compartilhado ou gerenciado pelo layout)
-  protected readonly sort = viewChild.required(MatSort);
 
   private loadingDialog!: MatDialogRef<LoadingComponent>;
   private readonly currentUser = this.route.parent?.parent?.snapshot.data['user'];
 
-  // Definições de Colunas das Tabelas
-  protected readonly displayedOwnerColumns: string[] = ['bookmark', 'patient', 'cns', 'type', 'consultation_date', 'status', 'actions'];
-  protected readonly displayedProcessColumns: string[] = ['patient', 'cns', 'type', 'consultation_date', 'responsible', 'actions'];
-  protected readonly displayedOthersColumns: string[] = ['patient', 'cns', 'type', 'consultation_date', 'responsible', 'actions'];
+  // 1. Capturas nomeadas e isoladas de cada matSort no template HTML
+  private readonly ownerSort = viewChild<MatSort>('ownerSort');
+  private readonly processSort = viewChild<MatSort>('processSort');
+  private readonly othersSort = viewChild<MatSort>('othersSort');
 
-  // Signals para armazenamento do estado bruto dos dados divididos por abas
-  private readonly rawOwnerList = signal<PatientRequest[]>([]);
-  private readonly rawProcessList = signal<PatientRequest[]>([]);
-  private readonly rawOthersList = signal<PatientRequest[]>([]);
+  // ➕ 2. Capturas nomeadas e isoladas dos paginadores do template HTML
+  private readonly ownerPaginator = viewChild<MatPaginator>('ownerPaginator');
+  private readonly processPaginator = viewChild<MatPaginator>('processPaginator');
+  private readonly othersPaginator = viewChild<MatPaginator>('othersPaginator');
 
-  // Computed signals injetando dados e acoplando ordenação nativa reativa em TODAS as abas
+  // Definições de Estrutura de Colunas expostas ao Template
+  protected readonly displayedOwnerColumns: string[] = ['bookmark', 'name', 'cns', 'type', 'consultation_date', 'status', 'actions'];
+  protected readonly displayedProcessColumns: string[] = ['name', 'cns', 'type', 'consultation_date', 'responsible', 'actions'];
+  protected readonly displayedOthersColumns: string[] = ['name', 'cns', 'type', 'consultation_date', 'responsible', 'actions'];
+
+  // Signals internos para gerenciamento do estado bruto
+  private readonly rawOwnerList = signal<any[]>([]);
+  private readonly rawProcessList = signal<any[]>([]);
+  private readonly rawOthersList = signal<any[]>([]);
+
+  // Computed signals criando os DataSources e acoplando o Sort/Paginator de forma reativa
   protected readonly ownerDataSource = computed(() => {
     const dataSource = new MatTableDataSource(this.rawOwnerList());
-    dataSource.sort = this.sort();
+    const sortRef = this.ownerSort();
+    const paginatorRef = this.ownerPaginator();
+
+    if (sortRef) dataSource.sort = sortRef;
+    if (paginatorRef) dataSource.paginator = paginatorRef; // ➕ Acoplamento
+
     return dataSource;
   });
 
   protected readonly processDataSource = computed(() => {
     const dataSource = new MatTableDataSource(this.rawProcessList());
-    dataSource.sort = this.sort();
+    const sortRef = this.processSort();
+    const paginatorRef = this.processPaginator();
+
+    if (sortRef) dataSource.sort = sortRef;
+    if (paginatorRef) dataSource.paginator = paginatorRef; // ➕ Acoplamento
+
     return dataSource;
   });
 
   protected readonly othersDataSource = computed(() => {
     const dataSource = new MatTableDataSource(this.rawOthersList());
-    dataSource.sort = this.sort();
+    const sortRef = this.othersSort();
+    const paginatorRef = this.othersPaginator();
+
+    if (sortRef) dataSource.sort = sortRef;
+    if (paginatorRef) dataSource.paginator = paginatorRef; // ➕ Acoplamento
+
     return dataSource;
   });
 
@@ -110,24 +136,37 @@ export class PatientRequestsPage implements OnInit, OnDestroy {
     TFD_PATIENT_REQUESTS_CHANNEL.close();
   }
 
-  // Filtros locais e rápidos de busca nas tabelas
+  // Métodos de Filtragem expostos para as tabelas
   protected applyOwnerFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    this.ownerDataSource().filter = filterValue.trim().toLowerCase();
+    const dataSource = this.ownerDataSource();
+    dataSource.filter = filterValue.trim().toLowerCase();
+    if (dataSource.paginator) {
+      dataSource.paginator.firstPage(); // Reseta para a primeira página após o filtro
+    }
   }
 
   protected applyProcessFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    this.processDataSource().filter = filterValue.trim().toLowerCase();
+    const dataSource = this.processDataSource();
+    dataSource.filter = filterValue.trim().toLowerCase();
+    if (dataSource.paginator) {
+      dataSource.paginator.firstPage(); // Reseta para a primeira página após o filtro
+    }
   }
 
   protected applyOthersFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    this.othersDataSource().filter = filterValue.trim().toLowerCase();
+    const dataSource = this.othersDataSource();
+    dataSource.filter = filterValue.trim().toLowerCase();
+    if (dataSource.paginator) {
+      dataSource.paginator.firstPage(); // Reseta para a primeira página após o filtro
+    }
   }
 
   /**
-   * Busca centralizada, mapeamento e separação lógica das requisições
+   * Obtém a listagem atualizada de solicitações e executa a separação reativa
+   * entre Titulares (Owners), Em Processamento (Processes) e Outros (Others).
    */
   private getPatientRequests(showLoading = false): void {
     if (showLoading) this.openLoading();
@@ -143,34 +182,53 @@ export class PatientRequestsPage implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (response) => {
-          // Mapeia os dados comuns injetando as propriedades niveladas para exibição simplificada na tabela
-          const normalizedRequests = response.map((item: any) => ({
-            ...item,
-            name: item.report?.patient_care?.patient?.name,
-            cns: item.report?.patient_care?.patient?.cns,
-            type: item.type,
-            consultation_date: item.consultation_date,
-            status: item.status,
-          }));
+          const rawData = response || [];
 
-          // 1. Filtro: Titular (Owner)
-          const owners = normalizedRequests.filter((req: any) => 
-            (!req.medical_professional || req.back_to_owner) && req.owner
-          );
+          // Filtra e mapeia as solicitações Titulares (Owner)
+          const owners = rawData
+            .filter((item: any) => (!item.medical_professional || item.back_to_owner) && item.owner)
+            .map((item: any) => ({
+              ...item,
+              name: item.report?.patient_care?.patient?.name,
+              cns: item.report?.patient_care?.patient?.cns,
+              type: item.type,
+              consultation_date: item.consultation_date,
+              status: item.status,
+            }));
 
-          // 2. Filtro: Vinculado a outros (Others)
-          const others = normalizedRequests.filter((req: any) => !req.owner);
+          // Filtra e mapeia as solicitações vinculadas a Outros Profissionais (Others)
+          const others = rawData
+            .filter((item: any) => !item.owner)
+            .map((item: any) => ({
+              ...item,
+              name: item.report?.patient_care?.patient?.name,
+              cns: item.report?.patient_care?.patient?.cns,
+              type: item.type,
+              consultation_date: item.consultation_date,
+              status: item.status,
+            }));
 
-          // 3. Filtro: Em processamento profissional (Process)
-          const processes = normalizedRequests.filter((req: any) => 
-            req.medical_professional && req.owner && !req.back_to_owner
-          );
+          // Filtra e mapeia as solicitações Em Processamento (Process)
+          const processes = rawData
+            .filter((item: any) => item.medical_professional && item.owner && !item.back_to_owner)
+            .map((item: any) => ({
+              ...item,
+              name: item.report?.patient_care?.patient?.name,
+              cns: item.report?.patient_care?.patient?.cns,
+              type: item.type,
+              consultation_date: item.consultation_date,
+              status: item.status,
+            }));
 
           this.rawOwnerList.set(owners);
           this.rawOthersList.set(others);
           this.rawProcessList.set(processes);
         },
-        error: (err) => console.error('Erro ao buscar solicitações de pacientes:', err)
+        error: () => {
+          this.rawOwnerList.set([]);
+          this.rawOthersList.set([]);
+          this.rawProcessList.set([]);
+        }
       });
   }
 
@@ -183,15 +241,16 @@ export class PatientRequestsPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Inversão lógica simplificada: Retorna 'true' caso o usuário NÃO possua a permissão
+   * Avalia as regras de acesso cedidas no Route Resolver.
+   * Retorna 'true' (desabilita) se o usuário NÃO possuir a permissão informada.
    */
   protected checkPermissions(permissionName: string): boolean {
     if (!this.currentUser?.roles) return true;
-    
-    const hasPermission = this.currentUser.roles.some((role: any) =>
+
+    const hasPermission = this.currentUser.roles.some((role: any) => 
       role.permissions?.some((perm: Permission) => perm.name === permissionName)
     );
-    
+
     return !hasPermission;
   }
 
@@ -200,14 +259,15 @@ export class PatientRequestsPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Método privado e unificado para gerenciamento reativo do ciclo de modais interativas
+   * Centralizador genérico para abertura de modais com recarga automatizada de dados.
    */
-  private openDialog(component: any, data: any, width = '400px', height = 'auto', requiresRefresh = true): void {
+  private openDialog(component: any, data: any, width = '1200px', height = 'auto', requiresRefresh = true): void {
     this.dialog.open(component, {
       width,
       height,
       disableClose: true,
       autoFocus: false,
+      scrollStrategy: this.overlay.scrollStrategies.noop(),
       data
     }).afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -223,7 +283,8 @@ export class PatientRequestsPage implements OnInit, OnDestroy {
     TFD_PATIENT_REQUESTS_CHANNEL.postMessage('update');
   }
 
-  // Métodos de Ação disparados a partir das linhas das tabelas no HTML
+  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
+
   protected haltedPatientRequest(patientRequest: PatientRequest): void {
     this.openDialog(HaltedPatientRequestComponent, { patient_request: patientRequest }, '400px');
   }
@@ -237,7 +298,7 @@ export class PatientRequestsPage implements OnInit, OnDestroy {
   }
 
   protected processPatientRequest(patientRequest: PatientRequest): void {
-    this.openDialog(ProcessPatientRequestComponent, { patient_request: patientRequest }, '500px');
+    this.openDialog(ProcessPatientRequestComponent, { patient_request: patientRequest }, '400px');
   }
 
   protected movePatientRequestFromProcesses(patientRequest: PatientRequest): void {

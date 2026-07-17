@@ -25,6 +25,7 @@ export interface PatientRequest {
     payment_professional?: Professional,
     hospital_unity: HospitalUnity,
     status: boolean,
+    has_opinion: boolean,
     medical_status: boolean,
     social_status:boolean,
     travel_status: boolean,

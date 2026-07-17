@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal, ChangeDetectorRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 
@@ -12,6 +12,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 // Serviços e Modais do Contexto de Laudos
 import { PatientService } from '../../../services/patient-service';
+import { MessageService } from '../../../../core/services/message-service';
 import { CreatePatientReportComponent } from '../create-patient-report-component/create-patient-report-component';
 import { DeletePatientReportComponent } from '../delete-patient-report-component/delete-patient-report-component';
 import { ReportAttachmentsComponent } from '../report-attachments-component/report-attachments-component';
@@ -35,16 +36,18 @@ const TFD_PATIENTS_CHANNEL = new BroadcastChannel('tfd-patients-channel');
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientReportsComponent implements OnInit {
-  // Injeções de dependência modernas
+  // Injeções de Dependência Dinâmicas
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly dialog = inject(MatDialog);
   private readonly patientService = inject(PatientService);
+  private readonly messageService = inject(MessageService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  // Propriedades expostas para o Template com computed e signals
-  protected readonly displayedColumns: string[] = ['protocol', 'cid', 'actions'];
-  protected readonly reportsList = signal<any[]>([]); // Substitua 'any' pelo seu Model de Report caso exista
-  protected readonly dataSource = computed(() => new MatTableDataSource(this.reportsList()));
+  // Estados gerenciados reativamente via Signals e Computeds
+  protected readonly displayedColumns: string[] = ['protocol', 'cid', 'lawsuit', 'actions'];
+  protected readonly reportsList = signal<any[]>([]); 
+  protected readonly dataSource = computed(() => new MatTableDataSource<any>(this.reportsList()));
   protected readonly isLoading = signal<boolean>(true);
 
   ngOnInit(): void {
@@ -52,13 +55,14 @@ export class PatientReportsComponent implements OnInit {
   }
 
   /**
-   * Busca os laudos do paciente de forma reativa e segura.
+   * Busca os laudos do paciente de forma reativa e atualiza os signals.
    */
-  private fetchPatientReports(showLoading = false): void {
-    const careId = this.data?.patient_care?.id; // Captura segura
+  private fetchPatientReports(showLoading: boolean = false): void {
+    const patientCareId = this.data?.patient_care?.id;
 
-    if (!careId) {
+    if (!patientCareId) {
       this.isLoading.set(false);
+      this.cdr.markForCheck();
       return;
     }
 
@@ -66,36 +70,33 @@ export class PatientReportsComponent implements OnInit {
       this.isLoading.set(true);
     }
 
-    this.patientService.getPatientReports(careId) // Passa a variável segura tratada
+    this.patientService.getPatientReports(patientCareId)
       .pipe(
         finalize(() => {
-          if (showLoading) {
-            this.isLoading.set(false);
-          }
+          this.isLoading.set(false);
+          this.cdr.markForCheck(); // Assegura a pintura visual correta ao finalizar o carregamento no OnPush
         }),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
         next: (response) => {
-          this.reportsList.set(response);
+          this.reportsList.set(response || []);
         },
-        error: () => {
-          // Trata o erro de conexão impedindo exceções soltas na aplicação e nos testes
+        error: (err) => {
+          this.reportsList.set([]);
+          const fallbackError = 'Não foi possível carregar os laudos do paciente.';
+          this.messageService.showMessage(err?.error?.message || fallbackError);
         }
       });
   }
 
   /**
-   * Centraliza a abertura de modais com tratamento automático do após fechamento e emissão de eventos
+   * Centraliza a abertura de modais com tratamento automático do afterClosed (Conforme Código de Referência)
    */
-  private openDialog(
-    component: any, 
-    data: any, 
-    options: { width?: string; height?: string; refreshWithLoading?: boolean; postMessage?: boolean } = {}
-  ): void {
+  private openDialog(component: any, data: any, width = '800px', height = 'auto', requiresRefresh = true, emitGlobalBroadcast = true): void {
     this.dialog.open(component, {
-      width: options.width || '800px',
-      height: options.height || '700px',
+      width,
+      height,
       disableClose: true,
       autoFocus: false,
       data
@@ -103,45 +104,36 @@ export class PatientReportsComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((result) => {
         if (result) {
-          this.fetchPatientReports(options.refreshWithLoading || false);
+          this.fetchPatientReports(requiresRefresh || false);
           
-          // Se a modal modificou dados e exige notificação global pelo canal
-          if (options.postMessage !== false) {
+          // Mantém a notificação via canal global se a ação exigir a sincronização de outras listagens
+          if (emitGlobalBroadcast) {
             TFD_PATIENTS_CHANNEL.postMessage('update');
           }
+          this.cdr.markForCheck();
         }
       });
   }
 
-  // Métodos de ação disparados pelo template HTML (Modificadores Protected)
+  // --- MÉTODOS DE AÇÃO DISPARADOS PELO TEMPLATE HTML (PROTECTED) ---
+
   protected showPatientReport(report: any): void {
-    this.openDialog(ShowPatientReportComponent, { report }, { height: 'auto', postMessage: false });
+    this.openDialog(ShowPatientReportComponent, { report }, '800px', 'auto', false, false);
   }
 
   protected createPatientReport(): void {
-    this.openDialog(CreatePatientReportComponent, 
-      { patient_care: this.data.patient_care },
-      { height: 'auto' }
-    );
+    this.openDialog(CreatePatientReportComponent, { patient_care: this.data.patient_care });
   }
 
   protected updatePatientReport(report: any): void {
-    this.openDialog(UpdatePatientReportComponent, 
-      { report },
-      { height: 'auto' }
-    );
+    this.openDialog(UpdatePatientReportComponent, { report });
   }
 
   protected deletePatientReport(report: any): void {
-    this.openDialog(
-      DeletePatientReportComponent,
-      { report },
-      { width: '400px', height: 'auto', refreshWithLoading: true }
-    );
+    this.openDialog(DeletePatientReportComponent, { report }, '400px', 'auto', false);
   }
 
   protected reportAttachments(report: any): void {
-    // Abre os anexos sem disparar o postMessage global já que é uma tela de listagem/gerenciamento interno
-    this.openDialog(ReportAttachmentsComponent, { report }, { width: '600px', height: 'auto', postMessage: false });
+    this.openDialog(ReportAttachmentsComponent, { report }, '600px', 'auto', false, false);
   }
 }

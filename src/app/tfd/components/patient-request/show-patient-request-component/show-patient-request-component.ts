@@ -20,10 +20,10 @@ import { ShowOpinionComponent } from '../../opinion/show-opinion-component/show-
 import { ShowTravelComponent } from '../../travel/show-travel-component/show-travel-component';
 import { ShowCostAssistanceComponent } from '../../cost-assistance/show-cost-assistance-component/show-cost-assistance-component';
 import { ShowAccountabilityComponent } from '../../accountability/show-accountability-component/show-accountability-component';
+import { Overlay } from '@angular/cdk/overlay';
 
 @Component({
   selector: 'app-show-patient-request-component',
-  standalone: true,
   imports: [
     CommonModule, 
     MatDialogModule, 
@@ -40,6 +40,7 @@ export class ShowPatientRequestComponent {
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly storageService = inject(StorageService);
   private readonly dialog = inject(MatDialog);
+  private readonly overlay = inject(Overlay);
   private readonly destroyRef = inject(DestroyRef);
 
   // Agrega as propriedades do paciente e do atendimento em um único objeto de leitura para o template
@@ -48,21 +49,15 @@ export class ShowPatientRequestComponent {
     ...this.data?.patient_request?.report?.patient_care
   };
 
-  /**
-   * Realiza o download do arquivo binário e o salva localmente
-   */
-  protected download(archive: number, name: string): void {
-    if (!archive) return;
-
-    this.storageService.download(archive)
+  protected download(archiveId: number, name: string): void {
+    this.storageService.download(archiveId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
           if (response?.archive) {
             saveAs(response.archive, name);
           }
-        },
-        error: (err) => console.error('Erro ao realizar o download do anexo:', err)
+        }
       });
   }
 
@@ -76,6 +71,7 @@ export class ShowPatientRequestComponent {
       height,
       disableClose: true,
       autoFocus: false,
+      scrollStrategy: this.overlay.scrollStrategies.noop(),
       data
     }).afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))

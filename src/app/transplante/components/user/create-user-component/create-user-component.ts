@@ -1,14 +1,14 @@
-import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
-import { NonNullableFormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal, ChangeDetectorRef, DestroyRef } from '@angular/core';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { CommonModule } from '@angular/common';
-import { MatSelectChange, MatSelectModule } from '@angular/material/select';
+import { MatSelectModule } from '@angular/material/select';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { finalize } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgxMaskDirective } from 'ngx-mask';
-import { ERRORS } from '../../../consts/errors';
 import { UserService } from '../../../services/user-service';
 import { MessageService } from '../../../../core/services/message-service';
 import { Professionals } from '../../../enums/professionals';
@@ -16,94 +16,96 @@ import { Professionals } from '../../../enums/professionals';
 @Component({
   selector: 'app-create-user-component',
   imports: [
-    CommonModule, 
-    FormsModule, 
-    ReactiveFormsModule, 
-    MatDialogModule, 
-    MatButtonModule, 
-    MatFormFieldModule, 
-    MatInputModule, 
-    MatSelectModule, 
-    MatProgressSpinnerModule, 
+    FormsModule,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatProgressSpinnerModule,
     NgxMaskDirective
   ],
   templateUrl: './create-user-component.html',
   styleUrl: './create-user-component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush, // ⚡ Performance máxima com OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class CreateUserComponent {
-  // Injeção moderna de dependências
+export class CreateUserComponent implements OnInit {
+  // Injeções de Dependência Dinâmicas
   protected readonly data = inject(MAT_DIALOG_DATA);
-  private readonly fb = inject(NonNullableFormBuilder);
+  private readonly fb = inject(FormBuilder);
   private readonly userService = inject(UserService);
   private readonly messageService = inject(MessageService);
   private readonly dialogRef = inject(MatDialogRef<CreateUserComponent>);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
 
-  readonly errorMessages = ERRORS;
-  readonly types: string[] = Object.values(Professionals);
-  
-  // Estado reativo do formulário e envio
-  readonly isLoading = signal<boolean>(false);
-  readonly selectedProfessionalType = signal<string>('');
+  // Estrutura do Formulário exposta ao template
+  protected userForm!: FormGroup;
 
-  readonly createUserForm: FormGroup;
+  // Propriedades e Listagens estáticas de Enums
+  protected readonly types: string[] = Object.values(Professionals);
 
-  constructor() {
-    // Inicialização limpa do FormGroup
-    this.createUserForm = this.fb.group({
-      email: [null, [Validators.required, Validators.email], [this.userService.emailUserExistsValidator(null)]],
-      name: [null, [Validators.required]],
-      type: [null, [Validators.required]],
-      cns: [null, [Validators.required]],
-      registration: [null, [Validators.required]],
-    });
+  // Estados gerenciados reativamente via Signals
+  protected readonly isSubmitting = signal<boolean>(false);
 
-    // Reatividade declarativa baseada no tipo selecionado
-    effect(() => {
-      const type = this.selectedProfessionalType();
-      const isMedico = type === 'Médico';
-      const isAssistenteSocial = type === 'Assistente Social';
+  // 🎯 Mapeamento local das mensagens de erro padronizado
+  protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
+    name: [{ type: 'required', message: 'O nome é obrigatório.' }],
+    email: [
+      { type: 'required', message: 'O e-mail é obrigatório.' },
+      { type: 'email', message: 'Formato de e-mail inválido.' },
+      { type: 'emailExists', message: 'O e-mail informado já está em uso.' }
+    ],
+    type: [{ type: 'required', message: 'Selecione o tipo de profissional.' }],
+    cns: [
+      { type: 'required', message: 'O CNS é obrigatório.' },
+      { type: 'cnsExists', message: 'O CNS informado já está em uso.' }
+    ],
+    registration: [{ type: 'required', message: 'A matrícula é obrigatória.' }]
+  };
 
-      // CBO fica desabilitado apenas se for Médico
-      if (isMedico) {
-        this.createUserForm.get('cbo')?.disable();
-      } else {
-        this.createUserForm.get('cbo')?.enable();
-      }
+  ngOnInit(): void {
+    this.initForm();
+  }
 
-      // Registro Profissional fica desabilitado se for Assistente Social OU Médico
-      if (isAssistenteSocial || isMedico) {
-        this.createUserForm.get('professional_register')?.disable();
-      } else {
-        this.createUserForm.get('professional_register')?.enable();
-      }
+  private initForm(): void {
+    this.userForm = this.fb.group({
+      name: ['', [Validators.required]],
+      email: ['', [Validators.required, Validators.email], [this.userService.emailUserExistsValidator(null)]],
+      type: ['', [Validators.required]],
+      cns: ['', [Validators.required], [this.userService.cnsUserExistsValidator(null)]],
+      registration: ['', [Validators.required]],
     });
   }
 
-  onSelection(event: MatSelectChange): void {
-    this.selectedProfessionalType.set(event.value);
-  }
+  protected onSubmit(): void {
+    if (this.userForm.invalid) {
+      this.userForm.markAllAsTouched();
+      return;
+    }
 
-  resetCBO(): void {
-    this.createUserForm.get('cbo')?.reset();
-  }
+    this.isSubmitting.set(true);
+    this.cdr.markForCheck();
 
-  onSubmit(): void {
-    if (this.createUserForm.invalid) return;
-
-    this.isLoading.set(true);
-    
-    // Passamos getRawValue() para enviar inclusive os campos que possam estar desabilitados, se necessário
-    this.userService.createUser(this.createUserForm.getRawValue()).subscribe({
-      next: (response: any) => {
-        this.messageService.showMessage(response.message);
-        this.dialogRef.close(true);
-      },
-      error: (err) => {
-        const fallbackMessage = err?.error?.message || 'Erro ao criar o usuário';
-        this.messageService.showMessage(fallbackMessage);
-        this.isLoading.set(false);
-      },
-    });
+    // getRawValue garante que campos desabilitados por regras de negócio também sejam enviados
+    this.userService.createUser(this.userForm.getRawValue())
+      .pipe(
+        finalize(() => {
+          this.isSubmitting.set(false);
+          this.cdr.markForCheck();
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (response: any) => {
+          this.messageService.showMessage(response?.message || 'Usuário cadastrado com sucesso!');
+          this.dialogRef.close(true);
+        },
+        error: (err) => {
+          const fallbackError = 'Erro ao criar o usuário.';
+          this.messageService.showMessage(err?.error?.message || fallbackError);
+        }
+      });
   }
 }

@@ -18,9 +18,11 @@ import { Permission } from '../../models/permission';
 import { Role } from '../../models/role';
 import { RoleService } from '../../services/role-service';
 
-// Componentes de Dialogs (Alinhados com a nova estrutura)
+// Components (Dialogs)
+import { DeleteRoleComponent } from '../../components/role/delete-role-component/delete-role-component';
+import { UpdateRoleComponent } from '../../components/role/update-role-component/update-role-component';
 
-const HOMECARE_ROLES_CHANNEL = new BroadcastChannel('homecare-roles-channel');
+const TFD_ROLES_CHANNEL = new BroadcastChannel('tfd-roles-channel');
 
 @Component({
   selector: 'app-roles-page',
@@ -34,43 +36,35 @@ const HOMECARE_ROLES_CHANNEL = new BroadcastChannel('homecare-roles-channel');
   ],
   templateUrl: './roles-page.html',
   styleUrl: './roles-page.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ OnPush para máxima performance com Signals
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RolesPage implements OnInit, OnDestroy {
-  // 🔒 Injeções de dependência imutáveis e modernas via inject()
+  // Injeções de dependência
   private readonly roleService = inject(RoleService);
   private readonly dialog = inject(MatDialog);
   private readonly route = inject(ActivatedRoute);
-  private readonly destroyRef = inject(DestroyRef); // Controle automático de desassinatura
+  private readonly destroyRef = inject(DestroyRef);
 
   private loadingDialog!: MatDialogRef<LoadingComponent>;
-  
-  // Cache das informações do usuário logado para evitar loops custosos no HTML
   private readonly currentUser = this.route.parent?.parent?.snapshot.data['user'];
 
   // Propriedades expostas para o Template
   protected readonly displayedColumns: string[] = ['name', 'actions'];
-  
-  // Lista bruta armazenada em um Signal puro
-  protected readonly rolesList = signal<Role[]>([]);
-
-  // Computed Signal: Recria e atualiza o DataSource de forma reativa e performática
-  protected readonly dataSource = computed(() => new MatTableDataSource(this.rolesList()));
+  protected readonly rawList = signal<Role[]>([]);
+  protected readonly dataSource = computed(() => new MatTableDataSource(this.rawList()));
 
   ngOnInit(): void {
-    this.getRoles(true); // Ativa o loading na primeira carga
+    this.fetchRoles(true);
 
-    // Ouvindo o canal de broadcast com segurança
-    HOMECARE_ROLES_CHANNEL.onmessage = (message) => {
+    TFD_ROLES_CHANNEL.onmessage = (message) => {
       if (message.data === 'update') {
-        this.getRoles(false); // Atualiza em background de forma silenciosa
+        this.fetchRoles(false);
       }
     };
   }
 
   ngOnDestroy(): void {
-    // Evita vazamento de memória fechando o canal
-    HOMECARE_ROLES_CHANNEL.close();
+    TFD_ROLES_CHANNEL.close();
   }
 
   protected applyFilter(event: Event): void {
@@ -78,8 +72,7 @@ export class RolesPage implements OnInit, OnDestroy {
     this.dataSource().filter = filterValue.trim().toLowerCase();
   }
 
-  // Busca unificada com tratamento seguro de Loading e Desassinatura
-  private getRoles(showLoading = false): void {
+  private fetchRoles(showLoading = false): void {
     if (showLoading) this.openLoading();
 
     this.roleService.getRoles()
@@ -89,15 +82,13 @@ export class RolesPage implements OnInit, OnDestroy {
             this.loadingDialog.close();
           }
         }),
-        takeUntilDestroyed(this.destroyRef) // Cancela a requisição se o usuário sair da página
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
         next: (response) => {
-          this.rolesList.set(response);
+          this.rawList.set(response || []);
         },
-        error: () => {
-          // Espaço para tratamento amigável de erros se necessário
-        }
+        error: () => {}
       });
   }
 
@@ -111,9 +102,12 @@ export class RolesPage implements OnInit, OnDestroy {
 
   protected checkPermissions(permissionName: string): boolean {
     if (!this.currentUser?.roles) return true;
-    return !this.currentUser.roles.some((role: any) => 
-      role.permissions.some((p: Permission) => p.name === permissionName)
+
+    const hasPermission = this.currentUser.roles.some((role: any) =>
+      role.permissions?.some((perm: Permission) => perm.name === permissionName)
     );
+
+    return !hasPermission;
   }
 
   protected ownerRole(role: Role): boolean {
@@ -122,28 +116,28 @@ export class RolesPage implements OnInit, OnDestroy {
     return ownerRoleNames.includes(role.name);
   }
 
-  // Centralizador de abertura de dialogs com tratamento RXJS limpo
-  private openDialog(component: any, data: any, width = '400px'): void {
+  private openDialog(component: any, data: any, width = '400px', height = 'auto', requiresRefresh = true): void {
     this.dialog.open(component, {
       width,
+      height,
       disableClose: true,
       autoFocus: false,
       data
     }).afterClosed()
-      .pipe(takeUntilDestroyed(this.destroyRef)) // Protege o fluxo pós-fechamento
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(result => {
-        if (result) {
+        if (result && requiresRefresh) {
           this.handleRoleChange();
         }
       });
   }
 
   private handleRoleChange(): void {
-    this.getRoles(false);
-    HOMECARE_ROLES_CHANNEL.postMessage('update');
+    this.fetchRoles(false);
+    TFD_ROLES_CHANNEL.postMessage('update');
   }
 
-  // Métodos de ação extremamente enxutos para o HTML
-  // protected updateRole(role: Role): void { this.openDialog(UpdateRoleComponent, { role }, '900px'); }
-  // protected deleteRole(role: Role): void { this.openDialog(DeleteRoleComponent, { role }, '400px'); }
+  // Métodos de ação do template HTML
+  protected updateRole(role: Role): void { this.openDialog(UpdateRoleComponent, { role }, '900px'); }
+  protected deleteRole(role: Role): void { this.openDialog(DeleteRoleComponent, { role }); }
 }

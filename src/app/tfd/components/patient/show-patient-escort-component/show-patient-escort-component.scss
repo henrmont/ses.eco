@@ -1,3 +1,5 @@
+@use 'variables' as *;
+
 :host {
   display: flex;
   flex-direction: column;
@@ -6,81 +8,52 @@
 }
 
 mat-dialog-content {
-  flex: 1;                  
   overflow-y: auto !important; 
-  max-height: none !important; 
-  padding: 4px 24px;
-}
-
-h2[mat-dialog-title] {
-  margin: 0;
-  padding: 16px 24px;
-  flex-shrink: 0; 
+  padding-top: $spacing-sm !important;
 }
 
 mat-dialog-actions {
-  margin: 0;
-  padding: 12px 24px 16px;
-  flex-shrink: 0; 
-  border-top: 1px solid rgba(0, 0, 0, 0.08); 
+  gap: $spacing-lg; 
 }
 
-.user-details-container {
+.details-container {
+  padding: $spacing-lg 0 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 4px 0;
+  gap: $spacing-xxl; 
 }
 
-.detail-card {
-  border-radius: 8px;
-  border: none !important;
-  box-shadow: 0px 2px 1px -1px rgba(0, 0, 0, 0.2), 
-              0px 1px 1px 0px rgba(0, 0, 0, 0.14), 
-              0px 1px 3px 0px rgba(0, 0, 0, 0.12) !important;
-  
-  mat-card-header {
-    margin-bottom: 12px;
-    
-    mat-card-title {
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--mdc-outlined-card-label-text-color, #555);
-    }
-  }
+mat-card {
+  background: $color-card-bg;
+  border-radius: $radius-md; 
+  box-shadow: $show-card; 
 }
 
 .line {
   display: grid;
-  gap: 16px; 
-  margin-top: 12px;
+  gap: $spacing-md; 
+  padding: 0 $spacing-md; 
+  align-items: center; 
+  color: $color-text-main;
+  min-height: 48px; 
 
-  @media (max-width: 480px) {
-    grid-template-columns: 1fr !important;
+  strong {
+    color: $color-text-variant;
+    font-weight: 600;
   }
 
-  div {
+  .action-cell {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-    font-size: 0.95rem;
-    color: #212121;
-    font-weight: 400;
-
-    strong {
-      font-size: 0.75rem;
-      font-weight: 500;
-      text-transform: uppercase;
-      color: #757575;
-      letter-spacing: 0.5px;
-    }
-
-    // Garante alinhamento horizontal perfeito para o nome do anexo + botão de download
-    &[style*="display: flex"] {
-      flex-direction: row !important;
-      align-items: center !important;
-      gap: 8px;
-    }
+    align-items: center;
+    gap: $spacing-sm;
+    height: 100%; 
   }
+}
+
+// --- Definições Semânticas das Colunas da Grid ---
+.line {
+  &.cols-1-col   { grid-template-columns: 1fr; }
+  &.cols-1-1     { grid-template-columns: 1fr 1fr; }
+  &.cols-1-2     { grid-template-columns: 1fr 2fr; }
+  &.cols-2-2-1   { grid-template-columns: 2fr 2fr 1fr; }
 }

@@ -1,47 +1,77 @@
+@use 'variables' as *;
+
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   width: 100%;
 }
 
-// 🛡️ Garante que o Angular Material respeite o atributo [hidden] usado para os testes unitários
 mat-error[hidden] {
   display: none !important;
 }
 
 mat-form-field {
   width: 100%;
-  height: auto;
 }
 
 mat-dialog-content {
-  display: flex;
-  flex-direction: column;
-  row-gap: 10px;
-  padding-top: 10px; // Evita que a borda outline do primeiro campo seja cortada no topo da modal
+  padding-top: $spacing-modal-pt;
+  overflow-y: auto;
+}
+
+.stepper {
+  margin-top: $spacing-form-gap; 
+  display: flex; 
+  flex-direction: column; 
+  gap: $spacing-form-gap;
+}
+
+.line {
+  display: grid; 
+  grid-template-columns: var(--grid-cols, 1fr); 
+  column-gap: $spacing-xl; 
+  row-gap: $spacing-form-gap; 
+  align-items: start;
+  min-height: 56px;
+
+  .toggle-cell {
+    display: flex;
+    align-items: center;
+    height: 56px;
+
+    mat-slide-toggle {
+      font-size: 14px;
+      color: var(--mdc-outlined-text-field-label-text-color, $color-text-label-fallback);
+    }
+  }
+}
+
+// --- Definições Semânticas das Colunas da Grid ---
+.line {
+  &.cols-1-1   { --grid-cols: 1fr 1fr; }
+  &.cols-1-col { --grid-cols: 1fr; }
+}
+
+// Alinhamento perfeito do spinner de carregamento no autocomplete
+.field-spinner {
+  margin-right: $spacing-sm;
 }
 
 .waiting {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: $spacing-form-gap;
 
   mat-spinner {
     display: inline-block;
-    flex-shrink: 0; // Impede que o layout flex esmague o tamanho do spinner
+    flex-shrink: 0;
   }
 }
 
-.line {
-  display: grid;
-  column-gap: 20px;
-  align-items: start; // Mudado de 'center' para 'start' para alinhar os topos dos componentes
-}
-
-.toggle {
-  display: flex;
-  align-items: center;
-  height: 56px; // Alinha com a altura da caixa do input (sem contar o erro)
-  margin-bottom: 22px; // 🎯 Compensa exatamente o espaço do mat-error do input vizinho
-  padding-left: 5px;
+mat-dialog-actions {
+  gap: $spacing-lg;
+  background-color: inherit;
+  margin-bottom: 0;
 }

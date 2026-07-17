@@ -1,13 +1,11 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 // Componentes Filhos
-import { DailiesCostComponent } from '../../components/daily-cost/dailies-cost-component/dailies-cost-component';
+import { DailiesCostComponent } from '../../components/setting/dailies-cost-component/dailies-cost-component';
 
 @Component({
   selector: 'app-settings-page',
   imports: [
-    CommonModule, 
     DailiesCostComponent
   ],
   templateUrl: './settings-page.html',

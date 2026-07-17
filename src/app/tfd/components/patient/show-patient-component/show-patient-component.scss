@@ -1,112 +1,63 @@
+@use 'variables' as *;
+
 :host {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 85vh; 
-  max-height: 85vh;
   overflow: hidden; 
 }
 
-// Único container com scroll vertical
 mat-dialog-content {
-  flex: 1;                  
   overflow-y: auto !important; 
-  max-height: none !important; 
-  padding: 4px 24px;
+  padding-top: $spacing-sm !important;
 }
 
-// Título do modal fixo no topo
-h2[mat-dialog-title] {
-  margin: 0;
-  padding: 16px 24px;
-  flex-shrink: 0; 
-}
-
-// Botão de ações fixo no rodapé
 mat-dialog-actions {
-  margin: 0;
-  padding: 12px 24px 16px;
-  flex-shrink: 0; 
-  border-top: 1px solid rgba(0, 0, 0, 0.08); 
+  gap: $spacing-lg; 
 }
 
-// Container dos cards
-.user-details-container {
+.details-container {
+  padding: $spacing-lg 0 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 4px 0;
+  gap: $spacing-xxl; 
 }
 
-// Ajustado para mat-card sombreado e título idêntico ao show-user
-.detail-card {
-  border-radius: 8px;
-  // Remove o estilo "outlined" (borda) e aplica a sombra (elevação) padrão do Material Card
-  border: none !important;
-  box-shadow: 0px 2px 1px -1px rgba(0, 0, 0, 0.2), 
-              0px 1px 1px 0px rgba(0, 0, 0, 0.14), 
-              0px 1px 3px 0px rgba(0, 0, 0, 0.12) !important;
-  
-  mat-card-header {
-    margin-bottom: 12px;
-    
-    mat-card-title {
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--mdc-outlined-card-label-text-color, #555);
-    }
-  }
+mat-card {
+  background: $color-card-bg;
+  border-radius: $radius-md; 
+  box-shadow: $show-card; 
 }
 
-// Linhas do Grid
 .line {
   display: grid;
-  gap: 16px; 
-  margin-top: 12px;
+  gap: $spacing-md; 
+  padding: 0 $spacing-md; 
+  align-items: center; 
+  color: $color-text-main;
+  min-height: 48px; 
 
-  @media (max-width: 480px) {
-    grid-template-columns: 1fr !important; // Responsivo para celular
+  strong {
+    color: $color-text-variant;
+    font-weight: 600;
   }
 
-  // Bloco de informação (Equivalente ao .info-group do show-user)
-  div {
+  .action-cell {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-    
-    // Tipografia do VALOR (.value do show-user)
-    font-size: 0.95rem;
-    color: #212121;
-    font-weight: 400;
-
-    // Tipografia da LABEL (.label do show-user)
-    strong {
-      font-size: 0.75rem;
-      font-weight: 500;
-      text-transform: uppercase;
-      color: #757575;
-      letter-spacing: 0.5px;
-    }
-
-    // Comportamento especial para quando a div do valor contiver botões de download
-    &:has(button[matIconButton]), &:has(button[mat-icon-button]) {
-      flex-direction: row;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
-
-      strong {
-        width: 100%;
-        margin-bottom: -4px; 
-      }
-    }
+    align-items: center;
+    gap: $spacing-sm;
+    height: 100%; 
   }
 }
 
-// Classe de destaque para informações principais (ex: Nome do Paciente)
-// Adicione a classe class="highlight" na div ou no texto do Nome lá no seu HTML
-.highlight {
-  font-weight: 600 !important;
-  color: var(--mat-sys-primary, #1976d2) !important;
+// --- Definições Semânticas das Colunas da Grid ---
+.line {
+  &.cols-1-col         { grid-template-columns: 1fr; }
+  &.cols-1-1           { grid-template-columns: 1fr 1fr; }
+  &.cols-1-2           { grid-template-columns: 1fr 2fr; }
+  &.cols-4-1           { grid-template-columns: 4fr 1fr; }
+  &.cols-1-1-1         { grid-template-columns: repeat(3, 1fr); }
+  &.cols-2-2-1         { grid-template-columns: 2fr 2fr 1fr; }
+  &.cols-2-3-2         { grid-template-columns: 2fr 3fr 2fr; }
+  &.cols-15-1-1-1-1    { grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr; }
 }

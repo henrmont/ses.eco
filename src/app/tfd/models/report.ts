@@ -12,4 +12,6 @@ export interface Report {
     patient_care?: PatientCare,
     cid: any,
     patient_requests?: PatientRequest[], 
+    has_patient_requests?: boolean,
+    has_entrance_or_lawsuit?: boolean
 }

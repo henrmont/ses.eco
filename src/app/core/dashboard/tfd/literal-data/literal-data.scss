@@ -1,24 +1,68 @@
-section {
-    display: flex;
-    justify-content: space-between;
-    column-gap: 20px;
-}
+@use 'variables' as *;
 
-mat-icon.icon {
-    width: auto;
-    height: auto;
-    font-size: 40px;
+section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: $spacing-xxl;
+  width: 100%;
+  margin: 0 auto;
 }
 
 mat-card {
-    width: 200px;
+  width: 100%;
+  border-radius: $radius-lg;
+  background-color: $color-surface;
+  box-shadow: $shadow-card;
+
+  mat-card-header {
+    padding: $spacing-xl $spacing-xxl $spacing-md $spacing-xxl;
+    
+    mat-card-subtitle { 
+      color: $color-text-main;
+    }
+  }
+
+  mat-card-content {
+    padding: 0 $spacing-lg $spacing-lg $spacing-lg;
+  }
 }
 
-mat-card-subtitle {
-    text-align: center;
-    height: 50px;
+.card-main-info {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+
+  .icon {
+    font-size: 40px;
+    height: 40px;
+    width: 40px;
+  }
+
+  h2 {
+    font-size: 2rem;
+    margin: 0;
+    font-weight: 700;
+  }
 }
 
-h2 {
-    font-size: 17px;
+.card-trend-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-top: $spacing-md;
+
+  .trend-badge {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+
+    &.trend-up { color: $color-success; }
+    &.trend-down { color: $color-danger; }
+  }
+
+  .trend-label {
+    font-size: 0.85rem;
+    color: $color-text-muted;
+  }
 }
+

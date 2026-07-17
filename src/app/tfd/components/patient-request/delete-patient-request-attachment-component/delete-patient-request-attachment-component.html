@@ -1,20 +1,30 @@
-<h2 mat-dialog-title>Deletar anexo</h2>
+<h2 mat-dialog-title>Confirmar exclusão</h2>
 
 <mat-dialog-content>
-  <p>Você tem certeza que deseja remover o arquivo <strong>{{ data?.patient_request_attachment?.name }}</strong>? Esta ação não poderá ser desfeita.</p>
+  <p>
+    Tem certeza de que deseja remover o anexo 
+    <strong>{{ data?.patient_request_attachment?.name ?? 'Não informado' }}</strong>?
+    <br><span>Esta ação não poderá ser desfeita.</span>
+  </p>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button mat-button [disabled]="isSubmitting()" [mat-dialog-close]="false">
+  <button mat-button type="button" [disabled]="isSubmitting()" [mat-dialog-close]="false">
     Cancelar
   </button>
-
-  <button mat-flat-button color="warn" [disabled]="isSubmitting()" (click)="onSubmit()">
+  
+  <button 
+    mat-flat-button 
+    color="warn" 
+    type="button" 
+    [disabled]="isSubmitting()" 
+    (click)="onSubmit()"
+  >
     <div class="waiting">
       @if (isSubmitting()) {
         <mat-spinner [diameter]="20"></mat-spinner>
       }
-      <span>{{ isSubmitting() ? 'Excluindo...' : 'Confirmar Exclusão' }}</span>
+      <span>{{ isSubmitting() ? 'Excluindo...' : 'Confirmar exclusão' }}</span>
     </div>
   </button>
 </mat-dialog-actions>

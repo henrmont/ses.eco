@@ -18,7 +18,6 @@ import { MessageService } from '../../../../core/services/message-service';
 
 @Component({
   selector: 'app-create-patient-report-component',
-  standalone: true,
   imports: [
     CommonModule, 
     FormsModule, 
@@ -48,8 +47,8 @@ export class CreatePatientReportComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   // Estrutura do Formulário e Controles expostos ao template
-  protected createReportForm!: FormGroup;
-  protected readonly cidControl = new FormControl<string | any>('');
+  protected reportForm!: FormGroup;
+  protected readonly cidControl = new FormControl<string | any>('', [Validators.required]);
 
   // Estados gerenciados reativamente via Signals
   protected readonly cidReadOnly = signal<boolean>(true);
@@ -60,7 +59,7 @@ export class CreatePatientReportComponent implements OnInit {
   private cidOptions: any[] = [];
   protected filteredCidOptions!: Observable<any[]>;
 
-  // 🎯 Mapeamento local das mensagens de erro (Substituindo o ERRORS importado)
+  // 🎯 Mapeamento local das mensagens de erro padronizado para a UI
   protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
     protocol: [
       { type: 'required', message: 'O número do protocolo é obrigatório.' }
@@ -76,23 +75,35 @@ export class CreatePatientReportComponent implements OnInit {
     ]
   };
 
-  constructor() {
-    this.initForm();
-  }
-
   ngOnInit(): void {
+    this.initForm();
     this.fetchCids();
+    this.registerCidCleaner();
   }
 
   // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO E SUPORTE ---
 
   private initForm(): void {
-    this.createReportForm = this.fb.group({
+    this.reportForm = this.fb.group({
       protocol: [null, [Validators.required]],
       cid_id: [null, [Validators.required]],
       lawsuit: [false, [Validators.required]],
       diagnosis: [null, [Validators.required]],
     });
+  }
+
+  /**
+   * Monitora se o usuário limpou o texto do autocomplete para invalidar o formulário principal
+   */
+  private registerCidCleaner(): void {
+    this.cidControl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        if (!value) {
+          this.reportForm.get('cid_id')?.setValue(null);
+          this.reportForm.get('cid_id')?.markAsDirty();
+        }
+      });
   }
 
   private configureCidFilter(): void {
@@ -125,47 +136,55 @@ export class CreatePatientReportComponent implements OnInit {
     if (!careId) return;
 
     this.cidLoading.set(true);
-    this.cdr.markForCheck();
+    this.cdr.detectChanges(); // Garante o spinner de loading visível imediatamente no OnPush
 
     this.patientService.getCids(careId)
       .pipe(
         finalize(() => {
           this.cidLoading.set(false);
-          this.cdr.markForCheck();
+          this.cdr.detectChanges();
         }),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
         next: (response) => {
-          this.cidOptions = response;
+          this.cidOptions = response || [];
           this.configureCidFilter();
           this.cidReadOnly.set(false);
         },
         error: () => {
           this.cidReadOnly.set(true);
+          this.cidOptions = [];
         }
       });
   }
 
   protected setCid(cid: any): void {
-    this.createReportForm.get('cid_id')?.setValue(cid.id);
+    this.reportForm.get('cid_id')?.setValue(cid.id);
+    this.reportForm.get('cid_id')?.markAsDirty();
   }
 
   protected onSubmit(): void {
-    const careId = this.data?.patient_care?.id;
-    if (this.createReportForm.invalid || !careId) {
-      this.createReportForm.markAllAsTouched();
+    const patientCareId = this.data?.patient_care?.id;
+    if (!patientCareId) {
+      this.messageService.showMessage('Identificador do atendimento do paciente inválido.');
+      return;
+    }
+
+    if (this.reportForm.invalid || this.cidControl.invalid) {
+      this.reportForm.markAllAsTouched();
+      this.cidControl.markAsTouched();
       return;
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
+    this.cdr.detectChanges(); // Sincroniza imediatamente o estado de submissão no DOM
 
-    this.patientService.createPatientReport(careId, this.createReportForm.value)
+    this.patientService.createPatientReport(patientCareId, this.reportForm.value)
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);
-          this.cdr.markForCheck();
+          this.cdr.detectChanges();
         }),
         takeUntilDestroyed(this.destroyRef)
       )
@@ -175,7 +194,7 @@ export class CreatePatientReportComponent implements OnInit {
           this.dialogRef.close(true);
         },
         error: (err) => {
-          const fallbackError = 'Erro ao processar a criação do laudo.';
+          const fallbackError = 'Ocorreu um erro ao processar a criação do laudo.';
           this.messageService.showMessage(err?.error?.message || fallbackError);
         }
       });

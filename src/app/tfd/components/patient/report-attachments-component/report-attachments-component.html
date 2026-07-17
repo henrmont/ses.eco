@@ -1,58 +1,83 @@
 <h2 mat-dialog-title>Arquivos do laudo</h2>
 
 <mat-dialog-content>
-  @if (isLoading()) {
-    <div class="loading-container">
-      <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
-    </div>
-  } @else {
-    <table mat-table [dataSource]="dataSource()" class="mat-elevation-z8">
-      
-      <ng-container matColumnDef="name">
-        <th mat-header-cell *matHeaderCellDef> Nome </th>
-        <td mat-cell *matCellDef="let element"> {{ element.name }} </td>
-      </ng-container>
+  <div class="attachments-container">
 
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef class="center" style="width: 12%;"> Ações </th>
-        <td mat-cell *matCellDef="let element" class="center" style="display: flex; justify-content: flex-end;">
-          <div>
-            <button mat-icon-button 
-                    matTooltip="Download do arquivo" 
-                    (click)="download(element.archive_id, element.name)">
-              <mat-icon>download</mat-icon>
-            </button>
+    @if (isLoading()) {
+      <div class="loading-shade">
+        <mat-spinner [diameter]="40"></mat-spinner>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table mat-table [dataSource]="dataSource()">
+            
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef>Nome</th>
+            <td mat-cell *matCellDef="let element">{{ element.name }}</td>
+          </ng-container>
 
-            <button mat-icon-button 
-                    matTooltip="Atualizar arquivo" 
-                    (click)="updateReportAttachment(element)">
-              <mat-icon>drive_file_rename_outline</mat-icon>
-            </button>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="center actions-column-header">Ações</th>
+            <td mat-cell *matCellDef="let element" class="center actions-cell">
+              <div class="actions-wrapper">
+                
+                <button 
+                  mat-icon-button 
+                  type="button" 
+                  matTooltip="Download do arquivo" 
+                  (click)="download(element.archive_id, element.name)"
+                >
+                  <mat-icon color="primary">download</mat-icon>
+                </button>
 
-            <button mat-icon-button 
-                    matTooltip="Deletar arquivo" 
-                    (click)="deleteReportAttachment(element)">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </div>
-        </td>
-      </ng-container>
+                <button 
+                  mat-icon-button 
+                  type="button" 
+                  matTooltip="Atualizar arquivo" 
+                  (click)="updateReportAttachment(element)"
+                >
+                  <mat-icon class="icon-edit">drive_file_rename_outline</mat-icon>
+                </button>
 
-      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+                <button 
+                  mat-icon-button 
+                  type="button" 
+                  matTooltip="Deletar arquivo" 
+                  (click)="deleteReportAttachment(element)"
+                >
+                  <mat-icon color="warn">delete</mat-icon>
+                </button>
 
-      <tr class="mat-row" *matNoDataRow>
-        <td class="mat-cell center" colspan="2">Nenhum arquivo encontrado</td>
-      </tr>
-    </table>
-  }
+              </div>
+            </td>
+          </ng-container>
+  
+          <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+  
+          <tr class="mat-row" *matNoDataRow>
+            <td class="mat-cell" [attr.colspan]="displayedColumns.length">
+              <div class="empty-state">
+                <p>Nenhum arquivo encontrado para este laudo.</p>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
+    }
+
+  </div>
 </mat-dialog-content>
 
-<mat-dialog-actions>
-  <button mat-button type="button" [mat-dialog-close]="false">Fechar</button>
-  <button matButton="filled" 
-          type="button" 
-          (click)="createReportAttachment()">
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [mat-dialog-close]="false">Cancelar</button>
+  <button 
+    mat-flat-button 
+    color="primary" 
+    type="button" 
+    (click)="createReportAttachment()"
+  >
+    <mat-icon>add</mat-icon>
     Novo arquivo
   </button>
 </mat-dialog-actions>

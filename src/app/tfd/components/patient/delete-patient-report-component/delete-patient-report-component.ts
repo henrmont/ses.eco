@@ -1,50 +1,68 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, ChangeDetectorRef, DestroyRef, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { finalize } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+
 import { PatientService } from '../../../services/patient-service';
 import { MessageService } from '../../../../core/services/message-service';
 
 @Component({
   selector: 'app-delete-patient-report-component',
-  imports: [MatDialogModule, MatButtonModule, MatProgressSpinnerModule],
+  imports: [
+    CommonModule, 
+    MatDialogModule, 
+    MatButtonModule, 
+    MatProgressSpinnerModule
+  ],
   templateUrl: './delete-patient-report-component.html',
   styleUrl: './delete-patient-report-component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima com OnPush + Signals
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DeletePatientReportComponent {
-  // Injeções de Dependência modernas via inject()
+  // Injeções de Dependência Dinâmicas
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly patientService = inject(PatientService);
   private readonly messageService = inject(MessageService);
   private readonly dialogRef = inject(MatDialogRef<DeletePatientReportComponent>);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
 
-  // Estado de submissão reativo
+  // Estados gerenciados reativamente via Signals
   protected readonly isSubmitting = signal<boolean>(false);
 
-  /**
-   * Dispara a requisição para remover o laudo do paciente
-   */
+  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
+
   protected onSubmit(): void {
     const reportId = this.data?.report?.id;
 
     if (!reportId) {
-      this.messageService.showMessage('Erro: Identificador do laudo não encontrado.');
+      this.messageService.showMessage('Identificador do laudo não encontrado.');
       return;
     }
 
     this.isSubmitting.set(true);
+    this.cdr.markForCheck(); // ⚡ Força a atualização do DOM para pintar o spinner imediatamente no OnPush
 
-    this.patientService.deletePatientReport(reportId).subscribe({
-      next: (response: any) => {
-        this.messageService.showMessage(response.message || 'Laudo removido com sucesso!');
-        this.dialogRef.close(true); // Retorna true para sinalizar sucesso à grid/listagem pai
-      },
-      error: (err) => {
-        const errorMessage = err?.error?.message || 'Ocorreu um erro ao tentar remover o laudo.';
-        this.messageService.showMessage(errorMessage);
-        this.isSubmitting.set(false);
-      },
-    });
+    this.patientService.deletePatientReport(reportId)
+      .pipe(
+        finalize(() => {
+          this.isSubmitting.set(false);
+          this.cdr.markForCheck(); // ⚡ Garante o desligamento do loading visual na tela
+        }),
+        takeUntilDestroyed(this.destroyRef) // 🛡️ Proteção reativa contra memory leaks se fecharem o modal rápido
+      )
+      .subscribe({
+        next: (response: any) => {
+          this.messageService.showMessage(response?.message || 'Laudo removido com sucesso!');
+          this.dialogRef.close(true);
+        },
+        error: (err) => {
+          const fallbackError = 'Ocorreu um erro ao tentar remover o laudo.';
+          this.messageService.showMessage(err?.error?.message || fallbackError);
+        },
+      });
   }
 }

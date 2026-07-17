@@ -1,3 +1,15 @@
+@use 'variables' as *;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+// Garante que o Angular Material respeite o atributo [hidden] do HTML
+mat-error[hidden] {
+  display: none !important;
+}
+
 mat-form-field {
   width: 100%;
   height: auto;
@@ -6,24 +18,33 @@ mat-form-field {
 mat-dialog-content {
   display: flex;
   flex-direction: column;
-  row-gap: 10px;
-  padding-top: 10px; // Garante que o outline do primeiro input não fique cortado no topo do modal
+  row-gap: $spacing-form-gap;    // 10px padronizados
+  padding-top: $spacing-form-gap; // Evita o corte do outline do primeiro campo
 }
 
+// Container de estado de carregamento / envio do formulário
 .waiting {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: $spacing-form-gap; // 10px
 
   mat-spinner {
     display: inline-block;
-    flex-shrink: 0;
+    flex-shrink: 0; // Impede que o layout flex esmague o tamanho do spinner
   }
 }
 
+// Grid para campos divididos na mesma linha (ex: Cidade/Estado ou Senha/Confirmação)
 .line {
   display: grid;
   grid-template-columns: 1fr;
-  column-gap: 20px;
+  column-gap: $spacing-xl; // 20px - Usa a consistência do nosso token de grid
+
+  // Adicione esta subclasse:
+  &.double-columns {
+    @media (min-width: 600px) {
+      grid-template-columns: 1fr 1fr; // Fica lado a lado apenas em telas maiores que 600px
+    }
+  }
 }

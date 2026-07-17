@@ -1,52 +1,104 @@
+@use 'variables' as *;
+
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
   width: 100%;
+  overflow: hidden; 
 }
 
-.loading-shade {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 150px;
+mat-dialog-content {
+  overflow-y: auto !important; 
+  padding-top: $spacing-sm !important;
+}
+
+mat-dialog-actions {
+  gap: $spacing-lg; 
 }
 
 .subtitle {
-  font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 16px;
-}
-
-.roles-list {
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  max-height: 300px;
-  overflow-y: auto;
-  padding: 0 !important;
-}
-
-.role-item {
-  border-bottom: 1px solid #f0f0f0;
-  &:last-child {
-    border-bottom: none;
+  color: $color-text-main;
+  margin-bottom: $spacing-md;
+  padding: 0 $spacing-md;
+  
+  strong {
+    color: $color-text-variant;
+    font-weight: 600;
   }
 }
 
-.role-row {
+.details-container {
+  padding: $spacing-lg 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md; // Espaçamento consistente entre as linhas de cards
+}
+
+mat-card {
+  background: $color-card-bg;
+  border-radius: $radius-md; 
+  box-shadow: $show-card; 
+}
+
+.line {
+  display: grid;
+  gap: $spacing-md; 
+  padding: 0 $spacing-md; 
+  align-items: center; 
+  color: $color-text-main;
+  min-height: 48px; 
+
+  strong {
+    color: $color-text-variant;
+    font-weight: 600;
+  }
+}
+
+// Customização interna dos cards de regras para alinhar o texto e o toggle nas extremidades
+.role-card-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: $spacing-md;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+// Container centralizado de loading
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
   width: 100%;
 }
 
-.role-name {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: #333;
+// Mensagem vazia expandida para ocupar a linha toda da grid
+.empty-container {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: $spacing-xl 0;
+  
+  .empty-msg {
+    color: $color-text-variant;
+    font-style: italic;
+  }
 }
 
-.empty-msg {
-  text-align: center;
-  color: #999;
-  padding: 24px;
-  font-style: italic;
+// Container de estado de salvamento no botão
+.waiting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-form-gap;
+
+  mat-spinner {
+    display: inline-block;
+    flex-shrink: 0;
+  }
+}
+
+// --- Definições Semânticas das Colunas da Grid (Idêntico ao show-user) ---
+.line {
+  &.cols-1-1 { grid-template-columns: 1fr 1fr; }
 }

@@ -71,7 +71,7 @@ describe('UpdatePatientRequestAttachmentComponent', () => {
     expect(component['isSubmitting']()).toBe(false);
     expect(component['isDownloading']()).toBe(false);
     expect(component['fileLabel']()).toBe('Nenhum arquivo selecionado');
-    expect(component['updateAttachmentForm'].get('name')?.value).toBe('comprovante_antigo');
+    expect(component['attachmentForm'].get('name')?.value).toBe('comprovante_antigo');
   });
 
   describe('Upload e Seleção Substituta de Arquivo Local (onFileSelected)', () => {
@@ -90,11 +90,11 @@ describe('UpdatePatientRequestAttachmentComponent', () => {
 
       expect(component['selectedFile']).toBe(mockFile);
       expect(component['fileLabel']()).toBe('novo_comprovante.pdf');
-      expect(component['updateAttachmentForm'].get('name')?.value).toBe('comprovante_antigo');
+      expect(component['attachmentForm'].get('name')?.value).toBe('comprovante_antigo');
     });
 
     it('deve sugerir o nome limpo do arquivo apenas se o campo nome estiver vazio', () => {
-      component['updateAttachmentForm'].get('name')?.setValue('');
+      component['attachmentForm'].get('name')?.setValue('');
 
       const mockFile = new File([''], 'rg_frente_verso.png', { type: 'image/png' });
       const mockEvent = {
@@ -104,7 +104,7 @@ describe('UpdatePatientRequestAttachmentComponent', () => {
       component['onFileSelected'](mockEvent);
       fixture.detectChanges();
 
-      expect(component['updateAttachmentForm'].get('name')?.value).toBe('rg_frente_verso');
+      expect(component['attachmentForm'].get('name')?.value).toBe('rg_frente_verso');
     });
   });
 
@@ -152,8 +152,8 @@ describe('UpdatePatientRequestAttachmentComponent', () => {
     });
 
     it('deve barrar a submissão se o formulário de nome estiver inválido', () => {
-      component['updateAttachmentForm'].get('name')?.setValue('');
-      component['updateAttachmentForm'].updateValueAndValidity();
+      component['attachmentForm'].get('name')?.setValue('');
+      component['attachmentForm'].updateValueAndValidity();
 
       component['onSubmit']();
 
@@ -161,7 +161,7 @@ describe('UpdatePatientRequestAttachmentComponent', () => {
     });
 
     it('deve atualizar com sucesso enviando o arquivo nulo caso mude apenas o nome', async () => {
-      component['updateAttachmentForm'].patchValue({ name: 'Nome Corrigido Sem Substituir Arquivo' });
+      component['attachmentForm'].patchValue({ name: 'Nome Corrigido Sem Substituir Arquivo' });
       component['selectedFile'] = null;
 
       patientRequestServiceMock.updatePatientRequestAttachment.mockReturnValue(of({ message: 'Anexo atualizado com sucesso!' }));
@@ -181,7 +181,7 @@ describe('UpdatePatientRequestAttachmentComponent', () => {
     });
 
     it('deve tratar falhas do backend ao tentar atualizar o anexo mantendo a modal aberta', async () => {
-      component['updateAttachmentForm'].patchValue({ name: 'Nova Tentativa com Erro' });
+      component['attachmentForm'].patchValue({ name: 'Nova Tentativa com Erro' });
       
       const mockApiError = { error: { message: 'Erro interno ao processar a requisição de atualização.' } };
       patientRequestServiceMock.updatePatientRequestAttachment.mockReturnValue(throwError(() => mockApiError));

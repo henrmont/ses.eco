@@ -1,12 +1,25 @@
-mat-card {
-    width: 100%;
-}
+@use 'variables' as *;
 
-mat-card-subtitle {
-    text-align: center;
-    height: 50px;
+mat-card {
+  width: 100%;
+  border-radius: $radius-lg;
+  background-color: $color-surface;
+  box-shadow: $shadow-card;
+
+  mat-card-header {
+    padding: $spacing-xl $spacing-xxl $spacing-md $spacing-xxl;
+    
+    mat-card-subtitle { 
+      color: $color-text-main;
+    }
+  }
+
+  mat-card-content {
+    padding: 0 $spacing-lg $spacing-lg $spacing-lg;
+  }
 }
 
 canvas {
-    width: 100%;
+  width: 100% !important;
+  height: 100% !important;
 }

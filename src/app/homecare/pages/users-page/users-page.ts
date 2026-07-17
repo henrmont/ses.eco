@@ -19,14 +19,14 @@ import { User } from '../../models/user';
 import { UserService } from '../../services/user-service';
 
 // Components (Dialogs)
-// import { DeleteUserComponent } from '../../components/user/delete-user-component/delete-user-component';
-// import { LockUserComponent } from '../../components/user/lock-user-component/lock-user-component';
+import { DeleteUserComponent } from '../../components/user/delete-user-component/delete-user-component';
+import { LockUserComponent } from '../../components/user/lock-user-component/lock-user-component';
 import { RolesUserComponent } from '../../components/user/roles-user-component/roles-user-component';
-// import { ShowUserComponent } from '../../components/user/show-user-component/show-user-component';
-// import { UpdateUserComponent } from '../../components/user/update-user-component/update-user-component';
-// import { ValidateUserComponent } from '../../components/user/validate-user-component/validate-user-component';
+import { ShowUserComponent } from '../../components/user/show-user-component/show-user-component';
+import { UpdateUserComponent } from '../../components/user/update-user-component/update-user-component';
+import { ValidateUserComponent } from '../../components/user/validate-user-component/validate-user-component';
 
-const HOMECARE_USERS_CHANNEL = new BroadcastChannel('homecare-users-channel');
+const TFD_USERS_CHANNEL = new BroadcastChannel('tfd-users-channel');
 
 @Component({
   selector: 'app-users-page',
@@ -54,21 +54,21 @@ export class UsersPage implements OnInit, OnDestroy {
   
   // Propriedades expostas para o Template
   protected readonly displayedColumns: string[] = ['is_editable', 'email', 'name', 'type', 'is_valid', 'actions'];
-  protected readonly usersList = signal<any[]>([]);
-  protected readonly dataSource = computed(() => new MatTableDataSource(this.usersList()));
+  protected readonly rawList = signal<any[]>([]);
+  protected readonly dataSource = computed(() => new MatTableDataSource(this.rawList()));
 
   ngOnInit(): void {
-    this.getUsers(true);
+    this.fetchUsers(true);
 
-    HOMECARE_USERS_CHANNEL.onmessage = (message) => {
+    TFD_USERS_CHANNEL.onmessage = (message) => {
       if (message.data === 'update') {
-        this.getUsers(false);
+        this.fetchUsers(false);
       }
     };
   }
 
   ngOnDestroy(): void {
-    HOMECARE_USERS_CHANNEL.close();
+    TFD_USERS_CHANNEL.close();
   }
 
   protected applyFilter(event: Event): void {
@@ -76,7 +76,7 @@ export class UsersPage implements OnInit, OnDestroy {
     this.dataSource().filter = filterValue.trim().toLowerCase();
   }
 
-  private getUsers(showLoading = false): void {
+  private fetchUsers(showLoading = false): void {
     if (showLoading) this.openLoading();
 
     this.userService.getUsers()
@@ -90,7 +90,9 @@ export class UsersPage implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (response) => {
-          const mappedUsers = response.map((item: any) => {
+          const mappedList = response || [];
+
+          const mappedUsers = mappedList.map((item: any) => {
             const userObj: User = {
               id: item.id,
               email: item.email,
@@ -107,7 +109,7 @@ export class UsersPage implements OnInit, OnDestroy {
             };
           });
 
-          this.usersList.set(mappedUsers);
+          this.rawList.set(mappedUsers);
         }
       });
   }
@@ -127,36 +129,40 @@ export class UsersPage implements OnInit, OnDestroy {
 
   protected checkPermissions(permissionName: string): boolean {
     if (!this.currentUser?.roles) return true;
-    return !this.currentUser.roles.some((role: any) => 
-      role.permissions.some((p: Permission) => p.name === permissionName)
+
+    const hasPermission = this.currentUser.roles.some((role: any) =>
+      role.permissions?.some((perm: Permission) => perm.name === permissionName)
     );
+
+    return !hasPermission;
   }
 
-  private openDialog(component: any, data: any, width = '400px'): void {
+  private openDialog(component: any, data: any, width = '400px', height = 'auto', requiresRefresh = true): void {
     this.dialog.open(component, {
       width,
+      height,
       disableClose: true,
       autoFocus: false,
       data
     }).afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(result => {
-        if (result) {
+        if (result && requiresRefresh) {
           this.handleUserChange();
         }
       });
   }
 
   private handleUserChange(): void {
-    this.getUsers(false);
-    HOMECARE_USERS_CHANNEL.postMessage('update');
+    this.fetchUsers(false);
+    TFD_USERS_CHANNEL.postMessage('update');
   }
 
   // Métodos de ação do template HTML
-  protected lockUser(user: User): void { }
-  protected validateUser(user: User): void {  }
-  protected rolesUser(user: User): void { this.openDialog(RolesUserComponent, { user }); }
-  protected deleteUser(user: User): void { }
-  protected updateUser(user: User): void {  }
-  protected showUser(user: User): void {  }
+  protected lockUser(user: User): void { this.openDialog(LockUserComponent, { user }); }
+  protected validateUser(user: User): void { this.openDialog(ValidateUserComponent, { user }); }
+  protected rolesUser(user: User): void { this.openDialog(RolesUserComponent, { user }, '700px'); }
+  protected deleteUser(user: User): void { this.openDialog(DeleteUserComponent, { user }); }
+  protected updateUser(user: User): void { this.openDialog(UpdateUserComponent, { user }, '700px'); }
+  protected showUser(user: User): void { this.openDialog(ShowUserComponent, { user }, '700px'); }
 }

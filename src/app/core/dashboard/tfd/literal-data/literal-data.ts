@@ -1,3 +1,4 @@
+import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -13,7 +14,11 @@ interface DashboardCard {
 
 @Component({
   selector: 'app-literal-data',
-  imports: [MatCardModule, MatIconModule],
+  imports: [
+    CommonModule,
+    MatCardModule, 
+    MatIconModule
+  ],
   templateUrl: './literal-data.html',
   styleUrl: './literal-data.scss',
 })
@@ -21,7 +26,7 @@ export class LiteralData {
 
   protected readonly dashboardCards: DashboardCard[] = [
     {
-      title: 'Solicitações em aberto',
+      title: 'SOLICITAÇÕES EM ABERTO',
       value: '120',
       icon: 'assignment',
       iconColor: 'rgb(178,102,255)',
@@ -29,7 +34,7 @@ export class LiteralData {
       isUp: false
     },
     {
-      title: 'Solicitações realizadas',
+      title: 'SOLICITAÇÕES REALIZADAS',
       value: '450',
       icon: 'assignment_turned_in',
       iconColor: 'rgb(102,178,255)',
@@ -37,7 +42,7 @@ export class LiteralData {
       isUp: true
     },
     {
-      title: 'Passagens emitidas',
+      title: 'PASSAGENS EMITIDAS',
       value: '300',
       icon: 'airplane_ticket',
       iconColor: 'rgb(255,125,51)',
@@ -45,7 +50,7 @@ export class LiteralData {
       isUp: true
     },
     {
-      title: 'Ajuda de custos realizadas',
+      title: 'AJUDA DE CUSTOS REALIZADAS',
       value: '200',
       icon: 'volunteer_activism',
       iconColor: 'rgb(255,51,153)',
@@ -53,7 +58,7 @@ export class LiteralData {
       isUp: true
     },
     {
-      title: 'Prestação de contas',
+      title: 'PRESTAÇÃO DE CONTAS',
       value: '180',
       icon: 'price_check',
       iconColor: 'rgb(178,102,255)',
@@ -61,7 +66,7 @@ export class LiteralData {
       isUp: true
     },
     {
-      title: 'Total de diárias',
+      title: 'TOTAL DE DIÁRIAS',
       value: '520',
       icon: 'luggage',
       iconColor: 'rgb(102,178,255)',
@@ -69,15 +74,15 @@ export class LiteralData {
       isUp: true
     },
     {
-      title: 'Valor pago em diárias',
+      title: 'VALOR PAGO EM DIÁRIAS',
       value: 'R$ 150.000',
-      icon: 'attach_money',
+      icon: 'monetization_on',
       iconColor: 'rgb(255,125,51)',
       percentage: '-8,1%',
       isUp: true
     },
     {
-      title: 'Atendimentos realizados',
+      title: 'ATENDIMENTOS REALIZADOS',
       value: '600',
       icon: 'medical_information',
       iconColor: 'rgb(255,51,153)',

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import {MatCardModule} from '@angular/material/card';
@@ -7,6 +7,7 @@ import { CommonModule } from '@angular/common';
 import { saveAs } from 'file-saver';
 import { NgxMaskPipe } from 'ngx-mask';
 import { StorageService } from '../../../../core/services/storage-service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-show-patient-escort-component',
@@ -16,18 +17,20 @@ import { StorageService } from '../../../../core/services/storage-service';
 })
 export class ShowPatientEscortComponent {
 
-  data = inject(MAT_DIALOG_DATA)
+  protected readonly data = inject(MAT_DIALOG_DATA)
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly storageService = inject(StorageService);
   
-  constructor(
-    private storageService: StorageService
-  ) {}
-
-  download(archive: number, name: string) {
-    this.storageService.download(archive).subscribe({
-      next: (response) => {
-        saveAs(response.archive,name)
-      }
-    })
+  protected download(archiveId: number, name: string): void {
+    this.storageService.download(archiveId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          if (response?.archive) {
+            saveAs(response.archive, name);
+          }
+        }
+      });
   }
 
 }

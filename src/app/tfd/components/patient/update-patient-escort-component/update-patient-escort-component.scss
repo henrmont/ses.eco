@@ -1,41 +1,90 @@
-mat-dialog-content {
-  padding-top: 10px;
+@use 'variables' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+mat-error[hidden] {
+  display: none !important;
 }
 
 mat-form-field {
   width: 100%;
 }
 
+mat-dialog-content {
+  padding-top: $spacing-modal-pt;
+  overflow-y: auto;
+}
+
 .stepper {
-  margin-top: 10px; 
+  margin-top: $spacing-form-gap; 
   display: flex; 
   flex-direction: column; 
-  gap: 10px;
+  gap: $spacing-form-gap;
 }
 
 .line {
   display: grid; 
-  align-items: center;
-  column-gap: 20px; 
-}
+  grid-template-columns: var(--grid-cols, 1fr); 
+  column-gap: $spacing-xl; 
+  row-gap: $spacing-form-gap; 
+  align-items: start;
+  min-height: 56px;
 
-.toggle {
-  display: flex;
-  align-items: center;
-  height: 100%;
-  padding-bottom: 20px; // Alinha o slide-toggle verticalmente com os inputs da mesma linha
+  .file-actions-cell {
+    display: flex;
+    align-items: center;
+    column-gap: $spacing-xl; // Respiro padronizado de 20px
+    height: 56px;
+  }
 
-  span {
-    margin-left: 10px;
+  .toggle-cell {
+    display: flex;
+    align-items: center;
+    height: 56px;
+
+    mat-slide-toggle {
+      font-size: 14px;
+      color: var(--mdc-outlined-text-field-label-text-color, $color-text-label-fallback);
+    }
   }
 }
 
-.btn-archive {
-    margin-top: -15px;
+// --- Definições Semânticas das Colunas da Grid ---
+.line {
+  &.cols-1-col     { --grid-cols: 1fr; }
+  &.cols-1-1       { --grid-cols: 1fr 1fr; }
+}
+
+.uf-container {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+
+  .uf-field {
+    width: 40%;
+    min-width: 80px;
+  }
 }
 
 .waiting {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  gap: $spacing-form-gap;
+
+  mat-spinner {
+    display: inline-block;
+    flex-shrink: 0;
+  }
+}
+
+mat-dialog-actions {
+  gap: $spacing-lg;
+  background-color: inherit;
+  margin-bottom: 0;
 }

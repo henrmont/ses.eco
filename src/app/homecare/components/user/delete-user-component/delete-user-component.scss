@@ -1,0 +1,19 @@
+@use 'variables' as *;
+
+// Container de estado de carregamento durante a ação de exclusão
+.waiting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-form-gap; // 10px padronizados do nosso design system de modais
+
+  mat-spinner {
+    display: inline-block;
+    flex-shrink: 0; // Impede que o layout flex esmague o tamanho do spinner
+  }
+}
+
+// Customização da área de botões do modal para manter a consistência visual
+mat-dialog-actions {
+  gap: $spacing-lg; // Espaçamento elegante de 8px entre os botões
+}

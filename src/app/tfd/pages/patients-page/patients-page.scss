@@ -1,91 +1,109 @@
-// Usando o seletor :host para definir o container principal da página
+@use 'variables' as *;
+
 :host {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    min-height: calc(100vh - 100px);
-    background-color: #fafafa; // Um fundo levemente cinza destaca a tabela branca
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: calc(100vh - 100px);
+  background-color: $color-page-bg;
 }
 
 section {
-    margin-top: 24px;
-    width: 85%;
+  margin-top: $spacing-xxl; 
+  width: 85%;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl; 
+
+  .tab-icon {
+    margin-right: $spacing-sm;
+  }
+
+  // Div container interna de cada aba
+  div.table {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: $spacing-xl;
+    width: 100%;
+    padding: $spacing-lg;
+    box-sizing: border-box;
+  }
 
-    // Estilização das Abas (Tabs) do Angular Material
-    mat-tab-group {
-        width: 100%;
-        
-        .tab-icon {
-            margin-right: 8px;
-            vertical-align: middle;
-        }
+  // Container de busca centralizado
+  div.search {
+    display: flex; 
+    justify-content: center; 
+    width: 100%;
+
+    mat-form-field {
+      width: 100%;
+      max-width: 500px; 
+    }
+  }
+
+  // Estilização da Tabela
+  table.mat-mdc-table {
+    // Evita o corte das sombras nas laterais/base de forma limpa
+    margin: 0 auto $spacing-sm auto;
+
+    background: $color-surface;
+    border-radius: $radius-md; 
+    overflow: hidden;
+    box-shadow: $shadow-card; 
+    border-collapse: separate;
+
+    th.mat-mdc-header-cell, 
+    td.mat-mdc-cell {
+      padding: $spacing-md $spacing-lg; 
+      vertical-align: middle;
     }
 
-    // Container interno de cada aba
-    // O padding impede que o overflow do mat-tab corte a sombra da tabela nas extremidades
-    div.table {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-        padding: 20px 8px 24px 8px; 
+    th.mat-mdc-header-cell {
+      font-weight: 600;
+      background-color: $color-table-header-bg;
+      color: $color-table-header-text;
     }
 
-    // Container de busca
-    div.search {
+    // Alinhamento das colunas centralizadas
+    .center {
+      text-align: center;
+      div {
         display: flex; 
-        justify-content: center; 
-        width: 100%;
-
-        mat-form-field {
-            width: 100%;
-            max-width: 500px; // Evita que o input fique gigante em telas ultra-wide
-        }
+        justify-content: center;
+        gap: $spacing-xs;
+      }
     }
 
-    // Estilização da Tabela do Angular Material
-    table.mat-mdc-table {
-        width: 100%;
-        background: #ffffff;
-        border-radius: 8px;
-        overflow: hidden;
-        // Ajustada para uma sombra ligeiramente mais contida e segura contra cortes de overflow
-        box-shadow: 0 4px 6px -2px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    // Definições de cores de status
+    .valid { color: $color-success; }
+    .invalid { color: $color-danger; }
+    .warning { color: $color-warning; }
 
-        // Estilo comum para células de cabeçalho e corpo
-        th.mat-mdc-header-cell, 
-        td.mat-mdc-cell {
-            padding: 12px 16px;
-            vertical-align: middle;
-        }
-
-        th.mat-mdc-header-cell {
-            font-weight: 600;
-            background-color: #f1f5f9; // Tom cinza moderno para o topo da tabela
-            color: #334155;
-        }
-
-        // Classes utilitárias dentro da tabela
-        .center {
-            text-align: center;
-            
-            // Container dos botões de ações
-            div {
-                display: flex; 
-                justify-content: center;
-                gap: 4px; // Substitui o space-around por um espaçamento fixo e elegante
-            }
-        }
-
-        // Cores dos ícones de status (Ativo/Inativo) baseado no padrão Tailwind
-        .valid {
-            color: #16a34a; // Verde elegante
-        }
-
-        .invalid {
-            color: #dc2626; // Vermelho elegante
-        }
+    // --- Configuração de Distribuição das Colunas (Pacientes) ---
+    
+    th.status-column-header {
+      width: 10%;
     }
+
+    // Acomoda harmoniosamente os 5 botões de ação sem sobreposição
+    th.actions-column-header-owner {
+      width: 20%; 
+    }
+
+    th.actions-column-header-others {
+      width: 10%;
+    }
+
+    td.actions-cell {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: $spacing-xs; // Espaçamento elegante e uniforme
+    }
+  }
+}
+
+// Ocultação da label do range do paginador
+::ng-deep .mat-mdc-paginator-range-label {
+  display: none !important;
 }

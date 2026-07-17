@@ -1,68 +1,118 @@
-// Definição do container principal do componente dentro da modal
+@use 'variables' as *;
+
 :host {
-    display: block;
-    width: 100%;
-    background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow: hidden;
 }
 
-// Container do Spinner de Carregamento Centralizado
-.loading-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 200px;
-    width: 100%;
-}
-
-// Margem de respiro para o box-shadow respirar e NUNCA cortar na modal
 mat-dialog-content {
-    padding: 12px 20px 24px 20px !important;
+  overflow-y: auto !important;
+  padding-bottom: 0 !important; // Evita quebra de margem ao fim do conteúdo scrollável
 }
 
-// Estilização da Tabela idêntica à users-page
+mat-dialog-actions {
+  gap: $spacing-lg; 
+}
+
+.escorts-container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 100%;
+}
+
+.table-responsive {
+  padding: $spacing-lg; 
+  width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
+}
+
 table.mat-mdc-table {
-    width: 100%;
-    background: #ffffff;
-    border-radius: 8px;
-    overflow: hidden;
-    // Sombra elegante e idêntica à usada na users-page
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  margin: 0 auto $spacing-sm auto;
+  width: 100%;
+  background: $color-surface;
+  border-radius: $radius-md; 
+  overflow: hidden;
+  box-shadow: $shadow-card; 
+  border-collapse: separate; 
 
-    // Estilo comum para células de cabeçalho e corpo
-    th.mat-mdc-header-cell, 
-    td.mat-mdc-cell {
-        padding: 12px 16px;
-        vertical-align: middle;
-    }
+  tr.mat-mdc-header-row {
+    height: 56px;
+  }
 
-    th.mat-mdc-header-cell {
-        font-weight: 600;
-        background-color: #f1f5f9; // Tom cinza moderno (Tailwind slate-100)
-        color: #334155; // Texto slate-700
-    }
+  tr.mat-mdc-row {
+    height: 52px;
+    transition: background-color 0.2s ease;
+  }
 
-    // Classes utilitárias dentro da tabela herdadas do seu padrão anterior e aprimoradas
-    .center {
-        text-align: center;
-        
-        // Container dos botões de ações
-        div {
-            display: flex; 
-            justify-content: center;
-            gap: 4px; // Espaçamento elegante entre os botões de ação
-            
-            button {
-                margin: 0; // Zera as margens antigas para respeitar o gap: 4px
-            }
-        }
-    }
+  th.mat-mdc-header-cell, 
+  td.mat-mdc-cell {
+    padding: $spacing-md $spacing-lg; 
+    vertical-align: middle;
+  }
 
-    // Cores dos ícones de status (Padrão Tailwind elegante da users-page)
-    .valid {
-        color: #16a34a; // Verde corporativo
-    }
+  th.mat-mdc-header-cell {
+    font-weight: 600;
+    background-color: $color-table-header-bg;
+    color: $color-table-header-text;
+  }
 
-    .invalid {
-        color: #dc2626; // Vermelho corporativo
-    }
+  .center {
+    text-align: center;
+  }
+
+  // Célula de Ações perfeitamente centralizada e espaçada
+  td.actions-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-xs;
+    height: 100%;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .valid { 
+    color: $color-success; 
+  }
+  
+  .invalid { 
+    color: $color-danger; 
+  }
+
+  th.status-column-header {
+    width: 80px;
+  }
+
+  th.actions-column-header {
+    width: 150px;
+  }
+}
+
+.loading-shade {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-xxl 0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-xl;
+  color: $color-text-variant;
+
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
 }

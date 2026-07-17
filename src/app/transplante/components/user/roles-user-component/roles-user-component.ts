@@ -1,14 +1,16 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { NonNullableFormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal, ChangeDetectorRef, DestroyRef } from '@angular/core';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
 import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { finalize } from 'rxjs'; // 👈 Importado para travar os states de loading/submitting
+import { finalize } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Role } from '../../../models/role';
 import { UserService } from '../../../services/user-service';
 import { MessageService } from '../../../../core/services/message-service';
+import { MatCardModule } from '@angular/material/card';
 
 @Component({
   selector: 'app-roles-user-component',
@@ -19,55 +21,76 @@ import { MessageService } from '../../../../core/services/message-service';
     MatButtonModule, 
     MatSlideToggleModule, 
     MatListModule, 
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatCardModule
   ],
   templateUrl: './roles-user-component.html',
   styleUrl: './roles-user-component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush, // ⚡ Otimização de performance com OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class RolesUserComponent {
-  // 🌟 Injeções padronizadas e limpas com inject()
+export class RolesUserComponent implements OnInit {
+  // Dynamic Dependency Injections
   protected readonly data = inject(MAT_DIALOG_DATA);
-  private readonly fb = inject(NonNullableFormBuilder);
+  private readonly fb = inject(FormBuilder);
   private readonly userService = inject(UserService);
   private readonly messageService = inject(MessageService);
   private readonly dialogRef = inject(MatDialogRef<RolesUserComponent>);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
 
-  readonly rolesUserForm: FormGroup;
+  // Form Structure exposed to the template
+  protected userRolesForm!: FormGroup;
   
-  // Signals para controle de estado da tela
-  readonly isLoading = signal<boolean>(true);
-  readonly isSubmitting = signal<boolean>(false);
-  readonly roles = signal<Role[]>([]);
+  // States managed reactively via Signals
+  protected readonly isLoading = signal<boolean>(true);
+  protected readonly isSubmitting = signal<boolean>(false);
+  protected readonly roles = signal<Role[]>([]);
 
-  constructor() {
-    // 🌟 Inicialização do formulário movida para o constructor, eliminando a necessidade do OnInit
-    const initialRoleIds = this.data.user.roles?.map((item: any) => item.id) || [];
-
-    this.rolesUserForm = this.fb.group({
-      id: [this.data.user.id, [Validators.required]],
-      roles: [initialRoleIds]
-    });
-
-    // Dispara a busca das roles imediatamente na construção do componente
-    this.getRoles();
+  ngOnInit(): void {
+    this.initForm();
+    this.fetchRoles();
   }
 
-  getRoles(): void {
+  private initForm(): void {
+    const initialRoleIds = this.data?.user?.roles?.map((item: any) => item.id) || [];
+
+    this.userRolesForm = this.fb.group({
+      id: [this.data?.user?.id, [Validators.required]],
+      roles: [initialRoleIds]
+    });
+  }
+
+  /**
+   * Fetches all available system roles and turns off
+   * the modal's initial loading state.
+   */
+  private fetchRoles(): void {
     this.userService.getRoles()
-      .pipe(finalize(() => this.isLoading.set(false))) // 👈 Garante que o loading pare independente de sucesso ou falha
+      .pipe(
+        finalize(() => {
+          this.isLoading.set(false);
+          this.cdr.markForCheck();
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
       .subscribe({
-        next: (response) => this.roles.set(response),
-        error: () => this.messageService.showMessage('Erro ao carregar a lista de permissões.')
+        next: (response) => {
+          this.roles.set(response || []);
+        },
+        error: (err) => {
+          const fallbackError = 'Erro ao carregar a lista de permissões.';
+          this.messageService.showMessage(err?.error?.message || fallbackError);
+        }
       });
   }
 
-  toggleRole(item: Role): void {
-    const currentRolesControl = this.rolesUserForm.get('roles');
-    if (!currentRolesControl) return;
+  // --- TEMPLATE ACTION METHODS (PROTECTED) ---
 
-    // Imutabilidade defendida com sucesso!
-    const currentRoles: number[] = [...currentRolesControl.value];
+  protected toggleRole(item: Role): void {
+    const rolesControl = this.userRolesForm.get('roles');
+    if (!rolesControl) return;
+
+    const currentRoles: number[] = [...rolesControl.value];
     const index = currentRoles.indexOf(item.id);
 
     if (index !== -1) {
@@ -76,39 +99,53 @@ export class RolesUserComponent {
       currentRoles.push(item.id);
     }
 
-    currentRolesControl.setValue(currentRoles);
-    currentRolesControl.markAsDirty();
+    this.userRolesForm.markAsDirty();
+    rolesControl.setValue(currentRoles);
+    rolesControl.updateValueAndValidity();
+    this.cdr.markForCheck();
   }
 
-  checkRole(id: number): boolean {
-    const currentRoles: number[] = this.rolesUserForm?.get('roles')?.value || [];
+  protected checkRole(id: number): boolean {
+    const currentRoles: number[] = this.userRolesForm?.get('roles')?.value || [];
     return currentRoles.includes(id);
   }
 
-  /**
-   * 🌟 Método utilitário para limpar o prefixo técnico (ex: 'xxx/nome_da_regra') 
-   * para exibição amigável no HTML do modal.
-   */
-  formatRoleName(roleName: string): string {
+  protected formatRoleName(roleName: string): string {
     if (!roleName) return '';
     return roleName.split('/').pop() || roleName;
   }
 
-  onSubmit(): void {
-    if (this.rolesUserForm.invalid || this.isSubmitting()) return;
+  protected onSubmit(): void {
+    const userId = this.data?.user?.id;
+    if (!userId) {
+      this.messageService.showMessage('Identificador do usuário inválido.');
+      return;
+    }
+
+    if (this.userRolesForm.invalid || this.isSubmitting()) {
+      this.userRolesForm.markAllAsTouched();
+      return;
+    }
 
     this.isSubmitting.set(true);
+    this.cdr.markForCheck();
     
-    this.userService.rolesUser(this.data.user.id, this.rolesUserForm.value)
-      .pipe(finalize(() => this.isSubmitting.set(false))) // 👈 Substitui a limpeza manual no bloco error
+    this.userService.rolesUser(userId, this.userRolesForm.getRawValue())
+      .pipe(
+        finalize(() => {
+          this.isSubmitting.set(false);
+          this.cdr.markForCheck();
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
       .subscribe({
         next: (response: any) => {
-          this.messageService.showMessage(response.message || 'Permissões atualizadas com sucesso!');
+          this.messageService.showMessage(response?.message || 'Permissões atualizadas com sucesso!');
           this.dialogRef.close(true);
         },
         error: (err) => {
-          const errorMsg = err?.error?.message || 'Erro ao atualizar permissões.';
-          this.messageService.showMessage(errorMsg);
+          const fallbackError = 'Erro ao atualizar permissões.';
+          this.messageService.showMessage(err?.error?.message || fallbackError);
         },
       });
   }

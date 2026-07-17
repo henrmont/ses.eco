@@ -1,94 +1,110 @@
 <h2 mat-dialog-title>Detalhes do acompanhante</h2>
+
 <mat-dialog-content>
-    <div class="user-details-container">
+  <div class="details-container">
 
-        <mat-card variant="outlined" class="detail-card">
-            <mat-card-header>
-                <mat-card-title>Dados pessoais</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-                <div class="line" style="grid-template-columns: 3fr 1fr;">
-                    <div class="highlight">
-                        <strong>Nome:</strong>{{ data.escort.name }}
-                    </div>
-                    <div>
-                        <strong>Vínculo / Parentesco:</strong>{{ data.escort.relation ?? 'Não informado' }}
-                    </div>
-                </div>
+    <!-- Card: Dados Pessoais -->
+    <mat-card appearance="outlined" class="detail-card">
+      <mat-card-header>
+        <mat-card-subtitle>DADOS PESSOAIS</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="line cols-1-1">
+          <div>
+            <strong>Nome:</strong> {{ data?.escort?.name ?? 'Não informado' }}
+          </div>
+          <div>
+            <strong>Vínculo / Parentesco:</strong> {{ data?.escort?.relation ?? 'Não informado' }}
+          </div>
+        </div>
 
-                <div class="line" style="grid-template-columns: 1fr 1fr;">
-                    <div>
-                        <strong>CPF:</strong>
-                        <span>
-                            {{ data.escort.document | mask: '000.000.000-00' }}
-                            <button mat-icon-button style="margin-left: 8px;" [disabled]="!data.escort.file_document_id" (click)="download(data.escort.file_document_id, 'documento_acompanhante')">
-                                <mat-icon>download</mat-icon>
-                            </button>
-                        </span>
-                    </div>
-                    <div>
-                        <strong>CNS:</strong>
-                        <span>
-                            {{ data.escort.cns | mask:'000 0000 0000 0000' }}
-                            <button mat-icon-button style="margin-left: 8px;" [disabled]="!data.escort.file_cns_id" (click)="download(data.escort.file_cns_id, 'cns_acompanhante')">
-                                <mat-icon>download</mat-icon>
-                            </button>
-                        </span>
-                    </div>
-                </div>
+        <div class="line cols-1-1">
+          <div class="action-cell">
+            <strong>CPF:</strong> 
+            {{ data?.escort?.document ? (data.escort.document | mask: '000.000.000-00') : 'Não informado' }}
+            <button 
+              mat-icon-button 
+              type="button"
+              [disabled]="!data?.escort?.file_document_id" 
+              (click)="download(data.escort.file_document_id, 'documento_acompanhante')"
+            >
+              <mat-icon>download</mat-icon>
+            </button>
+          </div>
+          <div class="action-cell">
+            <strong>CNS:</strong> 
+            {{ data?.escort?.cns ? (data.escort.cns | mask: '000 0000 0000 0000') : 'Não informado' }}
+            <button 
+              mat-icon-button 
+              type="button"
+              [disabled]="!data?.escort?.file_cns_id" 
+              (click)="download(data.escort.file_cns_id, 'cns_acompanhante')"
+            >
+              <mat-icon>download</mat-icon>
+            </button>
+          </div>
+        </div>
 
-                <div class="line" style="grid-template-columns: 1fr 1fr;">
-                    <div>
-                        <strong>Data de nascimento:</strong>{{ data.escort.birth_date | date: 'dd/MM/yyyy' }}
-                    </div>
-                    <div>
-                        <strong>Sexo:</strong>{{ data.escort.gender ?? 'Não informado' }}
-                    </div>
-                </div>
-            </mat-card-content>
-        </mat-card>
+        <div class="line cols-1-1">
+          <div>
+            <strong>Data de Nascimento:</strong> {{ data?.escort?.birth_date ? (data.escort.birth_date | date: 'dd/MM/yyyy') : 'Não informado' }}
+          </div>
+          <div>
+            <strong>Sexo:</strong> {{ data?.escort?.gender ?? 'Não informado' }}
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
 
-        <mat-card variant="outlined" class="detail-card">
-            <mat-card-header>
-                <mat-card-title>Dados do endereço</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-                <div class="line" style="grid-template-columns: 1fr 3fr 1fr;">
-                    <div>
-                        <strong>CEP:</strong>{{ data.escort.cep | mask:'00000-000' }}
-                    </div>
-                    <div>
-                        <strong>Logradouro / Endereço:</strong>
-                        <span>
-                            {{ data.escort.address }}
-                            <button mat-icon-button style="margin-left: 8px;" [disabled]="!data.escort.file_address_id" (click)="download(data.escort.file_address_id, 'comprovante_endereco_acompanhante')">
-                                <mat-icon>download</mat-icon>
-                            </button>
-                        </span>
-                    </div>
-                    <div>
-                        <strong>Número:</strong>{{ data.escort.number }}
-                    </div>
-                </div>
-                <div class="line" style="grid-template-columns: 3fr 2fr 2fr 1fr;">
-                    <div>
-                        <strong>Complemento:</strong>{{ data.escort.complement ?? 'Não informado' }}
-                    </div>
-                    <div>
-                        <strong>Bairro:</strong>{{ data.escort.neighborhood }}
-                    </div>
-                    <div>
-                        <strong>Cidade:</strong>{{ data.escort.city }}
-                    </div>
-                    <div>
-                        <strong>Estado (UF):</strong>{{ data.escort.state }}
-                    </div>
-                </div>
-            </mat-card-content>
-        </mat-card>
+    <!-- Card: Dados de Endereço -->
+    <mat-card appearance="outlined" class="detail-card">
+      <mat-card-header>
+        <mat-card-subtitle>DADOS DE ENDEREÇO</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="line cols-1-2">
+          <div>
+            <strong>CEP:</strong> {{ data?.escort?.cep ? (data.escort.cep | mask: '00000-000') : 'Não informado' }}
+          </div>
+          <div class="action-cell">
+            <strong>Endereço:</strong> {{ data?.escort?.address ?? 'Não informado' }}
+            <button 
+              mat-icon-button 
+              type="button"
+              [disabled]="!data?.escort?.file_address_id" 
+              (click)="download(data.escort.file_address_id, 'comprovante_endereco_acompanhante')"
+            >
+              <mat-icon>download</mat-icon>
+            </button>
+          </div>
+        </div>
 
-    </div>
+        <div class="line cols-1-2">
+          <div>
+            <strong>Número:</strong> {{ data?.escort?.number ?? 'Não informado' }}
+          </div>
+          <div>
+            <strong>Complemento:</strong> {{ data?.escort?.complement ?? 'Não informado' }}
+          </div>
+        </div>
+
+        <div class="line cols-2-2-1">
+          <div>
+            <strong>Bairro:</strong> {{ data?.escort?.neighborhood ?? 'Não informado' }}
+          </div>
+          <div>
+            <strong>Cidade:</strong> {{ data?.escort?.city ?? 'Não informado' }}
+          </div>
+          <div>
+            <strong>Estado:</strong> {{ data?.escort?.state ?? 'Não informado' }}
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+  </div>
 </mat-dialog-content>
+
 <mat-dialog-actions align="end">
-    <button mat-button [mat-dialog-close]="false">Fechar</button>
+  <button mat-button type="button" [mat-dialog-close]="false">Fechar</button>
 </mat-dialog-actions>

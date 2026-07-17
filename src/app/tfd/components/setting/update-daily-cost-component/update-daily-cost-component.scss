@@ -1,0 +1,43 @@
+@use 'variables' as *;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+// Garante que o Angular Material respeite o atributo [hidden] do HTML
+mat-error[hidden] {
+  display: none !important;
+}
+
+mat-form-field {
+  width: 100%;
+  height: auto;
+}
+
+mat-dialog-content {
+  display: flex;
+  flex-direction: column;
+  row-gap: $spacing-form-gap;     // 10px padronizados
+  padding-top: $spacing-form-gap; // Evita o corte do outline do campo
+}
+
+// Container de estado de carregamento / envio do formulário
+.waiting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-form-gap; // 10px
+
+  mat-spinner {
+    display: inline-block;
+    flex-shrink: 0; // Impede que o layout flex esmague o tamanho do spinner
+  }
+}
+
+// Grid estrutural para manter o padrão semântico de linhas do formulário
+.line {
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: $spacing-xl; // 20px de consistência
+}

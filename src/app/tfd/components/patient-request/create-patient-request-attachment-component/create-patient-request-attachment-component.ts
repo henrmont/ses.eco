@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal, ChangeDetectorRef, DestroyRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal, ChangeDetectorRef, DestroyRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,7 +8,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -16,7 +16,6 @@ import { MessageService } from '../../../../core/services/message-service';
 
 @Component({
   selector: 'app-create-patient-request-attachment-component',
-  standalone: true,
   imports: [
     CommonModule, 
     FormsModule, 
@@ -33,7 +32,7 @@ import { MessageService } from '../../../../core/services/message-service';
   styleUrl: './create-patient-request-attachment-component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class CreatePatientRequestAttachmentComponent {
+export class CreatePatientRequestAttachmentComponent implements OnInit {
   // Injeções de Dependência Dinâmicas
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
@@ -44,7 +43,7 @@ export class CreatePatientRequestAttachmentComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   // Estrutura do Formulário exposta ao template
-  protected createAttachmentForm!: FormGroup;
+  protected attachmentForm!: FormGroup;
 
   // Estados gerenciados reativamente via Signals
   protected readonly isSubmitting = signal<boolean>(false);
@@ -54,21 +53,21 @@ export class CreatePatientRequestAttachmentComponent {
   // Referência do binário em memória
   private selectedFile: File | null = null;
 
-  // Mapeamento local das mensagens de erro
+  // 🎯 Mapeamento local das mensagens de erro padronizado para a UI
   protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
     name: [
       { type: 'required', message: 'O nome do anexo é obrigatório.' }
     ]
   };
 
-  constructor() {
+  ngOnInit(): void {
     this.initForm();
   }
 
-  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO ---
+  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO E SUPORTE ---
 
   private initForm(): void {
-    this.createAttachmentForm = this.fb.group({
+    this.attachmentForm = this.fb.group({
       name: [null, [Validators.required]],
     });
   }
@@ -88,10 +87,11 @@ export class CreatePatientRequestAttachmentComponent {
       this.hasFile.set(true);
       
       // UX Inteligente: Sugere o nome do arquivo limpo sem a extensão se o input estiver vazio
-      const currentName = this.createAttachmentForm.get('name')?.value;
+      const currentName = this.attachmentForm.get('name')?.value;
       if (!currentName) {
         const sanitizedName = file.name.split('.').slice(0, -1).join('.');
-        this.createAttachmentForm.get('name')?.setValue(sanitizedName);
+        this.attachmentForm.get('name')?.setValue(sanitizedName);
+        this.attachmentForm.get('name')?.markAsDirty();
       }
       
       this.cdr.markForCheck();
@@ -102,11 +102,16 @@ export class CreatePatientRequestAttachmentComponent {
    * Processa a submissão e upload do anexo vinculado à solicitação do paciente
    */
   protected onSubmit(): void {
-    const requestId = this.data?.patient_request?.id;
+    const patientRequestId = this.data?.patient_request?.id;
 
-    // Bloqueia preventivamente se o form estiver inválido, sem arquivo ou sem o id da solicitação pai
-    if (this.createAttachmentForm.invalid || !this.selectedFile || !requestId) {
-      this.createAttachmentForm.markAllAsTouched();
+    if (!patientRequestId) {
+      this.messageService.showMessage('Identificador da solicitação não encontrado.');
+      return;
+    }
+
+    // Bloqueia preventivamente se o form estiver inválido ou sem arquivo
+    if (this.attachmentForm.invalid || !this.selectedFile) {
+      this.attachmentForm.markAllAsTouched();
       
       if (!this.selectedFile) {
         this.messageService.showMessage('A seleção de um arquivo anexo é obrigatória.');
@@ -115,14 +120,14 @@ export class CreatePatientRequestAttachmentComponent {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
+    this.cdr.markForCheck(); // Sincroniza imediatamente o estado de submissão no DOM
 
     const attachmentPayload = {
-      ...this.createAttachmentForm.value,
+      ...this.attachmentForm.getRawValue(),
       file: this.selectedFile
     };
 
-    this.patientRequestService.createPatientRequestAttachment(requestId, attachmentPayload)
+    this.patientRequestService.createPatientRequestAttachment(patientRequestId, attachmentPayload)
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);
@@ -131,7 +136,7 @@ export class CreatePatientRequestAttachmentComponent {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
-        next: (response: any) => {
+        next: (response) => {
           this.messageService.showMessage(response?.message || 'Arquivo anexado com sucesso!');
           this.dialogRef.close(true);
         },

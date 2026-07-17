@@ -1,11 +1,19 @@
+@use 'variables' as *;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+// Container de estado de carregamento durante a ação no modal
 .waiting {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: $spacing-form-gap; // 10px padronizados
 
   mat-spinner {
     display: inline-block;
-    flex-shrink: 0;
+    flex-shrink: 0; // Impede que o layout flex esmague o tamanho do spinner
   }
 }
