@@ -8,7 +8,7 @@ import {MatTooltipModule} from '@angular/material/tooltip';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { ActivatedRoute } from '@angular/router';
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
-import { Permission } from '../../models/permission';
+import { Permission } from '../../models/permission.model';
 import { DatasusService } from '../../services/datasus-service';
 
 const TFD_SIGTAP_CHANNEL = new BroadcastChannel('tfd-sigtap-channel');

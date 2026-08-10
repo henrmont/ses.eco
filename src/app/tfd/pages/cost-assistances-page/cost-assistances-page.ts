@@ -21,8 +21,8 @@ import { NgxMaskPipe } from 'ngx-mask';
 // Core, Modelos e Serviços
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
 import { PatientRequest } from '../../models/patient-request';
-import { Permission } from '../../models/permission';
-import { Role } from '../../models/role';
+import { Permission } from '../../models/permission.model';
+import { Role } from '../../models/role.model';
 import { CostAssistanceService } from '../../services/cost-assistance-service';
 
 // Modais (Dialogs)

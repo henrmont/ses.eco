@@ -1,0 +1,20 @@
+@use 'variables' as *;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+mat-dialog-content {
+  display: flex;
+  flex-direction: column;
+  row-gap: $spacing-form-gap;
+  padding-top: $spacing-form-gap;
+}
+
+// Layout de grid para os campos de entrada (2 colunas no desktop, 1 coluna no mobile)
+.line {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-form-gap $spacing-xl;
+}

@@ -5,6 +5,7 @@
 // Learn more about theming and how to use it for your application's
 // custom components at https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
+@use 'variables' as *;
 
 html {
   @include mat.theme((
@@ -47,4 +48,18 @@ body {
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+.waiting {
+  @include flex-center($spacing-form-gap);
+
+  mat-spinner {
+    display: inline-block;
+    flex-shrink: 0;
+  }
+}
+
+// Oculta o contador incremental de páginas em todos os paginadores do app
+.mat-mdc-paginator-range-label {
+  display: none !important;
+}
 

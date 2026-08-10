@@ -16,7 +16,7 @@ import { NgxMaskDirective } from 'ngx-mask';
 // Serviços e Models
 import { AccountabilityService } from '../../../services/accountability-service';
 import { MessageService } from '../../../../core/services/message-service';
-import { DailyCost } from '../../../models/daily-cost';
+import { DailyCost } from '../../../models/daily-cost.model';
 
 @Component({
   selector: 'app-update-accountability-daily-component',

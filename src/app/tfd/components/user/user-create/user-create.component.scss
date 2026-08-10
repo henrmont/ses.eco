@@ -1,0 +1,24 @@
+@use 'variables' as *;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+mat-dialog-content {
+  display: flex;
+  flex-direction: column;
+  row-gap: $spacing-form-gap;
+  padding-top: $spacing-form-gap; // Preserva a margem para evitar corte do outline
+}
+
+// Grid para campos divididos na mesma linha
+.line {
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: $spacing-xl;
+
+  &.double-columns {
+    grid-template-columns: 1fr 1fr;
+  }
+}

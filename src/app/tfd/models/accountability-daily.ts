@@ -1,5 +1,5 @@
 import { Accountability } from "./accountability";
-import { DailyCost } from "./daily-cost";
+import { DailyCost } from "./daily-cost.model";
 
 export interface AccountabilityDaily {
     id: number,

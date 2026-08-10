@@ -26,7 +26,7 @@ mat-dialog-actions {
 mat-card.detail-card {
   background: $color-card-bg;
   border-radius: $radius-md; 
-  box-shadow: $show-card; 
+  box-shadow: $shadow-soft; 
 
   mat-card-header {
     margin-bottom: $spacing-sm;

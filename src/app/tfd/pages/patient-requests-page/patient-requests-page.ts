@@ -20,7 +20,7 @@ import { NgxMaskPipe } from 'ngx-mask';
 // Core & Shared
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
 import { PatientRequest } from '../../models/patient-request';
-import { Permission } from '../../models/permission';
+import { Permission } from '../../models/permission.model';
 import { PatientRequestService } from '../../services/patient-request-service';
 
 // Components (Dialogs)

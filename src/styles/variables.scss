@@ -1,14 +1,22 @@
-// 🎨 Paleta de Cores (Design Tokens + Fallbacks do Material)
-$color-page-bg: #fafafa;
+// 🎨 Paleta de Cores (Design Tokens + Fallbacks MDC)
+// $color-page-bg: #fafafa;
 $color-surface: var(--mdc-theme-surface, #ffffff);
+$color-card-bg: #ffffff;
+
 $color-text-main: var(--mdc-theme-on-surface, #1c1b1f);
 $color-text-variant: var(--mdc-theme-on-surface-variant, #49454f);
 $color-text-muted: var(--mdc-theme-on-surface-variant, #79747e);
+$color-text-label-fallback: rgba(0, 0, 0, 0.6);
+
 $color-primary: var(--mdc-theme-primary, #6750a4);
 
-// Cores de Tabela e Elementos Estruturais
+// Cores de Tabela e Estruturais
 $color-table-header-bg: #f1f5f9;  
 $color-table-header-text: #334155;
+$color-divider: #e5e7eb; 
+$color-border-divider: rgba(0, 0, 0, 0.1);
+$color-border-subtle: rgba(0, 0, 0, 0.08); // ✨ Adicionado
+$color-hover-overlay: rgba(0, 0, 0, 0.02);  // ✨ Adicionado
 
 // Cores Semânticas de Status
 $color-success: #16a34a; 
@@ -17,28 +25,37 @@ $color-warning: #f59e0b;
 $color-sun: #e67e22;     
 $color-moon: #2c3e50;    
 
-// Backgrounds, Superfícies e Divisores
-$color-card-bg: #ffffff; 
-$color-divider: #e5e7eb; 
-$color-border-divider: rgba(0, 0, 0, 0.1); // ✨ Nova: Divisor sutil para mat-dialog-actions
-$color-text-label-fallback: rgba(0, 0, 0, 0.6); // ✨ Nova: Cor fallback para labels mdc
+// 🔤 Tipografia Base (Tokens Auxiliares)
+$font-size-xs: 12px;
+$font-size-sm: 13px; 
+$font-size-md: 14px;
+$font-size-body: 0.95rem;  // ✨ Adicionado
+$font-size-title: 1.1rem;   // ✨ Adicionado
+$font-size-lg: 16px;
+
+// 🔤 Pesos de Fonte
+$font-weight-medium: 500;   // ✨ Adicionado
+$font-weight-semibold: 600;
+$line-height-min-item: 48px;
 
 // 📐 Espaçamentos e Dimensões Base
 $spacing-xs: 4px;
 $spacing-sm: 8px;
+$spacing-form-gap: 10px;
 $spacing-md: 12px;
 $spacing-lg: 16px;
 $spacing-xl: 20px;
 $spacing-xxl: 24px;
 
-// 🏛️ Layout Tokens (Dimensões Específicas e Modais)
-$card-max-width: 800px;
-$spacing-form-gap: 10px;
-$spacing-modal-pt: 12px; // ✨ Nova: Ajuste harmônico para desgrudar do título
-$modal-content-max-height: 65vh; // ✨ Nova: Limite seguro de scroll para conteúdo interno
+$width-label-aligned: 180px;      // ✨ Adicionado
+$min-height-state-container: 150px; // ✨ Adicionado
+$icon-size-lg: 3rem;              // ✨ Adicionado
 
-// 📏 Alturas de Elementos do Angular Material
-$material-field-outline-height: 56px; // ✨ Nova: Altura oficial do mat-form-field outline para pareamento de botões/toggles
+// 🏛️ Tokens de Layout e Modais
+$card-max-width: 800px;
+$spacing-modal-pt: 12px;
+$modal-content-max-height: 65vh;
+$material-field-outline-height: 56px;
 
 // 📦 Bordas e Sombras
 $radius-sm: 4px;
@@ -49,8 +66,43 @@ $shadow-card: 0 3px 5px -1px rgba(0, 0, 0, 0.2),
               0 6px 10px 0 rgba(0, 0, 0, 0.14), 
               0 1px 18px 0 rgba(0, 0, 0, 0.12);
 
-$show-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 
-            0 2px 4px -2px rgba(0, 0, 0, 0.03);
+$shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 
+              0 2px 4px -2px rgba(0, 0, 0, 0.03);
 
 // ⚡ Transições
+$transition-fast: 0.2s ease; // ✨ Adicionado
 $transition-default: 0.2s ease-in-out;
+
+// 👁️ Opacidades e Estados
+$opacity-muted: 0.5;    // ✨ Adicionado
+$opacity-disabled: 0.5;
+
+// 🏛️ Tokens de Layout de Páginas
+$layout-header-height: 100px;
+$page-content-width: 85%;
+$search-input-max-width: 500px;
+
+// 🛠️ MIXINS REUTILIZÁVEIS
+@mixin flex-center($gap: $spacing-form-gap) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $gap;
+}
+
+@mixin modal-dialog-base {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow: hidden;
+}
+
+// Regras centralizadas no global:
+mat-error[hidden] {
+  display: none !important;
+}
+
+mat-form-field {
+  width: 100%;
+  height: auto;
+}

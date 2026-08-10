@@ -6,7 +6,7 @@ import { environment } from '../../../environments/environment.development';
 import { PatientRequest } from '../models/patient-request';
 import { Accountability } from '../models/accountability';
 import { AccountabilityDaily } from '../models/accountability-daily';
-import { DailyCost } from '../models/daily-cost';
+import { DailyCost } from '../models/daily-cost.model';
 
 // Interface genérica para padronizar as respostas de mutação do back-end (Laravel)
 export interface ApiResponse {

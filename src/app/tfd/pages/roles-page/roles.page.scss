@@ -1,0 +1,78 @@
+@use 'variables' as *;
+
+:host {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: calc(100vh - #{$layout-header-height});
+}
+
+section {
+  margin-top: $spacing-xxl; 
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl; 
+
+  div.table {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xl;
+    width: 100%;
+    padding: $spacing-lg;
+    box-sizing: border-box;
+  }
+
+  div.search {
+    display: flex; 
+    justify-content: center; 
+    width: 100%;
+
+    mat-form-field {
+      width: 100%;
+      max-width: $search-input-max-width; 
+    }
+  }
+
+  table.mat-mdc-table {
+    margin: 0 auto $spacing-sm auto;
+    width: 100%;
+
+    background: $color-surface;
+    border-radius: $radius-md; 
+    overflow: hidden;
+    box-shadow: $shadow-card; 
+    border-collapse: separate;
+
+    th.mat-mdc-header-cell, 
+    td.mat-mdc-cell {
+      padding: $spacing-md $spacing-lg; 
+      vertical-align: middle;
+    }
+
+    th.mat-mdc-header-cell {
+      font-weight: $font-weight-semibold;
+      background-color: $color-table-header-bg;
+      color: $color-table-header-text;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    th.name-column-header {
+      width: 92%;
+    }
+
+    th.actions-column-header {
+      width: 8%;
+    }
+
+    td.actions-cell {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: $spacing-xs;
+    }
+  }
+}

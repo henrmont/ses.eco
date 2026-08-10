@@ -16,7 +16,7 @@ import { NgxMaskDirective } from 'ngx-mask';
 // Serviços e Models
 import { CostAssistanceService } from '../../../services/cost-assistance-service';
 import { MessageService } from '../../../../core/services/message-service';
-import { DailyCost } from '../../../models/daily-cost';
+import { DailyCost } from '../../../models/daily-cost.model';
 
 @Component({
   selector: 'app-update-cost-assistance-daily-component',

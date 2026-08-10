@@ -1,0 +1,13 @@
+@use 'variables' as *;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+mat-dialog-content {
+  span {
+    color: $color-danger;
+    font-size: $font-size-sm; // Utiliza o token padronizado
+  }
+}

@@ -8,7 +8,7 @@ import {MatTooltipModule} from '@angular/material/tooltip';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { ActivatedRoute } from '@angular/router';
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
-import { Permission } from '../../models/permission';
+import { Permission } from '../../models/permission.model';
 import { HospitalUnityService } from '../../services/hospital-unity-service';
 import { HospitalUnity } from '../../models/hospital-unity';
 import { UpdateHospitalUnityComponent } from '../../components/hospital-unity/update-hospital-unity-component/update-hospital-unity-component';

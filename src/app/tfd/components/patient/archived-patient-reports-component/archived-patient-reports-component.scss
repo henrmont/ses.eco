@@ -34,7 +34,7 @@ mat-accordion {
     background: $color-surface;
     border-radius: $radius-md !important;
     overflow: hidden;
-    box-shadow: $show-card !important;
+    box-shadow: $shadow-soft !important;
 
     mat-expansion-panel-header {
       padding: 0 $spacing-lg;
@@ -69,7 +69,7 @@ mat-accordion {
   mat-card {
     background: $color-card-bg;
     border-radius: $radius-md; 
-    box-shadow: $show-card; 
+    box-shadow: $shadow-soft; 
   }
 }
 

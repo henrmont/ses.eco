@@ -14,7 +14,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 // Models e Serviços do Contexto de Prestações de Contas
 import { Accountability } from '../../../models/accountability';
-import { Permission } from '../../../models/permission';
+import { Permission } from '../../../models/permission.model';
 import { AccountabilityService } from '../../../services/accountability-service';
 import { MessageService } from '../../../../core/services/message-service';
 

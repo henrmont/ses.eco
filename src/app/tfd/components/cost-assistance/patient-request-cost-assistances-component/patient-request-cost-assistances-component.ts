@@ -14,7 +14,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 // Models e Serviços
 import { CostAssistance } from '../../../models/cost-assistance';
-import { Permission } from '../../../models/permission';
+import { Permission } from '../../../models/permission.model';
 import { CostAssistanceService } from '../../../services/cost-assistance-service';
 import { MessageService } from '../../../../core/services/message-service';
 

@@ -1,5 +1,5 @@
 import { CostAssistance } from "./cost-assistance";
-import { DailyCost } from "./daily-cost";
+import { DailyCost } from "./daily-cost.model";
 
 export interface CostAssistanceDaily {
     id: number,

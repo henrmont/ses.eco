@@ -8,12 +8,12 @@ export const tfdRoutes: Routes = [
     },
     {
         path: 'usuarios',
-        loadComponent: () => import('./../pages/users-page/users-page').then( m => m.UsersPage),
+        loadComponent: () => import('./../pages/users-page/users.page').then( m => m.UsersPage),
         data: { permission: 'tfd/usuário listar' } // Adicionado
     },
     {
         path: 'regras',
-        loadComponent: () => import('./../pages/roles-page/roles-page').then( m => m.RolesPage),
+        loadComponent: () => import('./../pages/roles-page/roles.page').then( m => m.RolesPage),
         data: { permission: 'tfd/regra listar' } // Adicionado
     },
     {
@@ -28,7 +28,7 @@ export const tfdRoutes: Routes = [
     },
     {
         path: 'configuracoes',
-        loadComponent: () => import('./../pages/settings-page/settings-page').then( m => m.SettingsPage),
+        loadComponent: () => import('./../pages/settings-page/settings.page').then( m => m.SettingsPage),
         data: { permission: 'tfd/configuração listar' } // Adicionado
     },
     {
@@ -45,14 +45,6 @@ export const tfdRoutes: Routes = [
         path: 'solicitacoes',
         loadComponent: () => import('./../pages/patient-requests-page/patient-requests-page').then( m => m.PatientRequestsPage),
         data: { permission: 'tfd/solicitação listar' } // Adicionado
-    },
-    {
-        path: 'consultar-paciente',
-        loadComponent: () => import('./../pages/search-patient-page/search-patient-page').then( m => m.SearchPatientPage)
-    },
-    {
-        path: 'consultar-arquivo',
-        loadComponent: () => import('./../pages/search-archive-page/search-archive-page').then( m => m.SearchArchivePage)
     },
     {
         path: 'pareceres',

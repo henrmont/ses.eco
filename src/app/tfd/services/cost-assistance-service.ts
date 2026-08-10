@@ -6,7 +6,7 @@ import { environment } from '../../../environments/environment.development';
 import { PatientRequest } from '../models/patient-request';
 import { CostAssistance } from '../models/cost-assistance';
 import { CostAssistanceDaily } from '../models/cost-assistance-daily';
-import { DailyCost } from '../models/daily-cost';
+import { DailyCost } from '../models/daily-cost.model';
 import { Professional } from '../models/professional';
 
 // Interface genérica para padronizar as respostas de mutação do back-end (Laravel)

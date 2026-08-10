@@ -2,7 +2,7 @@ import { Escort } from "./escort"
 import { Module } from "./module"
 import { Patient } from "./patient"
 import { Report } from "./report"
-import { User } from "./user"
+import { User } from "./user.model"
 
 export interface PatientCare {
     id: number,
