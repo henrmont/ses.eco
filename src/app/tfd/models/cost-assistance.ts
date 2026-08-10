@@ -9,5 +9,7 @@ export interface CostAssistance {
     type: CostAssistanceType,
     status: boolean,
     patient_request?: PatientRequest,
-    cost_assistance_dailies?: CostAssistanceDaily[]
+    cost_assistance_dailies?: CostAssistanceDaily[],
+    total_dailies?: number,
+    dailies?: any
 }

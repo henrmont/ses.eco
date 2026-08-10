@@ -59,6 +59,138 @@ export class CustomValidators {
     };
   }
 
+  static dateValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value = control.value;
+      if (!value) return null;
+
+      const parsed = CustomValidators.parseToMoment(value);
+      return parsed && parsed.isValid() ? null : { invalidDate: true };
+    };
+  }
+
+  static birthDateValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value = control.value;
+      if (!value) return null;
+
+      const parsed = CustomValidators.parseToMoment(value);
+      if (!parsed || !parsed.isValid()) return { invalidDate: true };
+
+      if (parsed.isAfter(moment())) {
+        return { futureDate: true };
+      }
+      return null;
+    };
+  }
+
+  /**
+   * Valida se a data do controle é ANTERIOR ou IGUAL a uma data de referência.
+   * @param target Valor direto da data, função getter, Signal OU nome do controle no FormGroup.
+   */
+  static dateBeforeValidator(target: any): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (!control.value) {
+        return null;
+      }
+
+      let referenceValue: any;
+
+      // Se for string e houver parent, tenta pegar o valor do controle informado
+      if (typeof target === 'string' && control.parent) {
+        const targetControl = control.parent.get(target);
+        referenceValue = targetControl ? targetControl.value : target;
+      } else if (typeof target === 'function') {
+        // Suporta funções/signals: target()
+        referenceValue = target();
+      } else {
+        referenceValue = target;
+      }
+
+      if (!referenceValue) {
+        return null;
+      }
+
+      const inputDate = moment(control.value);
+      const targetDate = moment(referenceValue);
+
+      if (inputDate.isValid() && targetDate.isValid() && inputDate.isAfter(targetDate, 'day')) {
+        return { dateBefore: true };
+      }
+
+      return null;
+    };
+  }
+
+  /**
+   * Valida se a data do controle é POSTERIOR ou IGUAL a uma data de referência.
+   * @param target Valor direto da data, função getter, Signal OU nome do controle no FormGroup.
+   */
+  static dateAfterValidator(target: any): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (!control.value) {
+        return null;
+      }
+
+      let referenceValue: any;
+
+      // Se for string e houver parent, tenta pegar o valor do controle informado
+      if (typeof target === 'string' && control.parent) {
+        const targetControl = control.parent.get(target);
+        referenceValue = targetControl ? targetControl.value : target;
+      } else if (typeof target === 'function') {
+        // Suporta funções/signals: target()
+        referenceValue = target();
+      } else {
+        referenceValue = target;
+      }
+
+      if (!referenceValue) {
+        return null;
+      }
+
+      const inputDate = moment(control.value);
+      const targetDate = moment(referenceValue);
+
+      if (inputDate.isValid() && targetDate.isValid() && inputDate.isBefore(targetDate, 'day')) {
+        return { dateAfter: true };
+      }
+
+      return null;
+    };
+  }
+
+  // --- MÉTODOS AUXILIARES PRIVADOS ---
+
+  /**
+   * Converte qualquer formato de data recebido (inclusive "YYYY-MM-DD HH:mm:ss")
+   * para um objeto Moment e zera a hora para comparação exata de dia.
+   */
+  private static parseToMoment(value: any): _moment.Moment | null {
+    if (!value) return null;
+    if (moment.isMoment(value)) return value.clone().startOf('day');
+    if (value instanceof Date) return moment(value).startOf('day');
+
+    // Lista de formatos aceitos (incluindo o espaço com hora)
+    const formats = [
+      'YYYY-MM-DD HH:mm:ss',
+      'YYYY-MM-DD',
+      'DD/MM/YYYY',
+      'YYYY-MM-DDTHH:mm:ss'
+    ];
+
+    // Tenta fazer o parse estrito com a lista de formatos
+    let parsed = moment(value, formats, true);
+
+    // Se falhar no estrito, tenta o parse legados/ISO como fallback
+    if (!parsed.isValid()) {
+      parsed = moment(value);
+    }
+
+    // Normaliza para o início do dia (00:00:00) para ignorar diferenças de horário
+    return parsed.isValid() ? parsed.startOf('day') : null;
+  }
+
   private static validateCNS(cns: string): boolean {
     if (!['1', '2', '7', '8', '9'].includes(cns[0])) return false;
 
@@ -67,10 +199,7 @@ export class CustomValidators {
       for (let i = 0; i < 15; i++) {
         soma += parseInt(cns[i]) * (15 - i);
       }
-      
-      if (soma % 11 !== 0) {
-        return false;
-      }
+      if (soma % 11 !== 0) return false;
     } 
     else if (['1', '2'].includes(cns[0])) {
       const pis = cns.substring(0, 11);
@@ -81,7 +210,6 @@ export class CustomValidators {
 
       const resto = soma % 11;
       let dv = 11 - resto;
-
       if (dv === 11) dv = 0;
 
       let resultado = "";
@@ -94,9 +222,7 @@ export class CustomValidators {
         resultado = pis + "000" + dv.toString();
       }
 
-      if (cns !== resultado) {
-        return false;
-      }
+      if (cns !== resultado) return false;
     } else {
       return false;
     }
@@ -147,54 +273,4 @@ export class CustomValidators {
 
     return dvFormatado === dvInformado;
   }
-
-  static dateValidator(): ValidatorFn {
-    return (control: AbstractControl): ValidationErrors | null => {
-      const value = control.value;
-      if (!value) {
-        return null; // O validador 'required' trata campos vazios
-      }
-
-      // Se for um objeto do Moment
-      if (moment.isMoment(value)) {
-        if (!value.isValid()) {
-          return { invalidDate: true };
-        }
-        return null;
-      }
-
-      // Se for uma string ou Date nativo, tenta converter e validar
-      const parsed = moment(value, ['YYYY-MM-DD', 'DD/MM/YYYY'], true);
-      if (!parsed.isValid()) {
-        return { invalidDate: true };
-      }
-      return null;
-    };
-  }
-
-  static birthDateValidator(): ValidatorFn {
-    return (control: AbstractControl): ValidationErrors | null => {
-      const value = control.value;
-      if (!value) {
-        return null; // O validador 'required' trata campos vazios
-      }
-
-      // Se for um objeto do Moment
-      if (moment.isMoment(value)) {
-        // Validação opcional: não permite datas no futuro
-        if (value.isAfter(moment())) {
-          return { futureDate: true };
-        }
-        return null;
-      }
-
-      // Se for uma string ou Date nativo, tenta converter e validar
-      const parsed = moment(value, ['YYYY-MM-DD', 'DD/MM/YYYY'], true);
-      if (parsed.isAfter(moment())) {
-        return { futureDate: true };
-      }
-      return null;
-    };
-  }
-
 }

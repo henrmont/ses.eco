@@ -1,0 +1,121 @@
+@use 'variables' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow: hidden; 
+}
+
+mat-dialog-content {
+  overflow-y: auto !important; 
+  padding-top: $spacing-sm !important;
+}
+
+mat-dialog-actions {
+  gap: $spacing-lg; 
+}
+
+// Container do Spinner de Carregamento
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: $spacing-xxl 0;
+}
+
+// Estilização do Sanfona/Acordeão
+mat-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+
+  mat-expansion-panel.accordion {
+    background: $color-surface;
+    border-radius: $radius-md !important;
+    overflow: hidden;
+    box-shadow: $show-card !important;
+
+    mat-expansion-panel-header {
+      padding: 0 $spacing-lg;
+      background-color: $color-surface;
+      
+      mat-panel-title {
+        color: $color-text-main;
+      }
+
+      mat-panel-description {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        width: 100%;
+        color: $color-text-variant;
+        
+        span {
+          font-size: 0.9rem;
+        }
+      }
+    }
+  }
+}
+
+// Container interno dos Cards de detalhe do acompanhante
+.details-container {
+  padding: $spacing-lg 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xxl; 
+
+  mat-card {
+    background: $color-card-bg;
+    border-radius: $radius-md; 
+    box-shadow: $show-card; 
+  }
+}
+
+// Grid de dados (alinhado perfeitamente com a referência)
+.line {
+  display: grid;
+  gap: $spacing-md; 
+  padding: 0 $spacing-md; 
+  align-items: center; 
+  color: $color-text-main;
+  min-height: 48px; 
+
+  strong {
+    color: $color-text-variant;
+    font-weight: 600;
+  }
+
+  .action-cell {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    height: 100%; 
+  }
+
+  &.empty-row {
+    grid-template-columns: 1fr;
+    text-align: center;
+    color: $color-text-variant;
+    font-style: italic;
+    padding: $spacing-xl 0;
+  }
+}
+
+// --- Definições Semânticas das Colunas da Grid ---
+.line {
+  &.cols-1-col   { grid-template-columns: 1fr; }
+  &.cols-1-1     { grid-template-columns: 1fr 1fr; }
+  &.cols-1-2     { grid-template-columns: 1fr 2fr; }
+  &.cols-2-2-1   { grid-template-columns: 2fr 2fr 1fr; }
+}
+
+// Classes utilitárias de status
+.valid {
+  color: $color-success !important;
+}
+
+.invalid {
+  color: $color-danger !important;
+}

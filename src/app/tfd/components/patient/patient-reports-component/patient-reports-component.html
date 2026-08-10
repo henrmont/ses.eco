@@ -16,6 +16,14 @@
             <th mat-header-cell *matHeaderCellDef>Protocolo</th>
             <td mat-cell *matCellDef="let element">{{ element.protocol }}</td>
           </ng-container>
+
+          <!-- Coluna: Especialidade -->
+          <ng-container matColumnDef="specialty">
+            <th mat-header-cell *matHeaderCellDef>Especialidade</th>
+            <td mat-cell *matCellDef="let element">
+              {{ getSpecialtyLabel(element.specialty) }}
+            </td>
+          </ng-container>
   
           <!-- Coluna: CID -->
           <ng-container matColumnDef="cid">

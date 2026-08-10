@@ -1,5 +1,25 @@
+@use 'variables' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+// Customização da área de ações para manter a consistência visual do design system
+mat-dialog-actions {
+  gap: $spacing-lg; 
+}
+
+// Feedback visual do botão durante o processo de movimentação
 .waiting {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-form-gap;
+
+  mat-spinner {
+    display: inline-block;
+    flex-shrink: 0;
+  }
 }

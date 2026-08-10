@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal, ChangeDetectorRef, DestroyRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, ChangeDetectorRef, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -6,19 +6,29 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSlideToggleChange, MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { CommonModule } from '@angular/common';
+import { CommonModule, CurrencyPipe } from '@angular/common';
 import { finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { TravelService } from '../../../services/travel-service';
 import { MessageService } from '../../../../core/services/message-service';
+import { TravelGender } from '../../../enums/travel-gender';
+import { MatIconModule } from '@angular/material/icon';
+
+export interface UnifiedPassengerOption {
+  id: number;
+  name: string;
+  isPatient: boolean;
+  typeLabel: string;
+  birthDate?: string | Date | null;
+}
 
 @Component({
   selector: 'app-create-passenger-component',
   standalone: true,
   imports: [
     CommonModule,
+    CurrencyPipe,
     FormsModule,
     ReactiveFormsModule,
     MatDialogModule,
@@ -27,14 +37,14 @@ import { MessageService } from '../../../../core/services/message-service';
     MatInputModule,
     MatProgressSpinnerModule,
     MatSelectModule,
-    MatSlideToggleModule
+    MatIconModule
   ],
   templateUrl: './create-passenger-component.html',
   styleUrl: './create-passenger-component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CreatePassengerComponent implements OnInit {
-  // Injeções de Dependência Dinâmicas
+  // Injeções de Dependência
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly travelService = inject(TravelService);
@@ -43,86 +53,158 @@ export class CreatePassengerComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Estrutura do Formulário exposta ao template
-  protected passengerForm!: FormGroup;
+  // Mapeamento de Key / Value para o select de Sexo
+  protected readonly genders = Object.entries(TravelGender).map(([key, value]) => ({ key, value }));
 
-  // Estados gerenciados reativamente via Signals
-  protected readonly passengersOptions = signal<any[]>([]);
+  // Form Group Principal
+  protected createPassengerForm!: FormGroup;
+
+  // Estados reativos via Signals
+  protected readonly passengersOptions = signal<UnifiedPassengerOption[]>([]);
   protected readonly isSubmitting = signal<boolean>(false);
 
-  // 🎯 Mapeamento local das mensagens de erro (Idêntico ao modelo de referência)
+  // Mensagens estáticas de erro do formulário
   protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
     passenger: [
-      { type: 'required', message: 'A seleção do passageiro é obrigatória.' }
+      { type: 'required', message: 'A seleção do passageiro é obrigatória.' },
+      { type: 'passengerExists', message: 'Este passageiro já está cadastrado nesta viagem.' }
     ],
     tariff: [
-      { type: 'required', message: 'O valor da tarifa é obrigatório.' },
-      { type: 'min', message: 'O valor da tarifa não pode ser negativo.' }
+      { type: 'required', message: 'O valor é obrigatório.' },
+      { type: 'min', message: 'O valor não pode ser negativo.' }
     ],
     tax: [
-      { type: 'required', message: 'O valor da taxa é obrigatório.' },
-      { type: 'min', message: 'O valor da taxa não pode ser negativo.' }
-    ]
+      { type: 'required', message: 'O valor é obrigatório.' },
+      { type: 'min', message: 'O valor não pode ser negativo.' }
+    ],
+    discount: [
+      { type: 'min', message: 'O valor não pode ser negativo.' }
+    ],
+    gender: [],
+    seat: [],
+    ticket: []
   };
 
-  constructor() {
-    this.initForm();
-  }
-
   ngOnInit(): void {
+    this.initForm();
     this.setPassengerOptions();
   }
 
-  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO E SUPORTE ---
+  // --- INICIALIZAÇÃO E REGRAS DO FORMULÁRIO ---
 
   private initForm(): void {
-    this.passengerForm = this.fb.group({
-      is_patient: [false, [Validators.required]],
-      passenger: [null, [Validators.required]],
+    const travelId = this.data?.travel?.id;
+
+    this.createPassengerForm = this.fb.group({
+      passenger: [null, [Validators.required], [this.travelService.passengerExistsValidator(travelId)]],
       tariff: [null, [Validators.required, Validators.min(0)]],
-      tax: [null, [Validators.required, Validators.min(0)]]
+      tax: [null, [Validators.required, Validators.min(0)]],
+      discount: [null, [Validators.min(0)]],
+      gender: [null],
+      seat: [null],
+      ticket: [null]
     });
   }
 
   /**
-   * Altera as opções disponíveis do select com base no estado do toggle (Paciente / Acompanhante)
+   * Unifica pacientes e acompanhantes ativos em uma única lista rotulada.
    */
   private setPassengerOptions(): void {
     const reportData = this.data?.travel?.patient_request?.report?.patient_care;
-    const isPatient = this.passengerForm.get('is_patient')?.value;
 
     if (!reportData) {
       this.passengersOptions.set([]);
       return;
     }
 
-    if (isPatient) {
-      this.passengersOptions.set(reportData.patient ? [reportData.patient] : []);
-    } else {
-      this.passengersOptions.set(reportData.escorts || []);
+    const options: UnifiedPassengerOption[] = [];
+
+    // Adiciona Paciente (se existir)
+    if (reportData.patient) {
+      options.push({
+        id: reportData.patient.id,
+        name: reportData.patient.name,
+        isPatient: true,
+        typeLabel: 'Paciente',
+        birthDate: reportData.patient.birth_date ?? null
+      });
     }
 
-    // Reseta o controle de seleção para evitar estados visuais inconsistentes
-    this.passengerForm.get('passenger')?.setValue(null);
+    // Adiciona apenas Acompanhantes com status === true usando for...of
+    if (Array.isArray(reportData.escorts)) {
+      for (const escort of reportData.escorts) {
+        if (escort?.status === true) {
+          options.push({
+            id: escort.id,
+            name: escort.name,
+            isPatient: false,
+            typeLabel: 'Acompanhante',
+            birthDate: escort.birth_date ?? null
+          });
+        }
+      }
+    }
+
+    this.passengersOptions.set(options);
   }
 
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
+  /**
+   * Calcula se o passageiro é ADT (Adulto) ou CHD (Criança)
+   * com base na data de nascimento em relação à data atual.
+   * Idade > 11 anos -> ADT | Idade <= 11 anos -> CHD.
+   */
+  private calculatePassengerType(birthDateInput?: string | Date | null): 'ADT' | 'CHD' {
+    if (!birthDateInput) {
+      return 'ADT';
+    }
 
-  protected onToggleChange(event: MatSlideToggleChange): void {
-    this.setPassengerOptions();
+    const birthDate = new Date(birthDateInput);
+    const now = new Date();
+
+    let age = now.getFullYear() - birthDate.getFullYear();
+    const monthDiff = now.getMonth() - birthDate.getMonth();
+
+    if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
+    return age > 11 ? 'ADT' : 'CHD';
   }
+
+  // --- SUBMISSÃO ---
 
   protected onSubmit(): void {
     const travelId = this.data?.travel?.id;
-    if (this.passengerForm.invalid || !travelId) {
-      this.passengerForm.markAllAsTouched();
+    
+    if (this.createPassengerForm.invalid || !travelId) {
+      this.createPassengerForm.markAllAsTouched();
+      return;
+    }
+
+    const selectedOption = this.createPassengerForm.get('passenger')?.value as UnifiedPassengerOption;
+
+    if (!selectedOption) {
       return;
     }
 
     this.isSubmitting.set(true);
     this.cdr.markForCheck();
 
-    this.travelService.createPassenger(travelId, this.passengerForm.getRawValue())
+    const rawValue = this.createPassengerForm.getRawValue();
+
+    const payload = {
+      is_patient: selectedOption.isPatient,
+      passenger_id: selectedOption.id,
+      type: this.calculatePassengerType(selectedOption.birthDate),
+      tariff: rawValue.tariff,
+      tax: rawValue.tax,
+      discount: rawValue.discount,
+      gender: rawValue.gender,
+      seat: rawValue.seat,
+      ticket: rawValue.ticket
+    };
+
+    this.travelService.createPassenger(travelId, payload)
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);

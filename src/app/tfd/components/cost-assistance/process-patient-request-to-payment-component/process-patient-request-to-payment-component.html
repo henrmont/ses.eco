@@ -1,76 +1,215 @@
 <h2 mat-dialog-title>Tramitar solicitação</h2>
 
-<form [formGroup]="tramitPatientRequestForm" (ngSubmit)="onSubmit()">
-  <mat-dialog-content>
+<mat-dialog-content>
+  <mat-stepper [linear]="false" class="stepper" #stepper>
     
-    <div class="line" style="grid-template-columns: 1fr;">
-      
-      <mat-form-field appearance="outline">
-        <mat-label>Pagamento</mat-label>
-        <input 
-          matInput 
-          type="text" 
-          [formControl]="paymentProfessionalControl" 
-          [matAutocomplete]="paymentProfessional" 
-          [readonly]="paymentProfessionalReadOnly() || isSubmitting()"
-        >
-        
-        @if (paymentProfessionalLoading()) {
-          <mat-spinner matSuffix [diameter]="25" style="margin-right: 10px;"></mat-spinner>
-        }
+    <!-- ETAPA 1: SELEÇÃO DE PROFISSIONAL, AJUDA DE CUSTO E VIAGEM -->
+    <mat-step [stepControl]="step1FormGroup">
+      <ng-template matStepLabel>Profissional e Valores</ng-template>
 
-        <mat-autocomplete #paymentProfessional="matAutocomplete" [displayWith]="displayPaymentProfessional">
-          @for (option of filteredPaymentProfessionalOptions | async; track option.id) {
-            <mat-option [value]="option" (onSelectionChange)="setPaymentProfessional(option)">
-              <mat-chip style="margin-right: 20px;">{{ option?.patient_payment_requests_count || 0 }}</mat-chip>
-              <span>{{ option?.name }}</span>
-            </mat-option>
-          }
-        </mat-autocomplete>
-
-        @for (item of errorMessages['payment_professional_id']; track $index) {
-          <mat-error [hidden]="!tramitPatientRequestForm.get('payment_professional_id')?.hasError(item.type)">
-            {{ item.message }}
-          </mat-error>
-        }
-      </mat-form-field>
-
-    </div>
-
-    <mat-list>
-      @for (item of data?.patient_request?.attachments; track item.id) {
-        <mat-list-item>
-          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-            <span>{{ item.name }}</span>
-            <mat-slide-toggle 
-              [disabled]="isSubmitting()" 
-              (toggleChange)="toggleArchive(item)"
-            ></mat-slide-toggle>
-          </div>
-        </mat-list-item>
-      } @empty {
-        <div style="text-align: center; padding: 15px 0; color: rgba(0, 0, 0, 0.54);">
-          Nenhum arquivo cadastrado.
+      @if (paymentProfessionalLoading()) {
+        <div class="waiting" style="min-height: 180px;">
+          <mat-spinner diameter="40"></mat-spinner>
         </div>
+      } @else {
+        <form [formGroup]="step1FormGroup" class="stepper">
+          
+          <!-- Linha 1: Seleção do Profissional -->
+          <div class="line cols-1-col">
+            <mat-form-field appearance="outline">
+              <mat-label>Profissional para pagamento</mat-label>
+              <input 
+                matInput 
+                type="text" 
+                [formControl]="paymentProfessionalControl" 
+                [matAutocomplete]="paymentProfessional" 
+                [readonly]="paymentProfessionalReadOnly() || isSubmitting()"
+                placeholder="Selecione o profissional"
+              >
+              
+              <mat-autocomplete #paymentProfessional="matAutocomplete" [displayWith]="displayPaymentProfessional">
+                @for (option of filteredPaymentProfessionalOptions | async; track option.id) {
+                  <mat-option [value]="option" (onSelectionChange)="setPaymentProfessional(option)">
+                    <mat-chip style="margin-right: 12px;">{{ option?.patient_payment_requests_count || 0 }}</mat-chip>
+                    <span>{{ option?.name }}</span>
+                  </mat-option>
+                }
+              </mat-autocomplete>
+
+              @for (item of errorMessages['payment_professional_id']; track $index) {
+                <mat-error [hidden]="!step1FormGroup.get('payment_professional_id')?.hasError(item.type)">
+                  {{ item.message }}
+                </mat-error>
+              }
+            </mat-form-field>
+          </div>
+
+          <!-- Linha 2: Seleção de Ajuda de Custo -->
+          <div class="line cols-1-col">
+            <mat-form-field appearance="outline">
+              <mat-label>Ajuda de custo</mat-label>
+              <input 
+                matInput 
+                type="text" 
+                [formControl]="costAssistanceControl" 
+                [matAutocomplete]="costAssistance" 
+                [readonly]="isSubmitting()"
+                placeholder="Selecione a ajuda de custo"
+              >
+              
+              <mat-autocomplete #costAssistance="matAutocomplete" [displayWith]="displayCostAssistance">
+                @for (option of filteredCostAssistanceOptions | async; track option.id) {
+                  <mat-option [value]="option" (onSelectionChange)="setCostAssistance(option)">
+                    <span>{{ displayCostAssistance(option) }}</span>
+                  </mat-option>
+                }
+              </mat-autocomplete>
+
+              @for (item of errorMessages['cost_assistance_id']; track $index) {
+                <mat-error [hidden]="!step1FormGroup.get('cost_assistance_id')?.hasError(item.type)">
+                  {{ item.message }}
+                </mat-error>
+              }
+            </mat-form-field>
+          </div>
+
+          <!-- Linha 3: Seleção de Viagem -->
+          <div class="line cols-1-col">
+            <mat-form-field appearance="outline">
+              <mat-label>Viagem / Passagem</mat-label>
+              <input 
+                matInput 
+                type="text" 
+                [formControl]="travelControl" 
+                [matAutocomplete]="travel" 
+                [readonly]="isSubmitting()"
+                placeholder="Selecione a viagem"
+              >
+              
+              <mat-autocomplete #travel="matAutocomplete" [displayWith]="displayTravel">
+                @for (option of filteredTravelOptions | async; track option.id) {
+                  <mat-option [value]="option" (onSelectionChange)="setTravel(option)">
+                    <span>{{ displayTravel(option) }}</span>
+                  </mat-option>
+                }
+              </mat-autocomplete>
+
+              @for (item of errorMessages['travel_id']; track $index) {
+                <mat-error [hidden]="!step1FormGroup.get('travel_id')?.hasError(item.type)">
+                  {{ item.message }}
+                </mat-error>
+              }
+            </mat-form-field>
+          </div>
+
+        </form>
       }
-    </mat-list>
+    </mat-step>
 
-  </mat-dialog-content>
+    <!-- ETAPA 2: DRAG AND DROP DOS ANEXOS -->
+    <mat-step [stepControl]="step2FormGroup">
+      <ng-template matStepLabel>Anexos para Pagamento</ng-template>
 
-  <mat-dialog-actions align="end">
-    <button mat-button [mat-dialog-close]="false" type="button">Fechar</button>
-    <button 
-      mat-flat-button
-      color="primary"
-      type="submit" 
-      [disabled]="tramitPatientRequestForm.invalid || tramitPatientRequestForm.pending || isSubmitting() || paymentProfessionalLoading()"
-    >
-      <div class="waiting">
-        @if (isSubmitting()) {
-          <mat-spinner matPrefix [diameter]="20"></mat-spinner>
-        }
-        Tramitar
+      <div class="drag-drop-wrapper">
+        
+        <!-- Lista de Arquivos Disponíveis (Origem) -->
+        <div class="drag-column">
+          <h3 class="column-title">
+            <mat-icon>folder_open</mat-icon>
+            Arquivos da Solicitação
+          </h3>
+
+          <div
+            [id]="availableListId"
+            cdkDropList
+            [cdkDropListData]="availableFiles()"
+            [cdkDropListConnectedTo]="slotListIds()"
+            (cdkDropListDropped)="dropToAvailable($event)"
+            class="drop-zone available-zone">
+            
+            @for (file of availableFiles(); track file.id) {
+              <div class="drag-card" cdkDrag>
+                <mat-icon class="drag-handle">drag_indicator</mat-icon>
+                <span class="file-name" [title]="file.name">{{ file.name }}</span>
+              </div>
+            } @empty {
+              <p class="empty-drop-msg">Nenhum arquivo disponível.</p>
+            }
+          </div>
+        </div>
+
+        <!-- Checklist de Documentos (Slots de Destino) -->
+        <div class="drag-column">
+          <h3 class="column-title">
+            <mat-icon>assignment_turned_in</mat-icon>
+            Checklist de Documentos
+          </h3>
+
+          <div class="slots-container">
+            @for (slot of fixedSlots(); track slot.key; let i = $index) {
+              <div class="slot-item">
+                <div class="slot-header">
+                  <span class="slot-title">{{ slot.title }}</span>
+                  @if (slot.required) {
+                    <span class="required-badge">*Obrigatório</span>
+                  }
+                </div>
+
+                <div
+                  [id]="'slot-' + i"
+                  cdkDropList
+                  [cdkDropListData]="slot.assignedFile"
+                  [cdkDropListConnectedTo]="[availableListId]"
+                  [cdkDropListEnterPredicate]="isSlotAvailable"
+                  (cdkDropListDropped)="dropToSlot($event, i)"
+                  class="drop-zone slot-zone"
+                  [class.has-file]="slot.assignedFile.length > 0">
+                  
+                  @for (file of slot.assignedFile; track file.id) {
+                    <div class="drag-card assigned-card" cdkDrag [cdkDragDisabled]="true">
+                      <mat-icon class="drag-handle">drag_indicator</mat-icon>
+                      <span class="file-name" [title]="file.name">{{ file.name }}</span>
+                      <button 
+                        type="button" 
+                        mat-icon-button 
+                        color="warn" 
+                        class="remove-btn"
+                        (click)="removeFileFromSlot(i)"
+                        [disabled]="isSubmitting()">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    </div>
+                  } @empty {
+                    <span class="placeholder-text">Arraste o arquivo aqui</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
       </div>
-    </button>
-  </mat-dialog-actions>
-</form>
+    </mat-step>
+
+  </mat-stepper>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [mat-dialog-close]="false" [disabled]="isSubmitting()">
+    Fechar
+  </button>
+  
+  <button 
+    mat-flat-button 
+    color="primary" 
+    type="button" 
+    [disabled]="tramitPatientRequestForm.invalid || !areSlotsValid() || isSubmitting() || paymentProfessionalLoading()"
+    (click)="onSubmit()">
+    <div class="waiting">
+      @if (isSubmitting()) {
+        <mat-spinner [diameter]="20"></mat-spinner>
+      }
+      <span>{{ isSubmitting() ? 'Tramitando...' : 'Tramitar' }}</span>
+    </div>
+  </button>
+</mat-dialog-actions>

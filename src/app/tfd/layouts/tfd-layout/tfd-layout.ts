@@ -207,7 +207,8 @@ export class TfdLayout {
       requiredRoles: ['paciente listar', 'paciente criar'],
       items: [
         { label: 'Pacientes', icon: 'personal_injury', permissions: ['paciente listar'], routerLink: ['pacientes'] },
-        { label: 'Novo paciente', icon: 'person_add', permissions: ['paciente criar'], action: () => this.createPatient() }
+        { label: 'Novo paciente', icon: 'person_add', permissions: ['paciente criar'], action: () => this.createPatient() },
+        { label: 'Arquivo', icon: 'inventory_2', permissions: ['paciente listar'], routerLink: ['arquivo-pacientes'] },
       ]
     },
     {
@@ -215,22 +216,24 @@ export class TfdLayout {
       requiredRoles: ['solicitação listar', 'solicitação criar'],
       items: [
         { label: 'Solicitações', icon: 'assignment', permissions: ['solicitação listar'], routerLink: ['solicitacoes'] },
-        { label: 'Nova solicitação', icon: 'post_add', permissions: ['solicitação criar'], action: () => this.createPatientRequest() }
+        { label: 'Nova solicitação', icon: 'post_add', permissions: ['solicitação criar'], action: () => this.createPatientRequest() },
       ]
     },
     {
       subHeader: 'Pareceres',
       requiredRoles: ['parecer listar'],
       items: [
-        { label: 'Pareceres técnicos', icon: 'grading', permissions: ['parecer listar'], routerLink: ['pareceres'] }
+        { label: 'Pareceres técnicos', icon: 'description', permissions: ['parecer listar'], routerLink: ['pareceres'] },
+        { label: 'Arquivo', icon: 'inventory_2', permissions: ['parecer listar'], routerLink: ['arquivo-pareceres'] },
       ]
     },
     {
       subHeader: 'Passagens',
       requiredRoles: ['passagem listar', 'passagem criar'],
       items: [
+        { label: 'Viagens', icon: 'luggage', permissions: ['passagem listar'], routerLink: ['passagens'] },
         { label: 'Importar passagens', icon: 'connecting_airports', permissions: ['passagem criar'], action: () => this.importTravels() },
-        { label: 'Viagens', icon: 'luggage', permissions: ['passagem listar'], routerLink: ['passagens'] }
+        { label: 'Arquivo', icon: 'inventory_2', permissions: ['passagem listar'], routerLink: ['arquivo-passagens'] },
       ]
     },
     {
@@ -238,14 +241,16 @@ export class TfdLayout {
       requiredRoles: ['ajuda de custo listar'],
       items: [
         { label: 'Ajuda de custo', icon: 'price_check', permissions: ['ajuda de custo listar'], routerLink: ['ajudas-de-custo'] },
-        { label: 'Prestação de contas', icon: 'receipt_long', permissions: ['ajuda de custo listar'], routerLink: ['prestacoes-de-conta'] }
+        { label: 'Prestação de contas', icon: 'receipt_long', permissions: ['ajuda de custo listar'], routerLink: ['prestacoes-de-conta'] },
+        { label: 'Arquivo', icon: 'inventory_2', permissions: ['ajuda de custo listar'], routerLink: ['arquivo-prestacoes-de-conta'] }
       ]
     },
     {
       subHeader: 'Pagamentos',
       requiredRoles: ['pagamento listar'],
       items: [
-        { label: 'Pagamentos', icon: 'payments', permissions: ['pagamento listar'], routerLink: ['pagamentos'] }
+        { label: 'Pagamentos', icon: 'payments', permissions: ['pagamento listar'], routerLink: ['pagamentos'] },
+        { label: 'Arquivo', icon: 'inventory_2', permissions: ['pagamento listar'], routerLink: ['arquivo-pagamentos'] }
       ]
     },
     {

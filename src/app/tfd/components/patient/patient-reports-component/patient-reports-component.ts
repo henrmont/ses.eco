@@ -10,7 +10,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-// Serviços e Modais do Contexto de Laudos
+// Serviços, Enums e Modais do Contexto de Laudos
 import { PatientService } from '../../../services/patient-service';
 import { MessageService } from '../../../../core/services/message-service';
 import { CreatePatientReportComponent } from '../create-patient-report-component/create-patient-report-component';
@@ -18,11 +18,13 @@ import { DeletePatientReportComponent } from '../delete-patient-report-component
 import { ReportAttachmentsComponent } from '../report-attachments-component/report-attachments-component';
 import { ShowPatientReportComponent } from '../show-patient-report-component/show-patient-report-component';
 import { UpdatePatientReportComponent } from '../update-patient-report-component/update-patient-report-component';
+import { Specialty } from '../../../enums/specialties';
 
 const TFD_PATIENTS_CHANNEL = new BroadcastChannel('tfd-patients-channel');
 
 @Component({
   selector: 'app-patient-reports-component',
+  standalone: true,
   imports: [
     MatDialogModule,
     MatButtonModule,
@@ -44,14 +46,22 @@ export class PatientReportsComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
 
-  // Estados gerenciados reativamente via Signals e Computeds
-  protected readonly displayedColumns: string[] = ['protocol', 'cid', 'lawsuit', 'actions'];
+  // Coluna 'specialty' inserida entre 'protocol' e 'cid'
+  protected readonly displayedColumns: string[] = ['protocol', 'specialty', 'cid', 'lawsuit', 'actions'];
   protected readonly reportsList = signal<any[]>([]); 
   protected readonly dataSource = computed(() => new MatTableDataSource<any>(this.reportsList()));
   protected readonly isLoading = signal<boolean>(true);
 
   ngOnInit(): void {
     this.fetchPatientReports(true);
+  }
+
+  /**
+   * Converte a chave da especialidade em seu rótulo legível via Enum Specialty
+   */
+  protected getSpecialtyLabel(specialtyKey: string): string {
+    if (!specialtyKey) return 'Não informada';
+    return Specialty[specialtyKey as keyof typeof Specialty] ?? specialtyKey;
   }
 
   /**
@@ -74,7 +84,7 @@ export class PatientReportsComponent implements OnInit {
       .pipe(
         finalize(() => {
           this.isLoading.set(false);
-          this.cdr.markForCheck(); // Assegura a pintura visual correta ao finalizar o carregamento no OnPush
+          this.cdr.markForCheck();
         }),
         takeUntilDestroyed(this.destroyRef)
       )
@@ -91,7 +101,7 @@ export class PatientReportsComponent implements OnInit {
   }
 
   /**
-   * Centraliza a abertura de modais com tratamento automático do afterClosed (Conforme Código de Referência)
+   * Centraliza a abertura de modais com tratamento automático do afterClosed
    */
   private openDialog(component: any, data: any, width = '800px', height = 'auto', requiresRefresh = true, emitGlobalBroadcast = true): void {
     this.dialog.open(component, {
@@ -106,7 +116,6 @@ export class PatientReportsComponent implements OnInit {
         if (result) {
           this.fetchPatientReports(requiresRefresh || false);
           
-          // Mantém a notificação via canal global se a ação exigir a sincronização de outras listagens
           if (emitGlobalBroadcast) {
             TFD_PATIENTS_CHANNEL.postMessage('update');
           }

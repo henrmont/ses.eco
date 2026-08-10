@@ -113,10 +113,6 @@
             <strong>Prestação de Contas:</strong> 
             {{ data?.patient_request?.type === 'Entrada' ? 'Não aplicável' : (data?.patient_request?.accountability_professional?.name ?? 'Nenhum profissional selecionado') }}
           </div>
-          <div>
-            <strong>Pagamento:</strong> 
-            {{ data?.patient_request?.type === 'Entrada' ? 'Não aplicável' : (data?.patient_request?.payment_professional?.name ?? 'Nenhum profissional selecionado') }}
-          </div>
         </div>
       </mat-card-content>
     </mat-card>
@@ -232,48 +228,6 @@
         } @empty {
           <div class="empty-message">
             Nenhuma prestação de contas vinculada à solicitação.
-          </div>
-        }
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card appearance="outlined" class="detail-card">
-      <mat-card-header>
-        <mat-card-subtitle>PAGAMENTO</mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content>
-        @if (data?.patient_request?.payment_info) {
-          <div class="line cols-1-col">
-            <div>
-              <strong>Descrição do Pagamento:</strong> {{ data.patient_request.payment_info.description ?? 'Não informada' }}
-            </div>
-          </div>
-          
-          <h3 class="payment-subtitle">Comprovantes de Pagamento</h3>
-          @for (item of data?.patient_request?.payment_attachments; track item.archive_id ?? item.name) {
-            <div class="line cols-1-col">
-              <div class="action-cell">
-                <strong>Documento:</strong> 
-                <span>{{ item?.name ?? 'Sem nome' }}</span>
-                <button 
-                  mat-icon-button 
-                  type="button"
-                  matTooltip="Download do comprovante" 
-                  [disabled]="!item?.archive_id" 
-                  (click)="download(item.archive_id, item.name)"
-                >
-                  <mat-icon>download</mat-icon>
-                </button>
-              </div>
-            </div>
-          } @empty {
-            <div class="empty-message">
-              Nenhum documento de comprovante vinculado ao pagamento.
-            </div>
-          }
-        } @else {
-          <div class="empty-message">
-            Nenhum dado de pagamento registrado para esta solicitação.
           </div>
         }
       </mat-card-content>

@@ -2,51 +2,115 @@
 
 <form [formGroup]="updateCostAssistanceForm" (ngSubmit)="onSubmit()">
   <mat-dialog-content>
-    
-    <div class="line">
-      <mat-form-field appearance="outline">
-        <mat-label>Nome</mat-label>
-        <input matInput type="text" formControlName="name">
-        
-        @for (item of errorMessages['name']; track $index) {
-          <mat-error [hidden]="!updateCostAssistanceForm.get('name')?.hasError(item.type)">
-            {{ item.message }}
-          </mat-error>
-        }
-      </mat-form-field>
-    </div>
+    <div class="stepper">
 
-    <div class="line">
-      <mat-form-field appearance="outline">
-        <mat-label>Tipo</mat-label>
-        <mat-select formControlName="type">
-          @for (item of types; track $index) {
-            <mat-option [value]="item">{{ item }}</mat-option>
+      <!-- Linha 1: Nome + Tipo -->
+      <div class="line cols-1-1">
+        <mat-form-field appearance="outline">
+          <mat-label>Nome</mat-label>
+          <input 
+            matInput 
+            type="text" 
+            formControlName="name" 
+            placeholder="Nome da ajuda de custo"
+            [readonly]="isSubmitting()"
+          >
+
+          @for (item of errorMessages['name']; track item.type) {
+            <mat-error [hidden]="!updateCostAssistanceForm.get('name')?.hasError(item.type)">
+              {{ item.message }}
+            </mat-error>
           }
-        </mat-select>
+        </mat-form-field>
 
-        @for (item of errorMessages['type']; track $index) {
-          <mat-error [hidden]="!updateCostAssistanceForm.get('type')?.hasError(item.type)">
-            {{ item.message }}
-          </mat-error>
-        }
-      </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo</mat-label>
+          <input 
+            matInput 
+            type="text" 
+            formControlName="type" 
+            [readonly]="true"
+          >
+          <mat-icon matSuffix>lock</mat-icon>
+
+          @for (item of errorMessages['type']; track item.type) {
+            <mat-error [hidden]="!updateCostAssistanceForm.get('type')?.hasError(item.type)">
+              {{ item.message }}
+            </mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <!-- Linha 2: Seleção de Passageiro -->
+      <div class="line cols-1-col">
+        <mat-form-field appearance="outline">
+          <mat-label>Passageiro</mat-label>
+          <mat-select formControlName="passenger_id" [disabled]="isSubmitting()">
+            <mat-option [value]="null">Nenhum</mat-option>
+            @for (passenger of passengersOptions(); track passenger.id + '-' + passenger.isPatient) {
+              <mat-option [value]="passenger.id">
+                {{ passenger.name }} ({{ passenger.typeLabel }})
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <!-- Linha 3: Banco, Agência e Conta -->
+      <div class="line cols-1-1-1">
+        <mat-form-field appearance="outline">
+          <mat-label>Banco</mat-label>
+          <input 
+            matInput 
+            type="text" 
+            formControlName="bank" 
+            placeholder="Nome ou código do banco"
+            [readonly]="isSubmitting()"
+          >
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Agência</mat-label>
+          <input 
+            matInput 
+            type="text" 
+            formControlName="agency" 
+            placeholder="Nº da agência"
+            [readonly]="isSubmitting()"
+          >
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Conta</mat-label>
+          <input 
+            matInput 
+            type="text" 
+            formControlName="account" 
+            placeholder="Nº da conta"
+            [readonly]="isSubmitting()"
+          >
+        </mat-form-field>
+      </div>
+
     </div>
-
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
-    <button matButton type="button" [mat-dialog-close]="false">Fechar</button>
+    <button mat-button type="button" [disabled]="isSubmitting()" [mat-dialog-close]="false">
+      Cancelar
+    </button>
+    
     <button 
-      matButton="filled" 
+      mat-flat-button 
+      color="primary" 
       type="submit" 
       [disabled]="updateCostAssistanceForm.invalid || updateCostAssistanceForm.pending || isSubmitting()"
     >
       <div class="waiting">
         @if (isSubmitting()) {
-          <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+          <mat-spinner [diameter]="20"></mat-spinner>
         }
-        Atualizar
+        <span>{{ isSubmitting() ? 'Atualizando...' : 'Atualizar' }}</span>
       </div>
     </button>
   </mat-dialog-actions>

@@ -22,6 +22,7 @@ import { DeletePatientRequestAttachmentComponent } from '../delete-patient-reque
 import { Overlay } from '@angular/cdk/overlay';
 
 const TFD_PATIENT_REQUESTS_CHANNEL = new BroadcastChannel('tfd-patient-requests-channel');
+const TFD_COST_ASSISTANCES_CHANNEL = new BroadcastChannel('tfd-cost-assistances-channel');
 
 @Component({
   selector: 'app-patient-request-attachments-component',
@@ -114,6 +115,7 @@ export class PatientRequestAttachmentsComponent implements OnInit {
           // Mantém a notificação via canal global se a ação exigir a sincronização de outras listagens
           if (emitGlobalBroadcast) {
             TFD_PATIENT_REQUESTS_CHANNEL.postMessage('update');
+            TFD_COST_ASSISTANCES_CHANNEL.postMessage('update');
           }
           this.cdr.markForCheck();
         }

@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal, ChangeDetectorRef } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -6,7 +7,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { CommonModule } from '@angular/common';
 import { NgxEditorModule, Editor, Toolbar } from 'ngx-editor';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
@@ -34,7 +34,7 @@ import { MessageService } from '../../../../core/services/message-service';
   changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima com OnPush
 })
 export class UpdateOpinionComponent implements OnInit {
-  // Injeções de Dependência
+  // Injeções de Dependência Dinâmicas
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly opinionService = inject(OpinionService);
@@ -44,13 +44,13 @@ export class UpdateOpinionComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   // Estrutura do Formulário e Editor expostos ao template
-  protected updateOpinionForm!: FormGroup;
+  protected opinionForm!: FormGroup;
   protected editor!: Editor;
   
-  // Estados reativos controlados via Signals
+  // Estados gerenciados reativamente via Signals
   protected readonly isSubmitting = signal<boolean>(false);
 
-  // 🎯 Mapeamento local das mensagens de erro embutidas
+  // 🎯 Mapeamento local das mensagens de erro padronizado para a UI
   protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
     name: [
       { type: 'required', message: 'O título ou nome do parecer é obrigatório.' }
@@ -77,19 +77,15 @@ export class UpdateOpinionComponent implements OnInit {
     ['undo', 'redo'],
   ];
 
-  constructor() {
-    this.initForm();
-  }
-
   ngOnInit(): void {
+    this.initForm();
     this.initEditor();
   }
 
-  // --- MÉTODOS PRIVADOS DE SUPORTE ---
+  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO E SUPORTE ---
 
   private initForm(): void {
-    // Inicializa os controles mapeando de forma segura as propriedades passadas via modal data
-    this.updateOpinionForm = this.fb.group({
+    this.opinionForm = this.fb.group({
       name: [this.data?.opinion?.name ?? null, [Validators.required]],
       content: [this.data?.opinion?.content ?? null, [Validators.required]],
       is_approved: [this.data?.opinion?.is_approved ?? false, [Validators.required]],
@@ -99,7 +95,7 @@ export class UpdateOpinionComponent implements OnInit {
   private initEditor(): void {
     this.editor = new Editor();
 
-    // Garante a liberação de memória em caso de destruição do componente
+    // Liberação segura de memória para evitar vazamento com o ciclo do editor Rich Text
     this.destroyRef.onDestroy(() => {
       this.editor.destroy();
     });
@@ -110,14 +106,20 @@ export class UpdateOpinionComponent implements OnInit {
   protected onSubmit(): void {
     const opinionId = this.data?.opinion?.id;
 
-    if (this.updateOpinionForm.invalid || !opinionId) {
-      this.updateOpinionForm.markAllAsTouched();
+    if (!opinionId) {
+      this.messageService.showMessage('Identificador do parecer não encontrado.');
+      return;
+    }
+
+    if (this.opinionForm.invalid) {
+      this.opinionForm.markAllAsTouched();
       return;
     }
 
     this.isSubmitting.set(true);
+    this.cdr.markForCheck(); // Sincroniza imediatamente o estado visual no DOM
 
-    this.opinionService.updateOpinion(opinionId, this.updateOpinionForm.getRawValue())
+    this.opinionService.updateOpinion(opinionId, this.opinionForm.getRawValue())
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);
@@ -131,8 +133,8 @@ export class UpdateOpinionComponent implements OnInit {
           this.dialogRef.close(true);
         },
         error: (err) => {
-          const errMsg = err?.error?.message || 'Erro ao processar a atualização do parecer.';
-          this.messageService.showMessage(errMsg);
+          const fallbackError = 'Ocorreu um erro ao processar a atualização do parecer.';
+          this.messageService.showMessage(err?.error?.message || fallbackError);
         },
       });
   }

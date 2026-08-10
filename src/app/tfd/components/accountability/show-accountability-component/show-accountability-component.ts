@@ -14,6 +14,6 @@ import { NgxMaskPipe } from 'ngx-mask';
 })
 export class ShowAccountabilityComponent {
 
-  data = inject(MAT_DIALOG_DATA)
+  protected readonly data = inject(MAT_DIALOG_DATA)
 
 }

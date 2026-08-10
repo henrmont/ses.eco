@@ -1,100 +1,116 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { PatientRequest } from '../models/patient-request';
+
 import { environment } from '../../../environments/environment.development';
+import { PatientRequest } from '../models/patient-request';
 import { CostAssistance } from '../models/cost-assistance';
 import { CostAssistanceDaily } from '../models/cost-assistance-daily';
 import { DailyCost } from '../models/daily-cost';
 import { Professional } from '../models/professional';
 
-const requestOptions = {
-  'Authorization': `Bearer ${window.localStorage.getItem('token')}`
+// Interface genérica para padronizar as respostas de mutação do back-end (Laravel)
+export interface ApiResponse {
+  message: string;
+  status?: string;
+  [key: string]: any;
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class CostAssistanceService {
+  // 🔒 Injeções e URLs configuradas como imutáveis
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${environment.apiTfdUrl}/cost-assistance`;
 
-  constructor(
-    private http: HttpClient,
-  ) {}
+  // --- FLUXO DE SOLICITAÇÕES DE PACIENTE (PATIENT REQUESTS) ---
 
   getPatientRequests(): Observable<PatientRequest[]> {
-    return this.http.get<PatientRequest[]>(`${environment.apiTfdUrl}/cost-assistance/get-patient-requests`, {headers: requestOptions})
+    return this.http.get<PatientRequest[]>(`${this.apiUrl}/get-patient-requests`);
   }
 
-  haltedPatientRequest(patient_request: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/cost-assistance/halted-patient-request/${patient_request}`, {headers: requestOptions})
+  haltedPatientRequest(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/halted-patient-request/${patientRequestId}`, {});
   }
 
-  getCostAssistances(patient_request: number): Observable<CostAssistance[]> {
-    return this.http.get<CostAssistance[]>(`${environment.apiTfdUrl}/cost-assistance/get-cost-assistances/${patient_request}`, {headers: requestOptions})
+  getHistoryPatientRequests(reportId: number, patientRequestId: number): Observable<PatientRequest[]> {
+    return this.http.get<PatientRequest[]>(`${this.apiUrl}/get-history-patient-requests/${reportId}/${patientRequestId}`);
   }
 
-  getBalance(patient_care: number): Observable<number> {
-    return this.http.get<number>(`${environment.apiTfdUrl}/cost-assistance/get-balance/${patient_care}`, {headers: requestOptions})
+  undoPatientRequest(patientRequestId: number, data: PatientRequest): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/undo-patient-request/${patientRequestId}`, data);
   }
 
-  createCostAssistance(patient_request: number, data: any): Observable<any> {
-    return this.http.post(`${environment.apiTfdUrl}/cost-assistance/create-cost-assistance/${patient_request}`, data, {headers: requestOptions})
+  processPatientRequestToPayment(patientRequestId: number, data: any): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/process-patient-request-to-payment/${patientRequestId}`, data);
   }
 
-  updateCostAssistance(cost_assistance: number, data: any): Observable<any> {
-    return this.http.patch(`${environment.apiTfdUrl}/cost-assistance/update-cost-assistance/${cost_assistance}`, data, {headers: requestOptions})
+  // --- TRAMITAÇÕES E MOVIMENTAÇÕES DE CAIXA ---
+
+  movePatientRequestFromHistory(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-request-from-history/${patientRequestId}`, {});
   }
 
-  deleteCostAssistance(cost_assistance: number): Observable<any> {
-    return this.http.delete(`${environment.apiTfdUrl}/cost-assistance/delete-cost-assistance/${cost_assistance}`, {headers: requestOptions})
+  movePatientRequestFromOthers(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-request-from-others/${patientRequestId}`, {});
   }
 
-  getCostAssistanceDailies(cost_assistance: number): Observable<CostAssistanceDaily[]> {
-    return this.http.get<CostAssistanceDaily[]>(`${environment.apiTfdUrl}/cost-assistance/get-cost-assistance-dailies/${cost_assistance}`, {headers: requestOptions})
+  movePatientRequestFromProcesses(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-request-from-processes/${patientRequestId}`, {});
+  }
+
+  // --- FLUXO DE AJUDAS DE CUSTO (COST ASSISTANCES) ---
+
+  getCostAssistances(patientRequestId: number): Observable<CostAssistance[]> {
+    return this.http.get<CostAssistance[]>(`${this.apiUrl}/get-cost-assistances/${patientRequestId}`);
+  }
+
+  getBalance(patientCareId: number): Observable<number> {
+    return this.http.get<number>(`${this.apiUrl}/get-balance/${patientCareId}`);
+  }
+
+  createCostAssistance(patientRequestId: number, data: any): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/create-cost-assistance/${patientRequestId}`, data);
+  }
+
+  updateCostAssistance(costAssistanceId: number, data: any): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-cost-assistance/${costAssistanceId}`, data);
+  }
+
+  deleteCostAssistance(costAssistanceId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/delete-cost-assistance/${costAssistanceId}`);
+  }
+
+  // --- FLUXO DE DIÁRIAS (COST ASSISTANCE DAILIES) ---
+
+  getCostAssistanceDailies(costAssistanceId: number): Observable<CostAssistanceDaily[]> {
+    return this.http.get<CostAssistanceDaily[]>(`${this.apiUrl}/get-cost-assistance-dailies/${costAssistanceId}`);
   }
 
   getDailyCosts(): Observable<DailyCost[]> {
-    return this.http.get<DailyCost[]>(`${environment.apiTfdUrl}/cost-assistance/get-daily-costs`, {headers: requestOptions})
+    return this.http.get<DailyCost[]>(`${this.apiUrl}/get-daily-costs`);
   }
 
-  createCostAssistanceDaily(cost_assistance: number, data: CostAssistanceDaily): Observable<Array<any>> {
-    return this.http.post<Array<any>>(`${environment.apiTfdUrl}/cost-assistance/create-cost-assistance-daily/${cost_assistance}`, data, {headers: requestOptions})
+  createCostAssistanceDaily(costAssistanceId: number, data: CostAssistanceDaily): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/create-cost-assistance-daily/${costAssistanceId}`, data);
   }
 
-  updateCostAssistanceDaily(cost_assistance_daily: number, data: CostAssistanceDaily): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/cost-assistance/update-cost-assistance-daily/${cost_assistance_daily}`, data, {headers: requestOptions})
+  updateCostAssistanceDaily(costAssistanceDailyId: number, data: CostAssistanceDaily): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-cost-assistance-daily/${costAssistanceDailyId}`, data);
   }
 
-  deleteCostAssistanceDaily(cost_assistance_daily: number): Observable<Array<any>> {
-    return this.http.delete<Array<any>>(`${environment.apiTfdUrl}/cost-assistance/delete-cost-assistance-daily/${cost_assistance_daily}`, {headers: requestOptions})
+  deleteCostAssistanceDaily(costAssistanceDailyId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/delete-cost-assistance-daily/${costAssistanceDailyId}`);
   }
 
-  getHistoryPatientRequests(report: number, patient_request: number): Observable<PatientRequest[]> {
-    return this.http.get<PatientRequest[]>(`${environment.apiTfdUrl}/cost-assistance/get-history-patient-requests/${report}/${patient_request}`, {headers: requestOptions})
-  }
-
-  movePatientRequestFromHistory(patient_request: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/cost-assistance/move-patient-request-from-history/${patient_request}`, {headers: requestOptions})
-  }
-
-  movePatientRequestFromOthers(patient_request: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/cost-assistance/move-patient-request-from-others/${patient_request}`, {headers: requestOptions})
-  }
-
-  movePatientRequestFromProcesses(patient_request: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/cost-assistance/move-patient-request-from-processes/${patient_request}`, {headers: requestOptions})
-  }
-
-  undoPatientRequest(patient_request: number, data: PatientRequest): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/cost-assistance/undo-patient-request/${patient_request}`, data, {headers: requestOptions})
-  }
+  // --- RECURSOS COMPLEMENTARES ---
 
   getPaymentProfessionals(): Observable<Professional[]> {
-    return this.http.get<Professional[]>(`${environment.apiTfdUrl}/cost-assistance/get-payment-professionals`, {headers: requestOptions})
+    return this.http.get<Professional[]>(`${this.apiUrl}/get-payment-professionals`);
   }
 
-  processPatientRequestToPayment(patient_request: number, data: any): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/cost-assistance/process-patient-request-to-payment/${patient_request}`, data, {headers: requestOptions})
+  finishBackPatientRequest(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/finish-back-patient-request/${patientRequestId}`, {});
   }
-
 }

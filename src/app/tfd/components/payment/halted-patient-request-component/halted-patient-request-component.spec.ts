@@ -4,21 +4,21 @@ import { of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { HaltedPatientRequestComponent } from './halted-patient-request-component';
-import { PaymentService } from '../../../services/payment-service';
+import { CostAssistanceService } from '../../../services/cost-assistance-service';
 import { MessageService } from '../../../../core/services/message-service';
 
 describe('HaltedPatientRequestComponent', () => {
   let component: HaltedPatientRequestComponent;
   let fixture: ComponentFixture<HaltedPatientRequestComponent>;
   
-  let paymentServiceMock: any;
+  let costAssistanceServiceMock: any;
   let messageServiceMock: any;
   let dialogRefMock: any;
 
   const mockDialogData = {
     patient_request: {
       id: 450,
-      is_payment_bookmark: false,
+      is_cost_assistance_bookmark: false,
       report: {
         patient_care: {
           patient: {
@@ -30,7 +30,7 @@ describe('HaltedPatientRequestComponent', () => {
   };
 
   beforeEach(async () => {
-    paymentServiceMock = {
+    costAssistanceServiceMock = {
       haltedPatientRequest: vi.fn()
     };
 
@@ -48,7 +48,7 @@ describe('HaltedPatientRequestComponent', () => {
     .overrideComponent(HaltedPatientRequestComponent, {
       set: {
         providers: [
-          { provide: PaymentService, useValue: paymentServiceMock },
+          { provide: CostAssistanceService, useValue: costAssistanceServiceMock },
           { provide: MessageService, useValue: messageServiceMock },
           { provide: MatDialogRef, useValue: dialogRefMock },
           { provide: MAT_DIALOG_DATA, useValue: mockDialogData }
@@ -80,7 +80,7 @@ describe('HaltedPatientRequestComponent', () => {
         .overrideComponent(HaltedPatientRequestComponent, {
           set: {
             providers: [
-              { provide: PaymentService, useValue: paymentServiceMock },
+              { provide: CostAssistanceService, useValue: costAssistanceServiceMock },
               { provide: MessageService, useValue: messageServiceMock },
               { provide: MatDialogRef, useValue: dialogRefMock },
               { provide: MAT_DIALOG_DATA, useValue: { patient_request: { id: null } } }
@@ -95,44 +95,43 @@ describe('HaltedPatientRequestComponent', () => {
       localComponent['onSubmit']();
 
       expect(messageServiceMock.showMessage).toHaveBeenCalledWith('Erro: Identificador da solicitação não encontrado.');
-      expect(paymentServiceMock.haltedPatientRequest).not.toHaveBeenCalled();
+      expect(costAssistanceServiceMock.haltedPatientRequest).not.toHaveBeenCalled();
     });
 
     // ==========================================
-    // 🎯 FLUXO A: MARCAR SOBRESTADO (is_payment_bookmark: false)
+    // 🎯 FLUXO A: MARCAR SOBRESTADO (is_cost_assistance_bookmark: false)
     // ==========================================
-    describe('Quando a ação for MARCAR SOBRESTADO (is_payment_bookmark: false)', () => {
+    describe('Quando a ação for MARCAR SOBRESTADO (is_cost_assistance_bookmark: false)', () => {
       it('deve paralisar a solicitação com sucesso, exibir mensagem da API e fechar a modal retornando true', () => {
         fixture.detectChanges();
-        const mockApiResponse = { message: 'Solicitação suspensa pelo setor financeiro!' };
-        paymentServiceMock.haltedPatientRequest.mockReturnValue(of(mockApiResponse));
+        const mockApiResponse = { message: 'Solicitação suspensa pela auditoria!' };
+        costAssistanceServiceMock.haltedPatientRequest.mockReturnValue(of(mockApiResponse));
 
         component['onSubmit']();
 
         expect(component['isSubmitting']()).toBe(false);
-        expect(paymentServiceMock.haltedPatientRequest).toHaveBeenCalledWith(450);
-        expect(messageServiceMock.showMessage).toHaveBeenCalledWith('Solicitação suspensa pelo setor financeiro!');
+        expect(costAssistanceServiceMock.haltedPatientRequest).toHaveBeenCalledWith(450);
+        expect(messageServiceMock.showMessage).toHaveBeenCalledWith('Solicitação suspensa pela auditoria!');
         expect(dialogRefMock.close).toHaveBeenCalledWith(true);
       });
 
       it('deve usar mensagem padrão de sucesso se a API retornar um objeto vazio', () => {
         fixture.detectChanges();
-        paymentServiceMock.haltedPatientRequest.mockReturnValue(of({}));
+        costAssistanceServiceMock.haltedPatientRequest.mockReturnValue(of({}));
 
         component['onSubmit']();
 
-        // Corrigido de 'updated' para 'atualizado'
         expect(messageServiceMock.showMessage).toHaveBeenCalledWith('Status da solicitação atualizado com sucesso!');
       });
 
       it('deve tratar falhas do servidor, exibir mensagem de erro da API e liberar o estado de submissão', () => {
         fixture.detectChanges();
-        const mockApiError = { error: { message: 'Não é possível paralisar uma solicitação com pagamentos finalizados.' } };
-        paymentServiceMock.haltedPatientRequest.mockReturnValue(throwError(() => mockApiError));
+        const mockApiError = { error: { message: 'Não é possível paralisar uma solicitação com pagamentos emitidos.' } };
+        costAssistanceServiceMock.haltedPatientRequest.mockReturnValue(throwError(() => mockApiError));
 
         component['onSubmit']();
 
-        expect(paymentServiceMock.haltedPatientRequest).toHaveBeenCalledWith(450);
+        expect(costAssistanceServiceMock.haltedPatientRequest).toHaveBeenCalledWith(450);
         expect(messageServiceMock.showMessage).toHaveBeenCalledWith(mockApiError.error.message);
         expect(component['isSubmitting']()).toBe(false);
         expect(dialogRefMock.close).not.toHaveBeenCalled();
@@ -141,7 +140,7 @@ describe('HaltedPatientRequestComponent', () => {
       it('deve usar mensagem de erro genérica se o servidor falhar sem retornar corpo de erro', () => {
         fixture.detectChanges();
         const rawError = { status: 500 };
-        paymentServiceMock.haltedPatientRequest.mockReturnValue(throwError(() => rawError));
+        costAssistanceServiceMock.haltedPatientRequest.mockReturnValue(throwError(() => rawError));
 
         component['onSubmit']();
 
@@ -151,28 +150,28 @@ describe('HaltedPatientRequestComponent', () => {
     });
 
     // ==========================================
-    // 🎯 FLUXO B: DESMARCAR SOBRESTADO (is_payment_bookmark: true)
+    // 🎯 FLUXO B: DESMARCAR SOBRESTADO (is_cost_assistance_bookmark: true)
     // ==========================================
-    describe('Quando a ação for DESMARCAR SOBRESTADO (is_payment_bookmark: true)', () => {
+    describe('Quando a ação for DESMARCAR SOBRESTADO (is_cost_assistance_bookmark: true)', () => {
       beforeEach(() => {
         // Altera o valor em tempo de execução contornando a restrição estrutural do objeto
-        Object.assign(component['data'].patient_request, { is_payment_bookmark: true });
+        Object.assign(component['data'].patient_request, { is_cost_assistance_bookmark: true });
       });
 
       it('deve executar a chamada de API normalmente repassando o ID da solicitação', () => {
         fixture.detectChanges();
-        paymentServiceMock.haltedPatientRequest.mockReturnValue(of({ message: 'Retornado ao fluxo de pagamento normal.' }));
+        costAssistanceServiceMock.haltedPatientRequest.mockReturnValue(of({ message: 'Retornado ao fluxo normal.' }));
 
         component['onSubmit']();
 
-        expect(paymentServiceMock.haltedPatientRequest).toHaveBeenCalledWith(450);
-        expect(messageServiceMock.showMessage).toHaveBeenCalledWith('Retornado ao fluxo de pagamento normal.');
+        expect(costAssistanceServiceMock.haltedPatientRequest).toHaveBeenCalledWith(450);
+        expect(messageServiceMock.showMessage).toHaveBeenCalledWith('Retornado ao fluxo normal.');
         expect(dialogRefMock.close).toHaveBeenCalledWith(true);
       });
 
       it('deve reter o comportamento e resetar o sinal isSubmitting caso ocorra erro no fluxo de desmarcação', () => {
         fixture.detectChanges();
-        paymentServiceMock.haltedPatientRequest.mockReturnValue(throwError(() => ({ status: 400 })));
+        costAssistanceServiceMock.haltedPatientRequest.mockReturnValue(throwError(() => ({ status: 400 })));
 
         component['onSubmit']();
 

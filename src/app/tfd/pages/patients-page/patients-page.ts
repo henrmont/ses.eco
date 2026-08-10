@@ -34,6 +34,7 @@ import { ShowPatientComponent } from '../../components/patient/show-patient-comp
 import { UpdatePatientComponent } from '../../components/patient/update-patient-component/update-patient-component';
 import { ValidatePatientComponent } from '../../components/patient/validate-patient-component/validate-patient-component';
 import { UndoMessageComponent } from '../../components/shared/undo-message-component/undo-message-component';
+import { FinishBackPatientComponent } from '../../components/patient/finish-back-patient-component/finish-back-patient-component';
 
 const TFD_PATIENTS_CHANNEL = new BroadcastChannel('tfd-patients-channel');
 
@@ -278,7 +279,7 @@ export class PatientsPage implements OnInit {
     this.openDialog(ValidatePatientComponent, { patient_care: patientCare }, '400px');
   }
 
-  protected undoMessage(message: string): void {
-    this.openDialog(UndoMessageComponent, { message }, '400px', 'auto', false);
+  protected finishBackPatient(patientCare: PatientCare): void {
+    this.openDialog(FinishBackPatientComponent, { patient_care: patientCare }, '400px');
   }
 }

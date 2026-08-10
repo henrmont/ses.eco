@@ -3,14 +3,16 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
+import { Overlay } from '@angular/cdk/overlay';
 
 // Angular Material
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialog, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -20,6 +22,7 @@ import { NgxMaskPipe } from 'ngx-mask';
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
 import { PatientRequest } from '../../models/patient-request';
 import { Permission } from '../../models/permission';
+import { Role } from '../../models/role';
 import { CostAssistanceService } from '../../services/cost-assistance-service';
 
 // Modais (Dialogs)
@@ -31,8 +34,8 @@ import { HistoryPatientRequestComponent } from '../../components/cost-assistance
 import { MovePatientRequestFromProcessesComponent } from '../../components/cost-assistance/move-patient-request-from-processes-component/move-patient-request-from-processes-component';
 import { MovePatientRequestFromOthersComponent } from '../../components/cost-assistance/move-patient-request-from-others-component/move-patient-request-from-others-component';
 import { UndoPatientRequestComponent } from '../../components/cost-assistance/undo-patient-request-component/undo-patient-request-component';
-import { UndoMessageComponent } from '../../components/shared/undo-message-component/undo-message-component';
 import { ProcessPatientRequestToPaymentComponent } from '../../components/cost-assistance/process-patient-request-to-payment-component/process-patient-request-to-payment-component';
+import { FinishBackPatientRequestComponent } from '../../components/cost-assistance/finish-back-patient-request-component/finish-back-patient-request-component';
 
 const TFD_COST_ASSISTANCES_CHANNEL = new BroadcastChannel('tfd-cost-assistances-channel');
 
@@ -48,6 +51,7 @@ const TFD_COST_ASSISTANCES_CHANNEL = new BroadcastChannel('tfd-cost-assistances-
     MatIconModule,
     MatTooltipModule,
     MatSortModule,
+    MatPaginatorModule,
     MatTabsModule,
     MatDialogModule,
     NgxMaskPipe
@@ -57,44 +61,67 @@ const TFD_COST_ASSISTANCES_CHANNEL = new BroadcastChannel('tfd-cost-assistances-
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CostAssistancesPage implements OnInit, OnDestroy {
-  // 🔒 Injeções de dependência modernas via inject()
+  // Injeções de Dependência Dinâmicas
   private readonly costAssistanceService = inject(CostAssistanceService);
   private readonly dialog = inject(MatDialog);
+  private readonly overlay = inject(Overlay);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Captura do MatSort do template via Signal reativo
-  protected readonly sort = viewChild.required(MatSort);
-
-  private loadingDialog!: MatDialogRef<LoadingComponent>;
+  private loadingDialog?: MatDialogRef<LoadingComponent>;
   private readonly currentUser = this.route.parent?.parent?.snapshot.data['user'];
 
-  // Definições de colunas das tabelas baseadas nas abas de Ajuda de Custo
+  // Capturas nomeadas e isoladas de cada MatSort no template HTML
+  private readonly ownerSort = viewChild<MatSort>('ownerSort');
+  private readonly processSort = viewChild<MatSort>('processSort');
+  private readonly othersSort = viewChild<MatSort>('othersSort');
+
+  // Capturas nomeadas e isoladas dos paginadores do template HTML
+  private readonly ownerPaginator = viewChild<MatPaginator>('ownerPaginator');
+  private readonly processPaginator = viewChild<MatPaginator>('processPaginator');
+  private readonly othersPaginator = viewChild<MatPaginator>('othersPaginator');
+
+  // Definições de Estrutura de Colunas expostas ao Template
   protected readonly displayedOwnerColumns: string[] = ['bookmark', 'patient', 'cns', 'type', 'consultation_date', 'status', 'actions'];
   protected readonly displayedProcessColumns: string[] = ['patient', 'cns', 'type', 'consultation_date', 'responsible', 'actions'];
   protected readonly displayedOthersColumns: string[] = ['patient', 'cns', 'type', 'consultation_date', 'responsible', 'actions'];
 
-  // Signals para armazenamento do estado bruto dos dados
-  private readonly rawOwnerList = signal<PatientRequest[]>([]);
-  private readonly rawProcessList = signal<PatientRequest[]>([]);
-  private readonly rawOthersList = signal<PatientRequest[]>([]);
+  // Signals internos para gerenciamento do estado bruto
+  private readonly rawOwnerList = signal<any[]>([]);
+  private readonly rawProcessList = signal<any[]>([]);
+  private readonly rawOthersList = signal<any[]>([]);
 
-  // ⚡ Computed signals injetando dados e acoplando ordenação nativa reativa em TODAS as abas
+  // Computed signals criando os DataSources e acoplando o Sort/Paginator de forma reativa
   protected readonly ownerDataSource = computed(() => {
     const dataSource = new MatTableDataSource(this.rawOwnerList());
-    dataSource.sort = this.sort();
+    const sortRef = this.ownerSort();
+    const paginatorRef = this.ownerPaginator();
+
+    if (sortRef) dataSource.sort = sortRef;
+    if (paginatorRef) dataSource.paginator = paginatorRef;
+
     return dataSource;
   });
 
   protected readonly processDataSource = computed(() => {
     const dataSource = new MatTableDataSource(this.rawProcessList());
-    dataSource.sort = this.sort();
+    const sortRef = this.processSort();
+    const paginatorRef = this.processPaginator();
+
+    if (sortRef) dataSource.sort = sortRef;
+    if (paginatorRef) dataSource.paginator = paginatorRef;
+
     return dataSource;
   });
 
   protected readonly othersDataSource = computed(() => {
     const dataSource = new MatTableDataSource(this.rawOthersList());
-    dataSource.sort = this.sort();
+    const sortRef = this.othersSort();
+    const paginatorRef = this.othersPaginator();
+
+    if (sortRef) dataSource.sort = sortRef;
+    if (paginatorRef) dataSource.paginator = paginatorRef;
+
     return dataSource;
   });
 
@@ -112,24 +139,37 @@ export class CostAssistancesPage implements OnInit, OnDestroy {
     TFD_COST_ASSISTANCES_CHANNEL.close();
   }
 
-  // Filtros locais e rápidos de busca nas tabelas acessando os computeds
+  // Métodos de Filtragem expostos para as tabelas
   protected applyOwnerFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    this.ownerDataSource().filter = filterValue.trim().toLowerCase();
+    const dataSource = this.ownerDataSource();
+    dataSource.filter = filterValue.trim().toLowerCase();
+    if (dataSource.paginator) {
+      dataSource.paginator.firstPage();
+    }
   }
 
   protected applyProcessFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    this.processDataSource().filter = filterValue.trim().toLowerCase();
+    const dataSource = this.processDataSource();
+    dataSource.filter = filterValue.trim().toLowerCase();
+    if (dataSource.paginator) {
+      dataSource.paginator.firstPage();
+    }
   }
 
   protected applyOthersFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    this.othersDataSource().filter = filterValue.trim().toLowerCase();
+    const dataSource = this.othersDataSource();
+    dataSource.filter = filterValue.trim().toLowerCase();
+    if (dataSource.paginator) {
+      dataSource.paginator.firstPage();
+    }
   }
 
   /**
-   * Busca centralizada, mapeamento e separação lógica das requisições de ajuda de custo
+   * Obtém a listagem atualizada de solicitações de ajuda de custo e executa a
+   * separação reativa entre Titulares, Em Processamento e Outros.
    */
   private fetchPatientRequests(showLoading = false): void {
     if (showLoading) this.openLoading();
@@ -145,10 +185,9 @@ export class CostAssistancesPage implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (response) => {
-          const rawList = response || [];
+          const rawData = response || [];
 
-          // Nivelamento estrutural igual ao modelo para exibição facilitada
-          const normalizedRequests = rawList.map((item: any) => ({
+          const normalizedRequests = rawData.map((item: any) => ({
             ...item,
             name: item.report?.patient_care?.patient?.name || '',
             cns: item.report?.patient_care?.patient?.cns || '',
@@ -157,7 +196,6 @@ export class CostAssistancesPage implements OnInit, OnDestroy {
             status: item.status
           }));
 
-          // Distribuição exata seguindo as regras de negócio de ajuda de custo
           const owners = normalizedRequests.filter((req: any) => (!req.payment_professional || req.back_to_cost_assistance) && req.cost_assistance);
           const processes = normalizedRequests.filter((req: any) => req.payment_professional && req.cost_assistance && !req.back_to_cost_assistance);
           const others = normalizedRequests.filter((req: any) => !req.cost_assistance);
@@ -166,7 +204,11 @@ export class CostAssistancesPage implements OnInit, OnDestroy {
           this.rawProcessList.set(processes);
           this.rawOthersList.set(others);
         },
-        error: () => {}
+        error: () => {
+          this.rawOwnerList.set([]);
+          this.rawProcessList.set([]);
+          this.rawOthersList.set([]);
+        }
       });
   }
 
@@ -179,24 +221,25 @@ export class CostAssistancesPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Inversão lógica estável: Retorna 'true' caso o usuário NÃO possua a permissão requerida
+   * Avalia as regras de acesso cedidas no Route Resolver.
+   * Retorna 'true' (desabilita) se o usuário NÃO possuir a permissão informada.
    */
   protected checkPermissions(permissionName: string): boolean {
     if (!this.currentUser?.roles) return true;
 
-    const hasPermission = this.currentUser.roles.some((role: any) =>
+    const hasPermission = this.currentUser.roles.some((role: Role) =>
       role.permissions?.some((perm: Permission) => perm.name === permissionName)
     );
 
     return !hasPermission;
   }
 
-  protected checkStatus(patient_request: PatientRequest): boolean {
-    return !!(patient_request.medical_status && patient_request.social_status);
+  protected checkStatus(patientRequest: PatientRequest): boolean {
+    return !!(patientRequest.medical_status && patientRequest.social_status);
   }
 
   /**
-   * Método privado e único para abertura e monitoramento do retorno de modais interativas
+   * Centralizador genérico para abertura de modais com recarga automatizada de dados.
    */
   private openDialog(component: any, data: any, width = '400px', height = 'auto', requiresRefresh = true): void {
     this.dialog.open(component, {
@@ -204,6 +247,7 @@ export class CostAssistancesPage implements OnInit, OnDestroy {
       height,
       disableClose: true,
       autoFocus: false,
+      scrollStrategy: this.overlay.scrollStrategies.noop(),
       data
     }).afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -219,48 +263,48 @@ export class CostAssistancesPage implements OnInit, OnDestroy {
     TFD_COST_ASSISTANCES_CHANNEL.postMessage('update');
   }
 
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE HTML ---
+  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
 
-  protected haltedPatientRequest(patient_request: PatientRequest): void {
-    this.openDialog(HaltedPatientRequestComponent, { patient_request }, '400px');
+  protected haltedPatientRequest(patientRequest: PatientRequest): void {
+    this.openDialog(HaltedPatientRequestComponent, { patient_request: patientRequest }, '400px');
   }
 
-  protected patientRequestAttachments(patient_request: PatientRequest): void {
-    this.openDialog(PatientRequestAttachmentsComponent, { patient_request }, '600px', 'auto', false);
+  protected patientRequestAttachments(patientRequest: PatientRequest): void {
+    this.openDialog(PatientRequestAttachmentsComponent, { patient_request: patientRequest }, '600px');
   }
 
-  protected costAssistances(patient_request: PatientRequest): void {
+  protected costAssistances(patientRequest: PatientRequest): void {
     this.openDialog(PatientRequestCostAssistancesComponent, {
-      patient_request,
+      patient_request: patientRequest,
       permissions: this.currentUser?.roles
     }, '1200px', 'auto');
   }
 
-  protected history(patient_request: PatientRequest): void {
-    this.openDialog(HistoryPatientRequestComponent, { patient_request }, '1000px', 'auto', false);
+  protected history(patientRequest: PatientRequest): void {
+    this.openDialog(HistoryPatientRequestComponent, { patient_request: patientRequest }, '1000px', 'auto', false);
   }
 
-  protected undoPatientRequest(patient_request: PatientRequest): void {
-    this.openDialog(UndoPatientRequestComponent, { patient_request }, '500px');
+  protected undoPatientRequest(patientRequest: PatientRequest): void {
+    this.openDialog(UndoPatientRequestComponent, { patient_request: patientRequest }, '500px');
   }
 
-  protected processPatientRequest(patient_request: PatientRequest): void {
-    this.openDialog(ProcessPatientRequestToPaymentComponent, { patient_request }, '500px');
+  protected processPatientRequest(patientRequest: PatientRequest): void {
+    this.openDialog(ProcessPatientRequestToPaymentComponent, { patient_request: patientRequest }, '800px', '650px');
   }
 
-  protected movePatientRequestFromProcesses(patient_request: PatientRequest): void {
-    this.openDialog(MovePatientRequestFromProcessesComponent, { patient_request }, '400px');
+  protected movePatientRequestFromProcesses(patientRequest: PatientRequest): void {
+    this.openDialog(MovePatientRequestFromProcessesComponent, { patient_request: patientRequest }, '400px');
   }
 
-  protected movePatientRequestFromOthers(patient_request: PatientRequest): void {
-    this.openDialog(MovePatientRequestFromOthersComponent, { patient_request }, '400px');
+  protected movePatientRequestFromOthers(patientRequest: PatientRequest): void {
+    this.openDialog(MovePatientRequestFromOthersComponent, { patient_request: patientRequest }, '400px');
   }
 
-  protected showPatientRequest(patient_request: PatientRequest): void {
-    this.openDialog(ShowPatientRequestComponent, { patient_request }, '1000px', 'auto', false);
+  protected showPatientRequest(patientRequest: PatientRequest): void {
+    this.openDialog(ShowPatientRequestComponent, { patient_request: patientRequest }, '1000px', 'auto', false);
   }
 
-  protected undoMessage(message: string): void {
-    this.openDialog(UndoMessageComponent, { message }, '400px', 'auto', false);
+  protected finishBackPatientRequest(patientRequest: PatientRequest): void {
+    this.openDialog(FinishBackPatientRequestComponent, { patient_request: patientRequest }, '400px');
   }
 }

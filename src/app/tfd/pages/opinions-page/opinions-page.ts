@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs';
 import { CommonModule } from '@angular/common';
+import { Overlay } from '@angular/cdk/overlay';
 
 // Angular Material
 import { MatButtonModule } from '@angular/material/button';
@@ -11,6 +12,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -35,6 +37,7 @@ import { MovePatientRequestFromOthersComponent } from '../../components/opinion/
 import { MovePatientRequestFromProcessesComponent } from '../../components/opinion/move-patient-request-from-processes-component/move-patient-request-from-processes-component';
 import { HistoryPatientRequestComponent } from '../../components/opinion/history-patient-request-component/history-patient-request-component';
 import { ProcessPatientRequestToCostAssistanceAndTravelComponent } from '../../components/opinion/process-patient-request-to-cost-assistance-and-travel-component/process-patient-request-to-cost-assistance-and-travel-component';
+import { FinishBackPatientRequestComponent } from '../../components/opinion/finish-back-patient-request-component/finish-back-patient-request-component';
 
 const TFD_OPINIONS_CHANNEL = new BroadcastChannel('tfd-opinions-channel');
 
@@ -50,6 +53,7 @@ const TFD_OPINIONS_CHANNEL = new BroadcastChannel('tfd-opinions-channel');
     MatIconModule,
     MatTooltipModule,
     MatSortModule,
+    MatPaginatorModule,
     MatTabsModule,
     NgxMaskDirective,
     NgxMaskPipe
@@ -58,48 +62,71 @@ const TFD_OPINIONS_CHANNEL = new BroadcastChannel('tfd-opinions-channel');
   styleUrl: './opinions-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima com OnPush + Signals
 })
-export class OpinionsPage implements OnInit, OnDestroy {
+export class OpinionsPage implements OnInit {
   // Injeções de dependência funcionais modernas
   private readonly opinionService = inject(OpinionService);
   private readonly dialog = inject(MatDialog);
+  private readonly overlay = inject(Overlay);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
-  // ViewChild para captura do MatSort do template
-  protected readonly sort = viewChild.required(MatSort);
-
   private loadingDialog!: MatDialogRef<LoadingComponent>;
   private readonly currentUser = this.route.parent?.parent?.snapshot.data['user'];
+
+  // Capturas reativas dos objetos MatSort de cada aba
+  private readonly ownerSort = viewChild<MatSort>('ownerSort');
+  private readonly processSort = viewChild<MatSort>('processSort');
+  private readonly othersSort = viewChild<MatSort>('othersSort');
+
+  // Capturas reativas dos objetos MatPaginator de cada aba
+  private readonly ownerPaginator = viewChild<MatPaginator>('ownerPaginator');
+  private readonly processPaginator = viewChild<MatPaginator>('processPaginator');
+  private readonly othersPaginator = viewChild<MatPaginator>('othersPaginator');
 
   // Estado que define o tipo do perfil logado ('medical' | 'social')
   protected readonly profileType = signal<'medical' | 'social'>('medical');
 
   // Definições de Colunas das Tabelas
-  protected readonly displayedOwnerColumns: string[] = ['bookmark', 'patient', 'cns', 'type', 'consultation_date', 'status', 'actions'];
-  protected readonly displayedProcessColumns: string[] = ['patient', 'cns', 'type', 'consultation_date', 'responsible', 'actions'];
-  protected readonly displayedOthersColumns: string[] = ['patient', 'cns', 'type', 'consultation_date', 'responsible', 'actions'];
+  protected readonly displayedOwnerColumns: string[] = ['bookmark', 'name', 'cns', 'type', 'consultation_date', 'status', 'actions'];
+  protected readonly displayedProcessColumns: string[] = ['name', 'cns', 'type', 'consultation_date', 'responsible', 'actions'];
+  protected readonly displayedOthersColumns: string[] = ['name', 'cns', 'type', 'consultation_date', 'responsible', 'actions'];
 
   // Signals para armazenamento do estado bruto dividido por abas
   private readonly rawOwnerList = signal<PatientRequest[]>([]);
   private readonly rawProcessList = signal<PatientRequest[]>([]);
   private readonly rawOthersList = signal<PatientRequest[]>([]);
 
-  // Computed signals acoplando ordenação automática e reativa em TODAS as abas
+  // Computed signals acoplando ordenação e paginação automática e reativa em TODAS as abas
   protected readonly ownerDataSource = computed(() => {
     const dataSource = new MatTableDataSource(this.rawOwnerList());
-    dataSource.sort = this.sort();
+    const sortRef = this.ownerSort();
+    const paginatorRef = this.ownerPaginator();
+
+    if (sortRef) dataSource.sort = sortRef;
+    if (paginatorRef) dataSource.paginator = paginatorRef;
+
     return dataSource;
   });
 
   protected readonly processDataSource = computed(() => {
     const dataSource = new MatTableDataSource(this.rawProcessList());
-    dataSource.sort = this.sort();
+    const sortRef = this.processSort();
+    const paginatorRef = this.processPaginator();
+
+    if (sortRef) dataSource.sort = sortRef;
+    if (paginatorRef) dataSource.paginator = paginatorRef;
+
     return dataSource;
   });
 
   protected readonly othersDataSource = computed(() => {
     const dataSource = new MatTableDataSource(this.rawOthersList());
-    dataSource.sort = this.sort();
+    const sortRef = this.othersSort();
+    const paginatorRef = this.othersPaginator();
+
+    if (sortRef) dataSource.sort = sortRef;
+    if (paginatorRef) dataSource.paginator = paginatorRef;
+
     return dataSource;
   });
 
@@ -111,26 +138,42 @@ export class OpinionsPage implements OnInit, OnDestroy {
         this.getPatientRequests(false);
       }
     };
+
+    // Fechamento seguro e moderno do BroadcastChannel sem necessidade de OnDestroy
+    this.destroyRef.onDestroy(() => {
+      TFD_OPINIONS_CHANNEL.close();
+    });
   }
 
-  ngOnDestroy(): void {
-    TFD_OPINIONS_CHANNEL.close();
-  }
-
-  // Filtros locais e rápidos de busca nas tabelas
+  // Filtros locais e rápidos de busca nas tabelas com reset preventivo de paginação
   protected applyOwnerFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    this.ownerDataSource().filter = filterValue.trim().toLowerCase();
+    const dataSource = this.ownerDataSource();
+    dataSource.filter = filterValue.trim().toLowerCase();
+
+    if (dataSource.paginator) {
+      dataSource.paginator.firstPage();
+    }
   }
 
   protected applyProcessFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    this.processDataSource().filter = filterValue.trim().toLowerCase();
+    const dataSource = this.processDataSource();
+    dataSource.filter = filterValue.trim().toLowerCase();
+
+    if (dataSource.paginator) {
+      dataSource.paginator.firstPage();
+    }
   }
 
   protected applyOthersFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    this.othersDataSource().filter = filterValue.trim().toLowerCase();
+    const dataSource = this.othersDataSource();
+    dataSource.filter = filterValue.trim().toLowerCase();
+
+    if (dataSource.paginator) {
+      dataSource.paginator.firstPage();
+    }
   }
 
   /**
@@ -157,8 +200,10 @@ export class OpinionsPage implements OnInit, OnDestroy {
             )
             .subscribe({
               next: (response) => {
+                const rawData = response ?? [];
+
                 // Normaliza e nivela as propriedades para as colunas da tabela
-                const normalizedRequests = response.map((item: any) => ({
+                const normalizedRequests = rawData.map((item: any) => ({
                   ...item,
                   name: item.report?.patient_care?.patient?.name,
                   cns: item.report?.patient_care?.patient?.cns,
@@ -171,7 +216,7 @@ export class OpinionsPage implements OnInit, OnDestroy {
                 const owners = normalizedRequests.filter((item: any) => 
                   isMedical
                     ? (!item.social_professional || item.back_to_medical) && item.medical
-                    : (!item.cost_assistance_professional || item.back_to_social) && item.social && !item.back_to_medical
+                    : (!item.cost_assistance_professional || item.back_to_social) && item.social
                 );
 
                 // 2. Filtro: Em Processamento (Process)
@@ -192,7 +237,11 @@ export class OpinionsPage implements OnInit, OnDestroy {
                 this.rawProcessList.set(processes);
                 this.rawOthersList.set(others);
               },
-              error: (err) => console.error('Erro ao buscar pareceres:', err)
+              error: () => {
+                this.rawOwnerList.set([]);
+                this.rawProcessList.set([]);
+                this.rawOthersList.set([]);
+              }
             });
         }
       });
@@ -207,7 +256,8 @@ export class OpinionsPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Inversão lógica simplificada: Retorna 'true' caso o usuário NÃO possua a permissão
+   * Avalia as regras de acesso cedidas no Route Resolver.
+   * Retorna 'true' (desabilita) se o usuário NÃO possuir a permissão informada.
    */
   protected checkPermissions(permissionName: string): boolean {
     if (!this.currentUser?.roles) return true;
@@ -220,14 +270,21 @@ export class OpinionsPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Método privado e unificado para gerenciamento reativo do ciclo de modais interativas
+   * Centralizador genérico para abertura de modais com recarga automatizada de dados.
    */
-  private openDialog(component: any, data: any, width = '400px', height = 'auto', requiresRefresh = true): void {
+  private openDialog(
+    component: any, 
+    data: any, 
+    width = '400px', 
+    height = 'auto', 
+    requiresRefresh = true
+  ): void {
     this.dialog.open(component, {
       width,
       height,
       disableClose: true,
       autoFocus: false,
+      scrollStrategy: this.overlay.scrollStrategies.noop(),
       data
     }).afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -243,7 +300,8 @@ export class OpinionsPage implements OnInit, OnDestroy {
     TFD_OPINIONS_CHANNEL.postMessage('update');
   }
 
-  // Métodos de Ação disparados a partir das linhas das tabelas no HTML
+  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
+
   protected showPatientRequest(patientRequest: PatientRequest): void {
     this.openDialog(ShowPatientRequestComponent, { patient_request: patientRequest }, '1000px', 'auto', false);
   }
@@ -284,8 +342,8 @@ export class OpinionsPage implements OnInit, OnDestroy {
     this.openDialog(ArchivePatientRequestComponent, { patient_request: patientRequest }, '400px');
   }
 
-  protected undoMessage(message: string): void {
-    this.openDialog(UndoMessageComponent, { message }, '400px', 'auto', false);
+  protected finishBackPatientRequest(patientRequest: PatientRequest): void {
+    this.openDialog(FinishBackPatientRequestComponent, { patient_request: patientRequest, type: this.profileType() }, '400px');
   }
 
   protected patientRequestAttachments(patientRequest: PatientRequest): void {

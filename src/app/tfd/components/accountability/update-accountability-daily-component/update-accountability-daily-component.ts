@@ -1,15 +1,17 @@
-import { ChangeDetectionStrategy, Component, ChangeDetectorRef, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, ChangeDetectorRef, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { finalize } from 'rxjs';
-
-// Angular Material
-import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { CommonModule } from '@angular/common';
+import { finalize } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+
+// Diretiva de Máscara
+import { NgxMaskDirective } from 'ngx-mask';
 
 // Serviços e Models
 import { AccountabilityService } from '../../../services/accountability-service';
@@ -20,6 +22,7 @@ import { DailyCost } from '../../../models/daily-cost';
   selector: 'app-update-accountability-daily-component',
   standalone: true,
   imports: [
+    CommonModule,
     FormsModule, 
     ReactiveFormsModule, 
     MatDialogModule, 
@@ -27,14 +30,15 @@ import { DailyCost } from '../../../models/daily-cost';
     MatFormFieldModule, 
     MatInputModule, 
     MatSelectModule, 
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    NgxMaskDirective
   ],
   templateUrl: './update-accountability-daily-component.html',
   styleUrl: './update-accountability-daily-component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima com OnPush e Signals
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UpdateAccountabilityDailyComponent implements OnInit {
-  // Injeções de dependência modernas via inject()
+  // Injeções de Dependência
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly accountabilityService = inject(AccountabilityService);
@@ -43,10 +47,15 @@ export class UpdateAccountabilityDailyComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Estrutura do Formulário exposta ao template
+  // Form Group Principal
   protected updateAccountabilityDailyForm!: FormGroup;
 
-  // 🎯 Mapeamento local das mensagens de erro conforme a referência técnica do projeto
+  // Estados reativos via Signals
+  protected readonly dailyCostsOptions = signal<DailyCost[]>([]);
+  protected readonly isSubmitting = signal<boolean>(false);
+  protected readonly isLoadingOptions = signal<boolean>(true);
+
+  // Mensagens estáticas de erro do formulário
   protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
     daily_cost_id: [
       { type: 'required', message: 'O tipo de diária é obrigatório.' }
@@ -57,30 +66,22 @@ export class UpdateAccountabilityDailyComponent implements OnInit {
     ]
   };
 
-  // Estados gerenciados reativamente via Signals
-  protected readonly dailyCostsOptions = signal<DailyCost[]>([]);
-  protected readonly isSubmitting = signal<boolean>(false);
-  protected readonly isLoadingOptions = signal<boolean>(true);
-
-  constructor() {
-    this.initForm();
-  }
-
   ngOnInit(): void {
+    this.initForm();
     this.fetchDailyCosts();
   }
 
-  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO E SUPORTE ---
+  // --- INICIALIZAÇÃO E BUSCA DE DADOS ---
 
   private initForm(): void {
     this.updateAccountabilityDailyForm = this.fb.group({
       daily_cost_id: [this.data?.accountability_daily?.daily_cost_id || null, [Validators.required]],
-      amount: [this.data?.accountability_daily?.amount || null, [Validators.required, Validators.min(1)]],
+      amount: [this.data?.accountability_daily?.amount || null, [Validators.required, Validators.min(1)]]
     });
   }
 
   /**
-   * Busca assíncrona das opções de tipos de diária disponíveis no sistema.
+   * Busca as opções de tipos de diária disponíveis.
    */
   private fetchDailyCosts(): void {
     this.accountabilityService.getDailyCosts()
@@ -92,8 +93,9 @@ export class UpdateAccountabilityDailyComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
-        next: (response) => {
-          this.dailyCostsOptions.set(response || []);
+        next: (response: any) => {
+          const items = Array.isArray(response) ? response : (response?.data || []);
+          this.dailyCostsOptions.set(items);
         },
         error: () => {
           this.messageService.showMessage('Falha ao carregar as opções de diária.');
@@ -101,10 +103,10 @@ export class UpdateAccountabilityDailyComponent implements OnInit {
       });
   }
 
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
+  // --- SUBMISSÃO ---
 
   /**
-   * Submete as alterações da diária de forma segura, reativa e controlada.
+   * Submete as alterações para atualização da diária.
    */
   protected onSubmit(): void {
     const dailyId = this.data?.accountability_daily?.id;

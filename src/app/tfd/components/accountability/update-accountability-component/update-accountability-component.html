@@ -2,34 +2,47 @@
 
 <form [formGroup]="updateAccountabilityForm" (ngSubmit)="onSubmit()">
   <mat-dialog-content>
-    
-    <div class="line">
-      <mat-form-field appearance="outline">
-        <mat-label>Nome</mat-label>
-        <input matInput type="text" formControlName="name">
-        
-        @for (item of errorMessages['name']; track $index) {
-          <mat-error [hidden]="!updateAccountabilityForm.get('name')?.hasError(item.type)">
-            {{ item.message }}
-          </mat-error>
-        }
-      </mat-form-field>
-    </div>
+    <div class="stepper">
 
+      <!-- Linha 1: Nome -->
+      <div class="line cols-1-col">
+        <mat-form-field appearance="outline">
+          <mat-label>Nome</mat-label>
+          <input 
+            matInput 
+            type="text" 
+            formControlName="name" 
+            placeholder="Nome da prestação de contas"
+            [readonly]="isSubmitting()"
+          >
+
+          @for (item of errorMessages['name']; track item.type) {
+            <mat-error [hidden]="!updateAccountabilityForm.get('name')?.hasError(item.type)">
+              {{ item.message }}
+            </mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+    </div>
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
-    <button matButton type="button" [mat-dialog-close]="false">Fechar</button>
+    <button mat-button type="button" [disabled]="isSubmitting()" [mat-dialog-close]="false">
+      Cancelar
+    </button>
+    
     <button 
-      matButton="filled" 
+      mat-flat-button 
+      color="primary" 
       type="submit" 
       [disabled]="updateAccountabilityForm.invalid || updateAccountabilityForm.pending || isSubmitting()"
     >
       <div class="waiting">
         @if (isSubmitting()) {
-          <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+          <mat-spinner [diameter]="20"></mat-spinner>
         }
-        Atualizar
+        <span>{{ isSubmitting() ? 'Atualizando...' : 'Atualizar' }}</span>
       </div>
     </button>
   </mat-dialog-actions>

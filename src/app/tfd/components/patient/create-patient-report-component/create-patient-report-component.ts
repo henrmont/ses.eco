@@ -15,9 +15,16 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { PatientService } from '../../../services/patient-service';
 import { MessageService } from '../../../../core/services/message-service';
+import { Specialty } from '../../../enums/specialties';
+
+interface SpecialtyOption {
+  key: string;
+  label: string;
+}
 
 @Component({
   selector: 'app-create-patient-report-component',
+  standalone: true,
   imports: [
     CommonModule, 
     FormsModule, 
@@ -37,7 +44,7 @@ import { MessageService } from '../../../../core/services/message-service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CreatePatientReportComponent implements OnInit {
-  // Injeções de Dependência Dinâmicas
+  // Injeções de Dependência
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly patientService = inject(PatientService);
@@ -46,23 +53,30 @@ export class CreatePatientReportComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Estrutura do Formulário e Controles expostos ao template
+  // Estrutura do Formulário
   protected reportForm!: FormGroup;
   protected readonly cidControl = new FormControl<string | any>('', [Validators.required]);
+  protected readonly specialtyControl = new FormControl<string | SpecialtyOption>('', [Validators.required]);
 
-  // Estados gerenciados reativamente via Signals
+  // Estados gerenciados por Signals
   protected readonly cidReadOnly = signal<boolean>(true);
   protected readonly cidLoading = signal<boolean>(false);
   protected readonly isSubmitting = signal<boolean>(false);
 
-  // Listagem e Filtros do Autocomplete
+  // Listagem e Filtros
   private cidOptions: any[] = [];
   protected filteredCidOptions!: Observable<any[]>;
 
-  // 🎯 Mapeamento local das mensagens de erro padronizado para a UI
+  private specialtyOptions: SpecialtyOption[] = [];
+  protected filteredSpecialtyOptions!: Observable<SpecialtyOption[]>;
+
+  // Mensagens de Erro para UI
   protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
     protocol: [
       { type: 'required', message: 'O número do protocolo é obrigatório.' }
+    ],
+    specialty: [
+      { type: 'required', message: 'A seleção da especialidade é obrigatória.' }
     ],
     cid_id: [
       { type: 'required', message: 'A seleção do CID é obrigatória para o laudo.' }
@@ -77,31 +91,57 @@ export class CreatePatientReportComponent implements OnInit {
 
   ngOnInit(): void {
     this.initForm();
+    this.loadSpecialties();
     this.fetchCids();
-    this.registerCidCleaner();
+    this.registerCleaners();
   }
 
-  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO E SUPORTE ---
+  // --- INICIALIZAÇÃO ---
 
   private initForm(): void {
     this.reportForm = this.fb.group({
       protocol: [null, [Validators.required]],
+      specialty: [null, [Validators.required]],
       cid_id: [null, [Validators.required]],
       lawsuit: [false, [Validators.required]],
       diagnosis: [null, [Validators.required]],
     });
   }
 
-  /**
-   * Monitora se o usuário limpou o texto do autocomplete para invalidar o formulário principal
-   */
-  private registerCidCleaner(): void {
+  private loadSpecialties(): void {
+    this.specialtyOptions = Object.entries(Specialty).map(([key, value]) => ({
+      key,
+      label: value
+    }));
+
+    this.filteredSpecialtyOptions = this.specialtyControl.valueChanges.pipe(
+      startWith(''),
+      map(value => {
+        const term = typeof value === 'string' ? value : value?.label || '';
+        return term ? this._filterSpecialty(term) : this.specialtyOptions.slice(0, 10);
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    );
+  }
+
+  private registerCleaners(): void {
+    // Limpeza de CID
     this.cidControl.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => {
-        if (!value) {
+        if (!value || typeof value !== 'object') {
           this.reportForm.get('cid_id')?.setValue(null);
           this.reportForm.get('cid_id')?.markAsDirty();
+        }
+      });
+
+    // Limpeza de Especialidade
+    this.specialtyControl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        if (!value || typeof value !== 'object') {
+          this.reportForm.get('specialty')?.setValue(null);
+          this.reportForm.get('specialty')?.markAsDirty();
         }
       });
   }
@@ -125,10 +165,21 @@ export class CreatePatientReportComponent implements OnInit {
     ).slice(0, 10);
   }
 
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
+  private _filterSpecialty(label: string): SpecialtyOption[] {
+    const filterValue = label.toLowerCase();
+    return this.specialtyOptions.filter(option => 
+      option.label.toLowerCase().includes(filterValue)
+    ).slice(0, 10);
+  }
+
+  // --- AÇÕES DO TEMPLATE ---
 
   protected displayCid(cid: any): string {
     return cid && cid.name && cid.code ? `${cid.code} - ${cid.name}` : '';
+  }
+
+  protected displaySpecialty(specialty: SpecialtyOption): string {
+    return specialty?.label || '';
   }
 
   protected fetchCids(): void {
@@ -136,7 +187,7 @@ export class CreatePatientReportComponent implements OnInit {
     if (!careId) return;
 
     this.cidLoading.set(true);
-    this.cdr.detectChanges(); // Garante o spinner de loading visível imediatamente no OnPush
+    this.cdr.detectChanges();
 
     this.patientService.getCids(careId)
       .pipe(
@@ -164,6 +215,11 @@ export class CreatePatientReportComponent implements OnInit {
     this.reportForm.get('cid_id')?.markAsDirty();
   }
 
+  protected setSpecialty(option: SpecialtyOption): void {
+    this.reportForm.get('specialty')?.setValue(option.key);
+    this.reportForm.get('specialty')?.markAsDirty();
+  }
+
   protected onSubmit(): void {
     const patientCareId = this.data?.patient_care?.id;
     if (!patientCareId) {
@@ -171,14 +227,15 @@ export class CreatePatientReportComponent implements OnInit {
       return;
     }
 
-    if (this.reportForm.invalid || this.cidControl.invalid) {
+    if (this.reportForm.invalid || this.cidControl.invalid || this.specialtyControl.invalid) {
       this.reportForm.markAllAsTouched();
       this.cidControl.markAsTouched();
+      this.specialtyControl.markAsTouched();
       return;
     }
 
     this.isSubmitting.set(true);
-    this.cdr.detectChanges(); // Sincroniza imediatamente o estado de submissão no DOM
+    this.cdr.detectChanges();
 
     this.patientService.createPatientReport(patientCareId, this.reportForm.value)
       .pipe(

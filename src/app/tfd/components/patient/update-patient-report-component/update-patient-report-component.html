@@ -22,6 +22,33 @@
         </div>
       </div>
 
+      <!-- Especialidade (Autocomplete) -->
+      <div class="line cols-1-col">
+        <mat-form-field appearance="outline">
+          <mat-label>Especialidade</mat-label>
+          <input 
+            type="text" 
+            matInput 
+            [formControl]="specialtyControl" 
+            [matAutocomplete]="specialtyAuto"
+          >
+
+          <mat-autocomplete #specialtyAuto="matAutocomplete" [displayWith]="displaySpecialty">
+            @for (option of filteredSpecialtyOptions | async; track option.key) {
+              <mat-option [value]="option" (onSelectionChange)="setSpecialty(option)">
+                {{ option.label }}
+              </mat-option>
+            }
+          </mat-autocomplete>
+
+          @for (item of errorMessages['specialty']; track item.type) {
+            <mat-error [hidden]="!specialtyControl.hasError('required')">
+              {{ item.message }}
+            </mat-error>
+          }
+        </mat-form-field>
+      </div>
+
       <!-- CID (Autocomplete) -->
       <div class="line cols-1-col">
         <mat-form-field appearance="outline">
@@ -77,7 +104,7 @@
       mat-flat-button 
       color="primary" 
       type="submit" 
-      [disabled]="reportForm.invalid || cidControl.invalid || reportForm.pending || reportForm.pristine || isSubmitting()"
+      [disabled]="reportForm.invalid || cidControl.invalid || specialtyControl.invalid || reportForm.pending || reportForm.pristine || isSubmitting()"
     >
       <div class="waiting">
         @if (isSubmitting()) {

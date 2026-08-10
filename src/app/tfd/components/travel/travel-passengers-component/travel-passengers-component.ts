@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal, ChangeDetectorRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
-import { CommonModule } from '@angular/common';
+import { CommonModule, CurrencyPipe, PercentPipe } from '@angular/common';
+import { Overlay } from '@angular/cdk/overlay';
 
 // Angular Material
 import { MatButtonModule } from '@angular/material/button';
@@ -14,17 +15,23 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 // Models e Serviços
 import { Passenger } from '../../../models/passenger';
 import { TravelService } from '../../../services/travel-service';
+import { MessageService } from '../../../../core/services/message-service';
 
 // Modais do Contexto de Passageiros
 import { CreatePassengerComponent } from '../create-passenger-component/create-passenger-component';
 import { UpdatePassengerComponent } from '../update-passenger-component/update-passenger-component';
 import { DeletePassengerComponent } from '../delete-passenger-component/delete-passenger-component';
+import { ShowPassengerComponent } from '../show-passenger-component/show-passenger-component';
+
+const TFD_TRAVELS_CHANNEL = new BroadcastChannel('tfd-travels-channel');
 
 @Component({
   selector: 'app-travel-passengers-component',
   standalone: true,
   imports: [
     CommonModule,
+    CurrencyPipe,
+    PercentPipe,
     MatDialogModule,
     MatButtonModule,
     MatTableModule,
@@ -34,32 +41,45 @@ import { DeletePassengerComponent } from '../delete-passenger-component/delete-p
   ],
   templateUrl: './travel-passengers-component.html',
   styleUrl: './travel-passengers-component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima unindo OnPush + Signals + Computed
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TravelPassengersComponent implements OnInit {
-  // Injeções de dependência modernas
+  // Injeções de Dependência
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly dialog = inject(MatDialog);
+  private readonly overlay = inject(Overlay);
   private readonly travelService = inject(TravelService);
+  private readonly messageService = inject(MessageService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  // Propriedades expostas para o Template com computed e signals
-  protected readonly displayedColumns: string[] = ['passenger', 'is_patient', 'tariff', 'tax', 'total', 'actions'];
-  protected readonly passengersList = signal<any[]>([]);
+  // Colunas e Coleções
+  protected readonly displayedColumns: string[] = ['passenger', 'is_patient', 'tariff', 'tax', 'discount', 'total', 'actions'];
+  protected readonly passengersList = signal<Passenger[]>([]);
   protected readonly isLoading = signal<boolean>(true);
 
-  // Mapeia a lista adicionando o valor computado 'total' individual de forma reativa
+  // Mapeia a lista calculando o valor total individual: (Tarifa + Taxa) - Desconto%
   private readonly mappedPassengers = computed(() => 
-    this.passengersList().map(item => ({
-      ...item,
-      total: (Number(item.tariff) || 0) + (Number(item.tax) || 0)
-    }))
+    this.passengersList().map(item => {
+      const tariff = Number(item.tariff) || 0;
+      const tax = Number(item.tax) || 0;
+      const discountPercent = Number(item.discount) || 0;
+
+      const baseAmount = tariff + tax;
+      const discountAmount = baseAmount * (discountPercent / 100);
+      const total = baseAmount - discountAmount;
+
+      return {
+        ...item,
+        total
+      };
+    })
   );
 
   // Fonte de dados reativa vinculada diretamente ao computed anterior
   protected readonly dataSource = computed(() => new MatTableDataSource(this.mappedPassengers()));
 
-  // Calcula o valor total global de tarifas + taxas somando todo o array de maneira limpa
+  // Calcula o valor total global
   protected readonly totalValue = computed(() => 
     this.mappedPassengers().reduce((acc, item) => acc + item.total, 0)
   );
@@ -69,13 +89,14 @@ export class TravelPassengersComponent implements OnInit {
   }
 
   /**
-   * Busca os passageiros vinculados à viagem de forma reativa e segura.
+   * Busca os passageiros vinculados à viagem de forma reativa.
    */
-  private fetchPassengers(showLoading = false): void {
+  private fetchPassengers(showLoading: boolean = false): void {
     const travelId = this.data?.travel?.id;
 
     if (!travelId) {
       this.isLoading.set(false);
+      this.cdr.markForCheck();
       return;
     }
 
@@ -86,9 +107,8 @@ export class TravelPassengersComponent implements OnInit {
     this.travelService.getPassengers(travelId)
       .pipe(
         finalize(() => {
-          if (showLoading) {
-            this.isLoading.set(false);
-          }
+          this.isLoading.set(false);
+          this.cdr.markForCheck();
         }),
         takeUntilDestroyed(this.destroyRef)
       )
@@ -96,53 +116,61 @@ export class TravelPassengersComponent implements OnInit {
         next: (response) => {
           this.passengersList.set(response || []);
         },
-        error: () => {
-          // Trata falhas de rede de forma silenciosa e limpa
+        error: (err) => {
+          this.passengersList.set([]);
+          const fallbackError = 'Não foi possível carregar os passageiros da viagem.';
+          this.messageService.showMessage(err?.error?.message || fallbackError);
         }
       });
   }
 
   /**
-   * Centraliza a abertura das modais internas de passageiro com atualização do estado pós-fechamento
+   * Centraliza a abertura de modais com tratamento automático do pós-fechamento
    */
   private openDialog(
     component: any, 
     data: any, 
-    options: { width?: string; refreshWithLoading?: boolean } = {}
+    width: string = '800px', 
+    height: string = 'auto', 
+    requiresRefresh: boolean = true, 
+    emitGlobalBroadcast: boolean = true
   ): void {
     this.dialog.open(component, {
-      width: options.width || '600px',
+      width,
+      height,
       disableClose: true,
       autoFocus: false,
+      scrollStrategy: this.overlay.scrollStrategies.noop(),
       data
     }).afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((result) => {
         if (result) {
-          this.fetchPassengers(options.refreshWithLoading || false);
+          this.fetchPassengers(requiresRefresh || false);
+          
+          if (emitGlobalBroadcast) {
+            TFD_TRAVELS_CHANNEL.postMessage('update');
+          }
+          this.cdr.markForCheck();
         }
       });
   }
 
-  // Métodos de ação disparados pelo template HTML (Modificadores Protected)
+  // --- MÉTODOS DE AÇÃO DO TEMPLATE ---
+
   protected createPassenger(): void {
-    this.openDialog(CreatePassengerComponent, 
-      { travel: this.data.travel }, 
-      { refreshWithLoading: true }
-    );
+    this.openDialog(CreatePassengerComponent, { travel: this.data?.travel }, '800px');
+  }
+
+  protected showPassenger(passenger: Passenger): void {
+    this.openDialog(ShowPassengerComponent, { passenger }, '800px', 'auto', false, false);
   }
 
   protected updatePassenger(passenger: Passenger): void {
-    this.openDialog(UpdatePassengerComponent, 
-      { passenger }, 
-      { refreshWithLoading: true }
-    );
+    this.openDialog(UpdatePassengerComponent, { passenger }, '800px');
   }
 
   protected deletePassenger(passenger: Passenger): void {
-    this.openDialog(DeletePassengerComponent, 
-      { passenger }, 
-      { width: '400px', refreshWithLoading: true }
-    );
+    this.openDialog(DeletePassengerComponent, { passenger }, '400px', 'auto', true);
   }
 }

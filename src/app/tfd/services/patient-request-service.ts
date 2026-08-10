@@ -90,6 +90,10 @@ export class PatientRequestService {
     return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-request-from-archive/${patientRequestId}`, {});
   }
 
+  finishBackPatientRequest(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/finish-back-patient-request/${patientRequestId}`, {});
+  }
+
   // --- ANEXOS DA SOLICITAÇÃO (ATTACHMENTS) ---
 
   createPatientRequestAttachment(patientRequestId: number, data: any): Observable<ApiResponse> {

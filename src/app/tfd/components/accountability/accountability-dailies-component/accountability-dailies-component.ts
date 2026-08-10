@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, ChangeDetectorRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
-import { CommonModule } from '@angular/common';
+import { CommonModule, CurrencyPipe } from '@angular/common';
+import { Overlay } from '@angular/cdk/overlay';
 
 // Angular Material
 import { MatButtonModule } from '@angular/material/button';
@@ -14,18 +15,21 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 // Models e Serviços
 import { AccountabilityDaily } from '../../../models/accountability-daily';
 import { AccountabilityService } from '../../../services/accountability-service';
-import { Permission } from '../../../models/permission';
+import { MessageService } from '../../../../core/services/message-service';
 
 // Modais do Contexto de Diárias da Prestação de Contas
 import { CreateAccountabilityDailyComponent } from '../create-accountability-daily-component/create-accountability-daily-component';
 import { UpdateAccountabilityDailyComponent } from '../update-accountability-daily-component/update-accountability-daily-component';
 import { DeleteAccountabilityDailyComponent } from '../delete-accountability-daily-component/delete-accountability-daily-component';
 
+const TFD_PATIENT_REQUESTS_CHANNEL = new BroadcastChannel('tfd-patient-requests-channel');
+
 @Component({
   selector: 'app-accountability-dailies-component',
   standalone: true,
   imports: [
     CommonModule,
+    CurrencyPipe,
     MatDialogModule,
     MatButtonModule,
     MatTableModule,
@@ -35,19 +39,27 @@ import { DeleteAccountabilityDailyComponent } from '../delete-accountability-dai
   ],
   templateUrl: './accountability-dailies-component.html',
   styleUrl: './accountability-dailies-component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima unindo OnPush + Signals + Computed
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AccountabilityDailiesComponent implements OnInit {
-  // Injeções de dependência modernas via inject()
+  // Injeções de Dependência
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly dialog = inject(MatDialog);
+  private readonly overlay = inject(Overlay);
   private readonly accountabilityService = inject(AccountabilityService);
+  private readonly messageService = inject(MessageService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  // Propriedades expostas para o Template com computed e signals
+  // Colunas e Coleções
   protected readonly displayedColumns: string[] = ['name', 'value', 'amount', 'partial', 'actions'];
-  protected readonly dailiesList = signal<any[]>([]);
+  protected readonly dailiesList = signal<AccountabilityDaily[]>([]);
   protected readonly isLoading = signal<boolean>(true);
+
+  // Computado que define se o rodapé deve exibir as colunas ou ficar escondido
+  protected readonly footerColumns = computed(() => 
+    this.dailiesList().length > 0 ? this.displayedColumns : []
+  );
 
   // Mapeia a lista adicionando o valor computado 'partial' (subtotal) individual de forma reativa
   private readonly mappedDailies = computed(() => 
@@ -58,7 +70,7 @@ export class AccountabilityDailiesComponent implements OnInit {
   );
 
   // Fonte de dados reativa vinculada diretamente ao computed anterior para alimentar a MatTable
-  protected readonly dataSource = computed(() => new MatTableDataSource<AccountabilityDaily>(this.mappedDailies()));
+  protected readonly dataSource = computed(() => new MatTableDataSource(this.mappedDailies()));
 
   // Calcula o valor total global somando todos os parciais de maneira limpa e reativa
   protected readonly totalValue = computed(() => 
@@ -69,14 +81,17 @@ export class AccountabilityDailiesComponent implements OnInit {
     this.fetchAccountabilityDailies(true);
   }
 
+  // --- BUSCA E REFRESH DE DADOS ---
+
   /**
    * Busca as diárias vinculadas à prestação de contas de forma reativa e segura.
    */
-  private fetchAccountabilityDailies(showLoading = false): void {
+  private fetchAccountabilityDailies(showLoading: boolean = false): void {
     const accountabilityId = this.data?.accountability?.id;
 
     if (!accountabilityId) {
       this.isLoading.set(false);
+      this.cdr.markForCheck();
       return;
     }
 
@@ -87,21 +102,25 @@ export class AccountabilityDailiesComponent implements OnInit {
     this.accountabilityService.getAccountabilityDailies(accountabilityId)
       .pipe(
         finalize(() => {
-          if (showLoading) {
-            this.isLoading.set(false);
-          }
+          this.isLoading.set(false);
+          this.cdr.markForCheck();
         }),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
-        next: (response) => {
-          this.dailiesList.set(response || []);
+        next: (response: any) => {
+          const items = Array.isArray(response) ? response : (response?.data || []);
+          this.dailiesList.set(items);
         },
-        error: () => {
-          // Trata falhas de rede de forma silenciosa e limpa
+        error: (err) => {
+          this.dailiesList.set([]);
+          const fallbackError = 'Não foi possível carregar as diárias da prestação de contas.';
+          this.messageService.showMessage(err?.error?.message || fallbackError);
         }
       });
   }
+
+  // --- GERENCIAMENTO DE MODAIS E PERMISSÕES ---
 
   /**
    * Centraliza a abertura das modais internas de diárias com atualização do estado pós-fechamento
@@ -109,51 +128,57 @@ export class AccountabilityDailiesComponent implements OnInit {
   private openDialog(
     component: any, 
     data: any, 
-    options: { width?: string; refreshWithLoading?: boolean } = {}
+    width: string = '500px',
+    height: string = 'auto',
+    requiresRefresh: boolean = true,
+    emitGlobalBroadcast: boolean = true
   ): void {
     this.dialog.open(component, {
-      width: options.width || '500px',
+      width,
+      height,
       disableClose: true,
       autoFocus: false,
+      scrollStrategy: this.overlay.scrollStrategies.noop(),
       data
     }).afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((result) => {
         if (result) {
-          this.fetchAccountabilityDailies(options.refreshWithLoading || false);
+          if (requiresRefresh) {
+            this.fetchAccountabilityDailies(false);
+          }
+
+          if (emitGlobalBroadcast) {
+            TFD_PATIENT_REQUESTS_CHANNEL.postMessage('update');
+          }
+          this.cdr.markForCheck();
         }
       });
   }
 
-  /**
-   * Varredura performática na árvore de permissões injetada
-   */
-  protected checkPermissions(name: string): boolean {
-    const roles: Permission[] = this.data?.permissions ?? [];
-    return !roles.some((role: any) => 
-      role.permissions?.some((permission: Permission) => permission.name === name)
-    );
-  }
+  // --- MÉTODOS DE AÇÃO DO TEMPLATE ---
 
-  // Métodos de ação disparados pelo template HTML (Modificadores Protected)
   protected createAccountabilityDaily(): void {
-    this.openDialog(CreateAccountabilityDailyComponent, 
-      { accountability: this.data.accountability }, 
-      { refreshWithLoading: true }
+    this.openDialog(
+      CreateAccountabilityDailyComponent, 
+      { accountability: this.data?.accountability }, 
+      '500px', 'auto', true, true
     );
   }
 
-  protected updateAccountabilityDaily(accountability_daily: AccountabilityDaily): void {
-    this.openDialog(UpdateAccountabilityDailyComponent, 
-      { accountability_daily }, 
-      { refreshWithLoading: true }
+  protected updateAccountabilityDaily(accountabilityDaily: AccountabilityDaily): void {
+    this.openDialog(
+      UpdateAccountabilityDailyComponent, 
+      { accountability_daily: accountabilityDaily }, 
+      '500px', 'auto', true, true
     );
   }
 
-  protected deleteAccountabilityDaily(accountability_daily: AccountabilityDaily): void {
-    this.openDialog(DeleteAccountabilityDailyComponent, 
-      { accountability_daily }, 
-      { width: '400px', refreshWithLoading: true }
+  protected deleteAccountabilityDaily(accountabilityDaily: AccountabilityDaily): void {
+    this.openDialog(
+      DeleteAccountabilityDailyComponent, 
+      { accountability_daily: accountabilityDaily }, 
+      '400px', 'auto', true, true
     );
   }
 }

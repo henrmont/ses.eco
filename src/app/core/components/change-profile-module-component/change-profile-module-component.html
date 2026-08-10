@@ -1,7 +1,8 @@
 <h2 mat-dialog-title>Selecionar módulo</h2>
 <mat-dialog-content>
   <mat-action-list>
-  @for (item of data.user.valid_modules; track $index) {
+  <!-- Alterado aqui: usando filteredModules -->
+  @for (item of filteredModules; track item.id) {
     <button mat-list-item (click)="changeProfileModule(item.id)" [disabled]="checkModule(item.id)">
       <div class="list-item">
         <div>
@@ -13,6 +14,10 @@
         }
       </div>
     </button>
+  } @empty {
+    <div style="padding: 16px; text-align: center; color: gray;">
+      Nenhum módulo disponível para este sistema.
+    </div>
   }
   </mat-action-list>
 </mat-dialog-content>

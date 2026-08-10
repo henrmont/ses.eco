@@ -7,6 +7,8 @@ export const environment = {
     apiTfdUrl: 'http://10.14.34.143:9001/api',
     apiHomecareUrl: 'http://10.14.34.143:9002/api',
     apiTransplanteUrl: 'http://10.14.34.143:9003/api',
+    apiJuridicoUrl: 'http://10.14.34.143:9004/api',
+    apiFinanceiroUrl: 'http://10.14.34.143:9005/api',
     // pusherKey: '0f506419f2c8f87b22da',
     // pusherCluster: 'sa1'
 };

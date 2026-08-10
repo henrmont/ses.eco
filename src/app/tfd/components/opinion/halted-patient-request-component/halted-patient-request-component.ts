@@ -1,8 +1,11 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { finalize } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+
 import { OpinionService } from '../../../services/opinion-service';
 import { MessageService } from '../../../../core/services/message-service';
 
@@ -10,6 +13,7 @@ import { MessageService } from '../../../../core/services/message-service';
   selector: 'app-halted-patient-request-component',
   standalone: true,
   imports: [
+    CommonModule,
     MatDialogModule, 
     MatButtonModule, 
     MatProgressSpinnerModule
@@ -19,14 +23,18 @@ import { MessageService } from '../../../../core/services/message-service';
   changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima com OnPush + Signals
 })
 export class HaltedPatientRequestComponent {
-  // Injeções de Dependência modernas via inject()
+  // Injeções de Dependência Dinâmicas
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly opinionService = inject(OpinionService);
   private readonly messageService = inject(MessageService);
   private readonly dialogRef = inject(MatDialogRef<HaltedPatientRequestComponent>);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
 
-  // Estado de submissão reativo
+  // Estados gerenciados reativamente via Signals
   protected readonly isSubmitting = signal<boolean>(false);
+
+  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
 
   /**
    * Dispara a requisição para paralisar/sobrestar a solicitação do parecerista (médico/social)
@@ -36,24 +44,29 @@ export class HaltedPatientRequestComponent {
     const profileType = this.data?.type;
 
     if (!requestId) {
-      this.messageService.showMessage('Erro: Identificador da solicitação não encontrado.');
+      this.messageService.showMessage('Identificador da solicitação inválido.');
       return;
     }
 
     this.isSubmitting.set(true);
+    this.cdr.markForCheck(); // ⚡ Força a atualização do DOM para pintar o spinner imediatamente no OnPush
 
     this.opinionService.haltedPatientRequest(profileType, requestId)
       .pipe(
-        finalize(() => this.isSubmitting.set(false)) // Garante que o loading apague em sucesso ou erro
+        finalize(() => {
+          this.isSubmitting.set(false);
+          this.cdr.markForCheck(); // ⚡ Garante o desligamento do loading visual na tela
+        }),
+        takeUntilDestroyed(this.destroyRef) // 🛡️ Proteção reativa contra memory leaks
       )
       .subscribe({
-        next: (response: any) => {
-          this.messageService.showMessage(response.message || 'Status de sobrestamento atualizado!');
+        next: (response) => {
+          this.messageService.showMessage(response?.message || 'Status de sobrestamento atualizado!');
           this.dialogRef.close(true); // Retorna sinal positivo para atualizar a grid na OpinionsPage
         },
         error: (err) => {
-          const errorMessage = err?.error?.message || 'Ocorreu um erro operacional ao atualizar o sobrestamento.';
-          this.messageService.showMessage(errorMessage);
+          const fallbackMessage = 'Ocorreu um erro ao tentar atualizar o sobrestamento.';
+          this.messageService.showMessage(err?.error?.message || fallbackMessage);
         },
       });
   }

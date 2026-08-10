@@ -32,8 +32,8 @@ import { PatientRequestAttachmentsComponent } from '../../components/patient-req
 import { ProcessPatientRequestComponent } from '../../components/patient-request/process-patient-request-component/process-patient-request-component';
 import { ShowPatientRequestComponent } from '../../components/patient-request/show-patient-request-component/show-patient-request-component';
 import { UpdatePatientRequestComponent } from '../../components/patient-request/update-patient-request-component/update-patient-request-component';
-import { UndoMessageComponent } from '../../components/shared/undo-message-component/undo-message-component';
 import { Overlay } from '@angular/cdk/overlay';
+import { FinishBackPatientRequestComponent } from '../../components/patient-request/finish-back-patient-request-component/finish-back-patient-request-component';
 
 const TFD_PATIENT_REQUESTS_CHANNEL = new BroadcastChannel('tfd-patient-requests-channel');
 
@@ -317,7 +317,7 @@ export class PatientRequestsPage implements OnInit, OnDestroy {
     this.openDialog(PatientRequestAttachmentsComponent, { patient_request: patientRequest }, '600px', 'auto', false);
   }
 
-  protected undoMessage(message: string): void {
-    this.openDialog(UndoMessageComponent, { message }, '400px', 'auto', false);
+  protected finishBackPatientRequest(patientRequest: PatientRequest): void {
+    this.openDialog(FinishBackPatientRequestComponent, { patient_request: patientRequest }, '400px');
   }
 }

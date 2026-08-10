@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal, ChangeDetectorRef } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -6,7 +7,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { CommonModule } from '@angular/common';
 import { NgxEditorModule, Editor, Toolbar } from 'ngx-editor';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
@@ -31,10 +31,10 @@ import { MessageService } from '../../../../core/services/message-service';
   ],
   templateUrl: './create-opinion-component.html',
   styleUrl: './create-opinion-component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima com OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CreateOpinionComponent implements OnInit {
-  // Injeções de dependência modernas via inject()
+  // Injeções de Dependência Dinâmicas
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly opinionService = inject(OpinionService);
@@ -44,13 +44,13 @@ export class CreateOpinionComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   // Estrutura do Formulário e Editor
-  protected createOpinionForm!: FormGroup;
+  protected opinionForm!: FormGroup;
   protected editor!: Editor;
   
   // Estados gerenciados reativamente via Signals
   protected readonly isSubmitting = signal<boolean>(false);
 
-  // 🎯 Mapeamento local das mensagens de erro (Idêntico ao padrão de referência)
+  // 🎯 Mapeamento local das mensagens de erro padronizado para a UI
   protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
     name: [
       { type: 'required', message: 'O título ou nome do parecer é obrigatório.' }
@@ -82,10 +82,10 @@ export class CreateOpinionComponent implements OnInit {
     this.initEditor();
   }
 
-  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO ---
+  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO E SUPORTE ---
 
   private initForm(): void {
-    this.createOpinionForm = this.fb.group({
+    this.opinionForm = this.fb.group({
       name: [null, [Validators.required]],
       content: [null, [Validators.required]],
       is_approved: [false, [Validators.required]],
@@ -95,7 +95,7 @@ export class CreateOpinionComponent implements OnInit {
   private initEditor(): void {
     this.editor = new Editor();
 
-    // Liberação segura de memória para evitar vazamento com o ciclo do editor do Rich Text
+    // Liberação segura de memória para evitar vazamento com o ciclo do editor Rich Text
     this.destroyRef.onDestroy(() => {
       this.editor.destroy();
     });
@@ -106,15 +106,20 @@ export class CreateOpinionComponent implements OnInit {
   protected onSubmit(): void {
     const requestId = this.data?.patient_request?.id;
 
-    if (this.createOpinionForm.invalid || !requestId) {
-      this.createOpinionForm.markAllAsTouched();
+    if (!requestId) {
+      this.messageService.showMessage('Identificador da solicitação inválido.');
+      return;
+    }
+
+    if (this.opinionForm.invalid) {
+      this.opinionForm.markAllAsTouched();
       return;
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
+    this.cdr.markForCheck(); // Sincroniza imediatamente o estado visual no DOM
 
-    this.opinionService.createOpinion(requestId, this.createOpinionForm.value)
+    this.opinionService.createOpinion(requestId, this.opinionForm.value)
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);
@@ -128,7 +133,7 @@ export class CreateOpinionComponent implements OnInit {
           this.dialogRef.close(true);
         },
         error: (err) => {
-          const fallbackError = 'Erro ao processar a criação do parecer.';
+          const fallbackError = 'Ocorreu um erro ao processar a criação do parecer.';
           this.messageService.showMessage(err?.error?.message || fallbackError);
         },
       });

@@ -1,15 +1,14 @@
-import { ChangeDetectionStrategy, Component, ChangeDetectorRef, DestroyRef, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, ChangeDetectorRef, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { finalize } from 'rxjs';
-import { signal } from '@angular/core';
-
-// Angular Material
-import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatIconModule } from '@angular/material/icon';
+import { CommonModule } from '@angular/common';
+import { finalize } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 // Serviços
 import { AccountabilityService } from '../../../services/accountability-service';
@@ -19,20 +18,22 @@ import { MessageService } from '../../../../core/services/message-service';
   selector: 'app-update-accountability-component',
   standalone: true,
   imports: [
+    CommonModule,
     FormsModule, 
     ReactiveFormsModule, 
     MatDialogModule, 
     MatButtonModule, 
     MatFormFieldModule, 
     MatInputModule, 
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatIconModule
   ],
   templateUrl: './update-accountability-component.html',
   styleUrl: './update-accountability-component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima com OnPush e Signals
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UpdateAccountabilityComponent implements OnInit {
-  // Injeções de dependência modernas via inject()
+  // Injeções de Dependência
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly accountabilityService = inject(AccountabilityService);
@@ -41,28 +42,24 @@ export class UpdateAccountabilityComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Estrutura do Formulário exposta ao template
+  // Form Group Principal
   protected updateAccountabilityForm!: FormGroup;
 
-  // 🎯 Mapeamento local das mensagens de erro
+  // Estados reativos via Signals
+  protected readonly isSubmitting = signal<boolean>(false);
+
+  // Mensagens estáticas de erro do formulário
   protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
     name: [
       { type: 'required', message: 'O nome da prestação de contas é obrigatório.' }
     ]
   };
 
-  // Estados gerenciados reativamente via Signals
-  protected readonly isSubmitting = signal<boolean>(false);
-
-  constructor() {
+  ngOnInit(): void {
     this.initForm();
   }
 
-  ngOnInit(): void {
-    // Pronto para lógicas extras de carregamento inicial, se necessário.
-  }
-
-  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO E SUPORTE ---
+  // --- INICIALIZAÇÃO E REGRAS DO FORMULÁRIO ---
 
   private initForm(): void {
     const accountability = this.data?.accountability;
@@ -72,10 +69,10 @@ export class UpdateAccountabilityComponent implements OnInit {
     });
   }
 
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
+  // --- SUBMISSÃO ---
 
   /**
-   * Submete o formulário para atualização da prestação de contas de forma segura, reativa e controlada.
+   * Submete o formulário para atualização da prestação de contas.
    */
   protected onSubmit(): void {
     const accountabilityId = this.data?.accountability?.id;
@@ -92,7 +89,11 @@ export class UpdateAccountabilityComponent implements OnInit {
     this.isSubmitting.set(true);
     this.cdr.markForCheck();
 
-    this.accountabilityService.updateAccountability(accountabilityId, this.updateAccountabilityForm.getRawValue())
+    const payload = {
+      name: this.updateAccountabilityForm.get('name')?.value
+    };
+
+    this.accountabilityService.updateAccountability(accountabilityId, payload)
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);

@@ -24,6 +24,7 @@
                             <button mat-icon-button 
                                     type="button"
                                     [matTooltip]="element.is_owner_bookmark ? 'Desmarcar sobrestado' : 'Marcar sobrestado'" 
+                                    [disabled]="element.back_to_owner"
                                     (click)="haltedPatientRequest(element)">
                                 <mat-icon [className]="element.is_owner_bookmark ? 'bookmark' : null">
                                     {{ element.is_owner_bookmark ? 'bookmark' : 'bookmark_border' }}
@@ -58,7 +59,7 @@
                         <th mat-header-cell *matHeaderCellDef class="center status-column-header"> Status </th>
                         <td mat-cell *matCellDef="let element" class="center">
                             @if (element.back_to_owner) {
-                                <button mat-icon-button type="button" (click)="undoMessage(element.back_to_owner)">
+                                <button mat-icon-button type="button" (click)="finishBackPatientRequest(element)">
                                     <mat-icon class="warning">warning_amber</mat-icon>
                                 </button>
                             } @else {
@@ -98,7 +99,7 @@
                                     type="button"
                                     matTooltip="Deletar solicitação" 
                                     (click)="deletePatientRequest(element)" 
-                                    [disabled]="checkPermissions('tfd/solicitação deletar') || (element.has_medical_opinion || element.has_social_opinion) || element.is_owner_bookmark">
+                                    [disabled]="checkPermissions('tfd/solicitação deletar') || element.medical_professional || element.is_owner_bookmark">
                                 <mat-icon>delete</mat-icon>
                             </button>
                             
@@ -184,7 +185,7 @@
                                     type="button"
                                     matTooltip="Mover para minha caixa" 
                                     (click)="movePatientRequestFromProcesses(element)" 
-                                    [disabled]="element.has_medical_opinion || element.has_social_opinion || checkPermissions('tfd/solicitação atualizar')">
+                                    [disabled]="element.has_medical_opinion || element.has_social_opinion || element.is_medical_bookmark || element.is_social_bookmark || checkPermissions('tfd/solicitação atualizar')">
                                 <mat-icon>move_to_inbox</mat-icon>
                             </button>
                         </td>
@@ -266,7 +267,7 @@
                                     type="button"
                                     matTooltip="Mover para minha caixa" 
                                     (click)="movePatientRequestFromOthers(element)" 
-                                    [disabled]="element.has_medical_opinion || element.has_social_opinion || checkPermissions('tfd/solicitação atualizar')">
+                                    [disabled]="element.has_medical_opinion || element.has_social_opinion || element.is_medical_bookmark || element.is_social_bookmark || checkPermissions('tfd/solicitação atualizar')">
                                 <mat-icon>move_to_inbox</mat-icon>
                             </button>
                         </td>

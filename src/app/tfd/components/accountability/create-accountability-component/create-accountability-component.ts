@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, ChangeDetectorRef, DestroyRef, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ChangeDetectorRef, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs';
-import { signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 // Angular Material
 import { MatButtonModule } from '@angular/material/button';
@@ -10,8 +10,9 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatIconModule } from '@angular/material/icon';
 
-// Serviços e Constantes
+// Serviços
 import { AccountabilityService } from '../../../services/accountability-service';
 import { MessageService } from '../../../../core/services/message-service';
 
@@ -19,20 +20,22 @@ import { MessageService } from '../../../../core/services/message-service';
   selector: 'app-create-accountability-component',
   standalone: true,
   imports: [
-    FormsModule, 
-    ReactiveFormsModule, 
-    MatDialogModule, 
-    MatButtonModule, 
-    MatFormFieldModule, 
-    MatInputModule, 
-    MatProgressSpinnerModule
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    MatIconModule,
   ],
   templateUrl: './create-accountability-component.html',
   styleUrl: './create-accountability-component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima com OnPush e Signals
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CreateAccountabilityComponent implements OnInit {
-  // Injeções de dependência modernas via inject()
+  // Injeções de Dependência
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly accountabilityService = inject(AccountabilityService);
@@ -41,28 +44,24 @@ export class CreateAccountabilityComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Estrutura do Formulário exposta ao template
+  // Form Group Principal
   protected createAccountabilityForm!: FormGroup;
 
-  // 🎯 Mapeamento local das mensagens de erro (Idêntico ao padrão adotado na referência)
+  // Estados reativos via Signals
+  protected readonly isSubmitting = signal<boolean>(false);
+
+  // Mensagens estáticas de erro do formulário
   protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
     name: [
       { type: 'required', message: 'O nome da prestação de contas é obrigatório.' }
     ]
   };
 
-  // Estados gerenciados reativamente via Signals
-  protected readonly isSubmitting = signal<boolean>(false);
-
-  constructor() {
+  ngOnInit(): void {
     this.initForm();
   }
 
-  ngOnInit(): void {
-    // Pronto para lógicas extras de carregamento inicial, se necessário.
-  }
-
-  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO E SUPORTE ---
+  // --- INICIALIZAÇÃO E REGRAS DO FORMULÁRIO ---
 
   private initForm(): void {
     this.createAccountabilityForm = this.fb.group({
@@ -70,11 +69,8 @@ export class CreateAccountabilityComponent implements OnInit {
     });
   }
 
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
+  // --- SUBMISSÃO ---
 
-  /**
-   * Submete o formulário para criação da prestação de contas de forma segura, reativa e controlada.
-   */
   protected onSubmit(): void {
     const requestId = this.data?.patient_request?.id;
 
@@ -90,7 +86,11 @@ export class CreateAccountabilityComponent implements OnInit {
     this.isSubmitting.set(true);
     this.cdr.markForCheck();
 
-    this.accountabilityService.createAccountability(requestId, this.createAccountabilityForm.getRawValue())
+    const payload = {
+      name: this.createAccountabilityForm.get('name')?.value
+    };
+
+    this.accountabilityService.createAccountability(requestId, payload)
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);

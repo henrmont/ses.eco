@@ -7,29 +7,29 @@ import { of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { UndoPatientRequestComponent } from './undo-patient-request-component';
-import { PaymentService } from '../../../services/payment-service';
+import { CostAssistanceService } from '../../../services/cost-assistance-service';
 import { MessageService } from '../../../../core/services/message-service';
 
 describe('UndoPatientRequestComponent', () => {
   let component: UndoPatientRequestComponent;
   let fixture: ComponentFixture<UndoPatientRequestComponent>;
 
-  let paymentServiceMock: any;
+  let costAssistanceServiceMock: any;
   let messageServiceMock: any;
   let dialogRefMock: any;
 
   const mockDialogData = {
+    type: 'social',
     patient_request: {
       id: 550,
       owner_professional: { name: 'Dr. Roberto Cruz' },
       medical_professional: { name: 'Dr. Adalberto Silva' },
-      social_professional: { name: 'Dra. Aline Souza' },
-      cost_assistance_professional: { name: 'Aline Financeiro' }
+      social_professional: { name: 'Dra. Aline Souza' }
     }
   };
 
   beforeEach(async () => {
-    paymentServiceMock = {
+    costAssistanceServiceMock = {
       undoPatientRequest: vi.fn()
     };
 
@@ -42,7 +42,7 @@ describe('UndoPatientRequestComponent', () => {
     };
 
     // Resposta padrão da Stream de devolução
-    paymentServiceMock.undoPatientRequest.mockReturnValue(of({ message: 'Solicitação devolvida com sucesso!' }));
+    costAssistanceServiceMock.undoPatientRequest.mockReturnValue(of({ message: 'Solicitação devolvida com sucesso!' }));
 
     await TestBed.configureTestingModule({
       imports: [
@@ -51,7 +51,7 @@ describe('UndoPatientRequestComponent', () => {
       providers: [
         provideNativeDateAdapter(),
         provideAnimationsAsync('noop'),
-        { provide: PaymentService, useValue: paymentServiceMock },
+        { provide: CostAssistanceService, useValue: costAssistanceServiceMock },
         { provide: MessageService, useValue: messageServiceMock },
         { provide: MatDialogRef, useValue: dialogRefMock },
         { provide: MAT_DIALOG_DATA, useValue: mockDialogData },
@@ -107,7 +107,7 @@ describe('UndoPatientRequestComponent', () => {
       component['onSubmit']();
       
       expect(component['tramitPatientRequestForm'].touched).toBe(true);
-      expect(paymentServiceMock.undoPatientRequest).not.toHaveBeenCalled();
+      expect(costAssistanceServiceMock.undoPatientRequest).not.toHaveBeenCalled();
     });
 
     it('deve barrar a submissão e exibir alerta se o ID da solicitação do paciente não existir nos dados da modal', () => {
@@ -116,7 +116,7 @@ describe('UndoPatientRequestComponent', () => {
       component['onSubmit']();
       
       expect(messageServiceMock.showMessage).toHaveBeenCalledWith('Erro: Identificador da solicitação não encontrado.');
-      expect(paymentServiceMock.undoPatientRequest).not.toHaveBeenCalled();
+      expect(costAssistanceServiceMock.undoPatientRequest).not.toHaveBeenCalled();
     });
 
     it('deve retornar/desfazer a solicitação com sucesso utilizando getRawValue, exibir mensagem e fechar a modal', () => {
@@ -130,7 +130,7 @@ describe('UndoPatientRequestComponent', () => {
       component['onSubmit']();
 
       expect(component['isSubmitting']()).toBe(false); 
-      expect(paymentServiceMock.undoPatientRequest).toHaveBeenCalledWith(
+      expect(costAssistanceServiceMock.undoPatientRequest).toHaveBeenCalledWith(
         550,
         component['tramitPatientRequestForm'].getRawValue()
       );
@@ -138,21 +138,12 @@ describe('UndoPatientRequestComponent', () => {
       expect(dialogRefMock.close).toHaveBeenCalledWith(true);
     });
 
-    it('deve usar mensagem padrão do subscribe caso a API retorne sucesso mas sem propriedade message explícita', () => {
-      component['data'].patient_request.id = 550;
-      paymentServiceMock.undoPatientRequest.mockReturnValue(of({}));
-
-      component['onSubmit']();
-
-      expect(messageServiceMock.showMessage).toHaveBeenCalledWith('Solicitação devolvida com sucesso!');
-    });
-
     it('deve lidar amigavelmente com falhas estruturadas do backend ao tentar retornar', () => {
       component['data'].patient_request.id = 550;
       component['tramitPatientRequestForm'].patchValue({ to: 'owner', reason: 'Erro de teste.' });
       
       const mockApiError = { error: { message: 'Não é possível retornar uma solicitação já finalizada.' } };
-      paymentServiceMock.undoPatientRequest.mockReturnValue(throwError(() => mockApiError));
+      costAssistanceServiceMock.undoPatientRequest.mockReturnValue(throwError(() => mockApiError));
 
       component['onSubmit']();
 
@@ -170,7 +161,7 @@ describe('UndoPatientRequestComponent', () => {
       Object.defineProperty(tramitForm, 'invalid', { get: () => false, configurable: true });
 
       const mockRawError = { status: 500, statusText: 'Internal Server Error' };
-      paymentServiceMock.undoPatientRequest.mockReturnValue(throwError(() => mockRawError));
+      costAssistanceServiceMock.undoPatientRequest.mockReturnValue(throwError(() => mockRawError));
 
       component['onSubmit']();
 

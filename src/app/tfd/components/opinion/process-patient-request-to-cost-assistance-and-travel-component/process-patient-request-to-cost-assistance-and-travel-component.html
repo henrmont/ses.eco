@@ -1,81 +1,86 @@
 <h2 mat-dialog-title>Tramitar solicitação</h2>
 
-<form [formGroup]="tramitPatientRequestForm" (ngSubmit)="onSubmit()">
+<form [formGroup]="processForm" (ngSubmit)="onSubmit()">
   <mat-dialog-content>
-    
-    <div class="line" style="grid-template-columns: 1fr;">
+    <div class="stepper">
       
-      <mat-form-field appearance="outline">
-        <mat-label>Profissional de Ajuda de Custo</mat-label>
-        <input 
-          matInput 
-          type="text" 
-          [formControl]="costAssistanceProfessionalControl" 
-          [matAutocomplete]="costAssistance" 
-          [readonly]="costAssistanceProfessionalReadOnly() || isSubmitting()"
-        >
+      <div class="line cols-1-col">
         
-        @if (costAssistanceProfessionalLoading()) {
-          <mat-spinner matSuffix [diameter]="25" style="margin-right: 10px;"></mat-spinner>
-        }
-
-        <mat-autocomplete #costAssistance="matAutocomplete" [displayWith]="displayCostAssistanceProfessional">
-          @for (option of filteredCostAssistanceProfessionalOptions | async; track option.id) {
-            <mat-option [value]="option" (onSelectionChange)="setCostAssistanceProfessional(option)">
-              <mat-chip style="margin-right: 20px;">{{ option?.patient_cost_assistance_requests_count || 0 }}</mat-chip>
-              <span>{{ option?.name }}</span>
-            </mat-option>
+        <mat-form-field appearance="outline">
+          <mat-label>Profissional de Ajuda de Custo</mat-label>
+          <input 
+            type="text" 
+            matInput 
+            [formControl]="costAssistanceProfessionalControl" 
+            [matAutocomplete]="costAssistance" 
+            [readonly]="costAssistanceProfessionalReadOnly() || isSubmitting()"
+          >
+          
+          @if (costAssistanceProfessionalLoading()) {
+            <mat-spinner matSuffix [diameter]="25" style="margin-right: 10px;"></mat-spinner>
           }
-        </mat-autocomplete>
 
-        @for (item of errorMessages['cost_assistance_professional_id']; track $index) {
-          <mat-error [hidden]="!tramitPatientRequestForm.get('cost_assistance_professional_id')?.hasError(item.type)">
-            {{ item.message }}
-          </mat-error>
-        }
-      </mat-form-field>
+          <mat-autocomplete #costAssistance="matAutocomplete" [displayWith]="displayCostAssistanceProfessional">
+            @for (option of filteredCostAssistanceProfessionalOptions | async; track option.id) {
+              <mat-option [value]="option" (onSelectionChange)="onCostAssistanceProfessionalSelected(option)">
+                <mat-chip style="margin-right: 20px;">{{ option?.patient_cost_assistance_requests_count ?? 0 }}</mat-chip>
+                <span>{{ option?.name }}</span>
+              </mat-option>
+            }
+          </mat-autocomplete>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Profissional de Viagem (Opcional)</mat-label>
-        <input 
-          matInput 
-          type="text" 
-          [formControl]="travelProfessionalControl" 
-          [matAutocomplete]="travel" 
-          [readonly]="travelProfessionalReadOnly() || isSubmitting()"
-        >
-        
-        @if (travelProfessionalLoading()) {
-          <mat-spinner matSuffix [diameter]="25" style="margin-right: 10px;"></mat-spinner>
-        }
-
-        <mat-autocomplete #travel="matAutocomplete" [displayWith]="displayTravelProfessional">
-          @for (option of filteredTravelProfessionalOptions | async; track option.id) {
-            <mat-option [value]="option" (onSelectionChange)="setTravelProfessional(option)">
-              <mat-chip style="margin-right: 20px;">{{ option?.patient_travel_requests_count || 0 }}</mat-chip>
-              <span>{{ option?.name }}</span>
-            </mat-option>
+          @for (item of errorMessages['cost_assistance_professional_control']; track item.type) {
+            <mat-error [hidden]="!costAssistanceProfessionalControl.hasError('required')">
+              {{ item.message }}
+            </mat-error>
           }
-        </mat-autocomplete>
-      </mat-form-field>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Profissional de Viagem (Opcional)</mat-label>
+          <input 
+            type="text" 
+            matInput 
+            [formControl]="travelProfessionalControl" 
+            [matAutocomplete]="travel" 
+            [readonly]="travelProfessionalReadOnly() || isSubmitting()"
+          >
+          
+          @if (travelProfessionalLoading()) {
+            <mat-spinner matSuffix [diameter]="25" style="margin-right: 10px;"></mat-spinner>
+          }
+
+          <mat-autocomplete #travel="matAutocomplete" [displayWith]="displayTravelProfessional">
+            @for (option of filteredTravelProfessionalOptions | async; track option.id) {
+              <mat-option [value]="option" (onSelectionChange)="onTravelProfessionalSelected(option)">
+                <mat-chip style="margin-right: 20px;">{{ option?.patient_travel_requests_count ?? 0 }}</mat-chip>
+                <span>{{ option?.name }}</span>
+              </mat-option>
+            }
+          </mat-autocomplete>
+        </mat-form-field>
+
+      </div>
 
     </div>
-
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
-    <button mat-button [mat-dialog-close]="false">Fechar</button>
+    <button mat-button type="button" [disabled]="isSubmitting()" [mat-dialog-close]="false">
+      Cancelar
+    </button>
+    
     <button 
       mat-flat-button
       color="primary"
       type="submit" 
-      [disabled]="tramitPatientRequestForm.invalid || tramitPatientRequestForm.pending || isSubmitting() || costAssistanceProfessionalLoading() || travelProfessionalLoading()"
+      [disabled]="processForm.invalid || costAssistanceProfessionalControl.invalid || processForm.pending || isSubmitting() || costAssistanceProfessionalLoading() || travelProfessionalLoading()"
     >
       <div class="waiting">
         @if (isSubmitting()) {
-          <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+          <mat-spinner [diameter]="20"></mat-spinner>
         }
-        Tramitar
+        <span>{{ isSubmitting() ? 'Tramitando...' : 'Tramitar' }}</span>
       </div>
     </button>
   </mat-dialog-actions>

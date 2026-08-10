@@ -28,16 +28,16 @@ export class ArchivePatientRequestComponent {
    * Dispara a requisição para arquivar a solicitação
    */
   protected onSubmit(): void {
-    const requestId = this.data?.patient_request?.id;
+    const patientRequestId = this.data?.patient_request?.id;
 
-    if (!requestId) {
+    if (!patientRequestId) {
       this.messageService.showMessage('Erro: Identificador da solicitação não encontrado.');
       return;
     }
 
     this.isSubmitting.set(true);
 
-    this.opinionService.archivePatientRequest(requestId).subscribe({
+    this.opinionService.archivePatientRequest(patientRequestId).subscribe({
       next: (response: any) => {
         this.messageService.showMessage(response.message || 'Solicitação arquivada com sucesso!');
         this.dialogRef.close(true); // Retorna true para atualizar a grid/listagem pai

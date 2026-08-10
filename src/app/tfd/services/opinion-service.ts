@@ -31,6 +31,10 @@ export class OpinionService {
     return this.http.get<any>(`${this.apiUrl}/get-patient-requests`);
   }
 
+  getArchivePatientRequests(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/get-archive-patient-requests`);
+  }
+
   getType(): Observable<string> {
     return this.http.get<string>(`${this.apiUrl}/get-type`);
   }
@@ -95,6 +99,10 @@ export class OpinionService {
     return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-request-from-others/${type}/${patient_request}`, {});
   }
 
+  movePatientRequestFromArchive(type: string, patient_request: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-request-from-archive/${type}/${patient_request}`, {});
+  }
+
   movePatientRequestFromProcesses(type: string, patient_request: number): Observable<ApiResponse> {
     return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-request-from-processes/${type}/${patient_request}`, {});
   }
@@ -103,7 +111,8 @@ export class OpinionService {
     return this.http.patch<ApiResponse>(`${this.apiUrl}/archive-patient-request/${patient_request}`, {});
   }
 
-  restorePatientRequest(patient_request: number): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/restore/patient-request/${patient_request}`, {});
+  finishBackPatientRequest(type: string, patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/finish-back-patient-request/${type}/${patientRequestId}`, {});
   }
+  
 }

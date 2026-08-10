@@ -1,104 +1,191 @@
-import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { AbstractControl, AsyncValidatorFn, ValidationErrors } from '@angular/forms';
+import { Observable, catchError, map, of } from 'rxjs';
+import * as moment from 'moment';
+
 import { environment } from '../../../environments/environment.development';
 import { PatientRequest } from '../models/patient-request';
 
-const requestOptions = {
-  'Authorization': `Bearer ${window.localStorage.getItem('token')}`
+// Interface de apoio para o validador assíncrono de passageiros
+export interface UnifiedPassengerOption {
+  id: number;
+  name: string;
+  isPatient: boolean;
+  typeLabel: string;
+}
+
+// Interface genérica para padronizar as respostas de mutação do back-end (Laravel)
+export interface ApiResponse {
+  message: string;
+  status?: string;
+  [key: string]: any;
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class TravelService {
+  // 🔒 Injeções e URLs configuradas como imutáveis
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${environment.apiTfdUrl}/travel`;
+  private readonly validatorUrl = `${environment.apiTfdUrl}/validator`;
 
-  constructor(
-    private http: HttpClient,
-  ) {}
+  // --- FLUXO DE SOLICITAÇÕES DE VIAGEM (PATIENT REQUESTS) ---
 
   getPatientRequests(): Observable<PatientRequest[]> {
-    return this.http.get<PatientRequest[]>(`${environment.apiTfdUrl}/travel/get-patient-requests`, {headers: requestOptions})
+    return this.http.get<PatientRequest[]>(`${this.apiUrl}/get-patient-requests`);
   }
 
-  haltedPatientRequest(patient_request: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/travel/halted-patient-request/${patient_request}`, {headers: requestOptions})
+  getArchivePatientRequests(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/get-archive-patient-requests`);
   }
 
-  getPatientEscorts(patient_care: number): Observable<any> {
-    return this.http.get<any>(`${environment.apiTfdUrl}/travel/get-patient-escorts/${patient_care}`, {headers: requestOptions})
+  getPatientEscorts(patientCareId: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/get-patient-escorts/${patientCareId}`);
   }
 
-  patientRequestEscorts(patient_request: number, data: any): Observable<any> {
-    return this.http.patch<any>(`${environment.apiTfdUrl}/travel/patient-request-escorts/${patient_request}`, data, {headers: requestOptions})
+  patientRequestEscorts(patientRequestId: number, data: any): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/patient-request-escorts/${patientRequestId}`, data);
   }
 
-  undoPatientRequest(patient_request: number, data: PatientRequest): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/travel/undo-patient-request/${patient_request}`, data, {headers: requestOptions})
+  haltedPatientRequest(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/halted-patient-request/${patientRequestId}`, {});
   }
 
-  finishPatientRequestTravel(patient_request: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/travel/finish-patient-request-travel/${patient_request}`, {headers: requestOptions})
+  undoPatientRequest(patientRequestId: number, data: PatientRequest): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/undo-patient-request/${patientRequestId}`, data);
   }
 
-  movePatientRequestFromFinished(patient_request: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/travel/move-patient-request-from-finished/${patient_request}`, {headers: requestOptions})
+  finishPatientRequestTravel(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/finish-patient-request-travel/${patientRequestId}`, {});
   }
 
-  movePatientRequestFromOthers(patient_request: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/travel/move-patient-request-from-others/${patient_request}`, {headers: requestOptions})
+  movePatientRequestFromArchive(patient_request: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-request-from-archive/${patient_request}`, {});
   }
 
-  importTravels(data: any): Observable<any> {
-    return this.http.post<any>(`${environment.apiTfdUrl}/travel/import-travels`, data, {headers: requestOptions})
+  movePatientRequestFromFinished(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-request-from-finished/${patientRequestId}`, {});
   }
 
-  getTravels(patient_request: number): Observable<any> {
-    return this.http.get<any>(`${environment.apiTfdUrl}/travel/get-travels/${patient_request}`, {headers: requestOptions})
+  movePatientRequestFromOthers(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-request-from-others/${patientRequestId}`, {});
   }
 
-  createTravel(patient_request: number, data: any): Observable<any> {
-    return this.http.post<any>(`${environment.apiTfdUrl}/travel/create-travel/${patient_request}`, data, {headers: requestOptions})
+  importTravels(data: any): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/import-travels`, data);
   }
 
-  updateTravel(travel: number, data: any): Observable<any> {
-    return this.http.patch<any>(`${environment.apiTfdUrl}/travel/update-travel/${travel}`, data, {headers: requestOptions})
+  // --- FLUXO DE VIAGENS (TRAVELS) ---
+
+  getTravels(patientRequestId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/get-travels/${patientRequestId}`);
   }
 
-  deleteTravel(travel: number): Observable<any> {
-    return this.http.delete<any>(`${environment.apiTfdUrl}/travel/delete-travel/${travel}`, {headers: requestOptions})
+  createTravel(patientRequestId: number, data: any): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/create-travel/${patientRequestId}`, data);
   }
 
-  getPassengers(travel: number): Observable<any> {
-    return this.http.get<any>(`${environment.apiTfdUrl}/travel/get-passengers/${travel}`, {headers: requestOptions})
+  updateTravel(travelId: number, data: any): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-travel/${travelId}`, data);
   }
 
-  createPassenger(travel: number, data: any): Observable<any> {
-    return this.http.post<any>(`${environment.apiTfdUrl}/travel/create-passenger/${travel}`, data, {headers: requestOptions})
+  deleteTravel(travelId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/delete-travel/${travelId}`);
   }
 
-  updatePassenger(passenger: number, data: any): Observable<any> {
-    return this.http.patch<any>(`${environment.apiTfdUrl}/travel/update-passenger/${passenger}`, data, {headers: requestOptions})
+  // --- FLUXO DE PASSAGEIROS (PASSENGERS) ---
+
+  getPassengers(travelId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/get-passengers/${travelId}`);
   }
 
-  deletePassenger(passenger: number): Observable<any> {
-    return this.http.delete<any>(`${environment.apiTfdUrl}/travel/delete-passenger/${passenger}`, {headers: requestOptions})
+  createPassenger(travelId: number, data: any): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/create-passenger/${travelId}`, data);
   }
 
-  getRoutes(travel: number): Observable<any> {
-    return this.http.get<any>(`${environment.apiTfdUrl}/travel/get-travel-routes/${travel}`, {headers: requestOptions})
+  updatePassenger(passengerId: number, data: any): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-passenger/${passengerId}`, data);
   }
 
-  createRoute(travel: number, data: any): Observable<any> {
-    return this.http.post<any>(`${environment.apiTfdUrl}/travel/create-travel-route/${travel}`, data, {headers: requestOptions})
+  deletePassenger(passengerId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/delete-passenger/${passengerId}`);
   }
 
-  updateRoute(route: number, data: any): Observable<any> {
-    return this.http.patch<any>(`${environment.apiTfdUrl}/travel/update-travel-route/${route}`, data, {headers: requestOptions})
+  // --- FLUXO DE ROTAS (ROUTES) ---
+
+  getRoutes(travelId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/get-travel-routes/${travelId}`);
   }
 
-  deleteRoute(route: number): Observable<any> {
-    return this.http.delete<any>(`${environment.apiTfdUrl}/travel/delete-travel-route/${route}`, {headers: requestOptions})
+  createRoute(travelId: number, data: any): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/create-travel-route/${travelId}`, this.mountFormData(data));
   }
-  
+
+  updateRoute(routeId: number, data: any): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-travel-route/${routeId}`, this.mountFormData(data));
+  }
+
+  deleteRoute(routeId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/delete-travel-route/${routeId}`);
+  }
+
+  archivePatientRequest(patient_request: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/archive-patient-request/${patient_request}`, {});
+  }
+
+  finishBackPatientRequest(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/finish-back-patient-request/${patientRequestId}`, {});
+  }
+
+  // --- VALIDATORS ASSÍNCRONOS BLINDADOS ---
+
+  /**
+   * Validador assíncrono para verificar se o passageiro selecionado já está cadastrado na viagem.
+   * @param travelId ID da viagem atual.
+   */
+  passengerExistsValidator(travelId: number | null | undefined): AsyncValidatorFn {
+    return (control: AbstractControl): Observable<ValidationErrors | null> => {
+      const selectedOption = control.value as UnifiedPassengerOption | null;
+
+      if (!selectedOption || !travelId) {
+        return of(null);
+      }
+
+      const params = new HttpParams()
+        .set('passenger_id', selectedOption.id.toString())
+        .set('is_patient', selectedOption.isPatient.toString());
+
+      return this.http
+        .get<{ passengerExists: boolean }>(`${this.validatorUrl}/passenger-exists/${travelId}`, { params })
+        .pipe(
+          map(res => {
+            const exists = res && (res.passengerExists === true || (res as any) === true);
+            return exists ? { passengerExists: true } : null;
+          }),
+          catchError(() => of(null))
+        );
+    };
+  }
+
+  // --- TRATAMENTO E COMPOSIÇÃO DE MULTIPART/FORM-DATA ---
+
+  private mountFormData(data: any): FormData {
+    const formData = new FormData();
+
+    if (!data) return formData;
+
+    for (const [key, value] of Object.entries(data)) {
+      if (value instanceof File || value instanceof Blob) {
+        formData.append(key, value, 'file');
+      } else if (moment.isMoment(value)) {
+        formData.append(key, value.format('YYYY-MM-DD'));
+      } else if (value !== null && value !== undefined) {
+        formData.append(key, String(value));
+      }
+    }
+
+    return formData;
+  }
 }

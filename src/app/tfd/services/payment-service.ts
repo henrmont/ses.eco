@@ -1,43 +1,77 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { PatientRequest } from '../models/patient-request';
-import { environment } from '../../../environments/environment.development';
-import { DailyCost } from '../models/daily-cost';
-import { Accountability } from '../models/accountability';
-import { AccountabilityDaily } from '../models/accountability-daily';
 
-const requestOptions = {
-  'Authorization': `Bearer ${window.localStorage.getItem('token')}`
+import { environment } from '../../../environments/environment.development';
+import { PatientRequest } from '../models/patient-request';
+
+// Interface genérica para padronizar as respostas de mutação do back-end (Laravel)
+export interface ApiResponse {
+  message: string;
+  status?: string;
+  [key: string]: any;
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class PaymentService {
+  // Injeções e URLs configuradas como imutáveis
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${environment.apiTfdUrl}/payment`;
 
-  constructor(
-    private http: HttpClient,
-  ) {}
+  // --- FLUXO DE PAGAMENTOS (PAYMENTS) ---
 
-  getPatientRequests(): Observable<PatientRequest[]> {
-    return this.http.get<PatientRequest[]>(`${environment.apiTfdUrl}/payment/get-patient-requests`, {headers: requestOptions})
+  getPayments(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/get-payments`);
   }
 
-  haltedPatientRequest(patient_request: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/payment/halted-patient-request/${patient_request}`, {headers: requestOptions})
+  getArchivePatientRequests(): Observable<PatientRequest[]> {
+    return this.http.get<PatientRequest[]>(`${this.apiUrl}/get-archive-patient-requests`);
   }
 
-  paymentInfo(patient_request: number, data: any): Observable<any> {
-    return this.http.post(`${environment.apiTfdUrl}/payment/payment-info/${patient_request}`, data, {headers: requestOptions})
+  haltedPatientRequest(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/halted-patient-request/${patientRequestId}`, {});
   }
 
-  finishPatientRequestPayment(patient_request: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/payment/finish-patient-request-payment/${patient_request}`, {headers: requestOptions})
+  updatePayment(paymentId: number, data: any): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-payment/${paymentId}`, data);
   }
 
-  undoPatientRequest(patient_request: number, data: PatientRequest): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/payment/undo-patient-request/${patient_request}`, data, {headers: requestOptions})
+  finishPatientRequestPayment(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/finish-patient-request-payment/${patientRequestId}`, {});
   }
-  
+
+  undoPatientRequest(patientRequestId: number, data: PatientRequest): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/undo-patient-request/${patientRequestId}`, data);
+  }
+
+  archivePatientRequest(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/archive-patient-request/${patientRequestId}`, {});
+  }
+
+  movePatientRequestFromArchive(patient_request: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-request-from-archive/${patient_request}`, {});
+  }
+
+  /**
+   * Faz o download do arquivo PDF mesclado.
+   * É obrigatório declarar { responseType: 'blob' } para tratar o binário retornado.
+   */
+  downloadMergedPdf(paymentId: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/download-merged-pdf/${paymentId}`, {
+      responseType: 'blob'
+    });
+  }
+
+  /**
+   * Faz o download do arquivo PDF mesclado.
+   * É obrigatório declarar { responseType: 'blob' } para tratar o binário retornado.
+   */
+  downloadMemoPdf(paymentId: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/download-memo-pdf/${paymentId}`, {
+      responseType: 'blob'
+    });
+  }
+
 }

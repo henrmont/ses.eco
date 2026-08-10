@@ -7,5 +7,7 @@ export interface Accountability {
     name: string,
     status: boolean,
     patient_request?: PatientRequest,
-    accountability_dailies?: AccountabilityDaily[]
+    accountability_dailies?: AccountabilityDaily[],
+    total_dailies?: number,
+    dailies?: any
 }

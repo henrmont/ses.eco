@@ -1,16 +1,23 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal, ChangeDetectorRef, DestroyRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, ChangeDetectorRef, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatDatepickerInputEvent, MatDatepickerModule } from '@angular/material/datepicker';
+import { MAT_DATE_LOCALE, MatNativeDateModule } from '@angular/material/core';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { TravelService } from '../../../services/travel-service';
+// Importação segura do Moment
+import * as _moment from 'moment';
+const moment = (_moment as any).default || _moment;
+
+import { TravelService, ApiResponse } from '../../../services/travel-service';
 import { MessageService } from '../../../../core/services/message-service';
+import { CustomValidators } from '../../../../core/validators/custom.validator';
 
 @Component({
   selector: 'app-create-route-component',
@@ -23,14 +30,19 @@ import { MessageService } from '../../../../core/services/message-service';
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatDatepickerModule,
+    MatNativeDateModule
+  ],
+  providers: [
+    { provide: MAT_DATE_LOCALE, useValue: 'pt-BR' }
   ],
   templateUrl: './create-route-component.html',
   styleUrl: './create-route-component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance reativa máxima unindo OnPush + Signals
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CreateRouteComponent implements OnInit {
-  // Injeções de Dependência Dinâmicas
+  // Injeções de Dependência
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly travelService = inject(TravelService);
@@ -39,44 +51,84 @@ export class CreateRouteComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Estrutura do Formulário exposta ao template
+  // Form Group Principal
   protected createRouteForm!: FormGroup;
 
-  // Estados gerenciados reativamente via Signals
+  // Estados reativos via Signals
   protected readonly isSubmitting = signal<boolean>(false);
 
-  // 🎯 Mapeamento local das mensagens de erro (Idêntico ao modelo de referência)
+  // Mensagens estáticas de erro do formulário
   protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
     origin: [
       { type: 'required', message: 'A cidade de origem é obrigatória.' }
     ],
     destination: [
       { type: 'required', message: 'A cidade de destino é obrigatória.' }
-    ]
+    ],
+    distance: [
+      { type: 'min', message: 'A distância não pode ser negativa.' }
+    ],
+    departure: [
+      { type: 'invalidDate', message: 'Data de saída inválida.' }
+    ],
+    arrival: [
+      { type: 'invalidDate', message: 'Data de chegada inválida.' }
+    ],
+    flight: [],
+    airplane: [],
+    class: [],
+    scales: [],
+    family: []
   };
 
-  constructor() {
+  ngOnInit(): void {
     this.initForm();
   }
 
-  ngOnInit(): void {
-    // Pronto para lógicas extras de carregamento inicial, se necessário.
-  }
-
-  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO E SUPORTE ---
+  // --- INICIALIZAÇÃO E REGRAS DO FORMULÁRIO ---
 
   private initForm(): void {
     this.createRouteForm = this.fb.group({
+      flight: [null],
+      airplane: [null],
+      departure: [null, [CustomValidators.dateValidator()]],
+      arrival: [null, [CustomValidators.dateValidator()]],
       origin: [null, [Validators.required]],
       destination: [null, [Validators.required]],
-      distance: [null]
+      distance: [null, [Validators.min(0)]],
+      class: [null],
+      scales: [null],
+      family: [null]
     });
   }
 
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
+  // --- MÉTODOS DE AÇÃO DO TEMPLATE ---
+
+  protected setDepartureDate(event: MatDatepickerInputEvent<any>): void {
+    if (event.value) {
+      const parsedDate = moment(event.value);
+      if (parsedDate.isValid()) {
+        this.createRouteForm.get('departure')?.setValue(parsedDate, { emitEvent: true });
+        this.createRouteForm.get('departure')?.markAsDirty();
+      }
+    }
+  }
+
+  protected setArrivalDate(event: MatDatepickerInputEvent<any>): void {
+    if (event.value) {
+      const parsedDate = moment(event.value);
+      if (parsedDate.isValid()) {
+        this.createRouteForm.get('arrival')?.setValue(parsedDate, { emitEvent: true });
+        this.createRouteForm.get('arrival')?.markAsDirty();
+      }
+    }
+  }
+
+  // --- SUBMISSÃO ---
 
   protected onSubmit(): void {
     const travelId = this.data?.travel?.id;
+
     if (this.createRouteForm.invalid || !travelId) {
       this.createRouteForm.markAllAsTouched();
       return;
@@ -85,8 +137,9 @@ export class CreateRouteComponent implements OnInit {
     this.isSubmitting.set(true);
     this.cdr.markForCheck();
 
-    // getRawValue garante a captura dos campos mantendo a integridade da árvore do form
-    this.travelService.createRoute(travelId, this.createRouteForm.getRawValue())
+    const payload = this.createRouteForm.getRawValue();
+
+    this.travelService.createRoute(travelId, payload)
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);
@@ -95,7 +148,7 @@ export class CreateRouteComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
-        next: (response: any) => {
+        next: (response: ApiResponse) => {
           this.messageService.showMessage(response?.message || 'Rota criada com sucesso!');
           this.dialogRef.close(true);
         },

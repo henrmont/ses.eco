@@ -1,3 +1,5 @@
+@use 'variables' as *;
+
 :host {
   display: flex;
   flex-direction: column;
@@ -5,107 +7,118 @@
   overflow: hidden; 
 }
 
-h2[mat-dialog-title] {
-  margin: 0;
-  padding: 16px 24px;
-  flex-shrink: 0; 
-}
-
 mat-dialog-content {
-  flex: 1;                  
   overflow-y: auto !important; 
-  max-height: none !important; 
-  padding: 16px 24px;
+  padding-top: $spacing-sm !important;
 }
 
 mat-dialog-actions {
-  margin: 0;
-  padding: 12px 24px 16px;
-  flex-shrink: 0; 
-  border-top: 1px solid rgba(0, 0, 0, 0.08); 
+  gap: $spacing-lg; 
 }
 
-// Estilização e espaçamento dos Cards de detalhamento da ajuda de custo
-mat-card {
-  background: #ffffff;
-  border-radius: 8px !important;
-  box-shadow: 0 4px 6px -2px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+.details-container {
+  padding: $spacing-lg 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xxl; 
+}
+
+mat-card.detail-card {
+  background: $color-card-bg;
+  border-radius: $radius-md; 
+  box-shadow: $show-card; 
 
   mat-card-header {
-    padding: 16px 16px 8px;
+    margin-bottom: $spacing-sm;
     
-    mat-card-title {
-      font-weight: 600;
-      color: #334155;
-      font-size: 1.1rem;
+    mat-card-subtitle {
+      letter-spacing: 0.5px;
+      color: $color-text-variant;
     }
-  }
-
-  mat-card-content {
-    padding: 0 16px 16px;
   }
 }
 
-// Simulador de Linha/Grid para dados gerais e diárias
 .line {
   display: grid;
-  gap: 16px;
-  padding: 12px 16px;
-  align-items: center;
-  font-size: 0.95rem;
-  color: #334155;
+  gap: $spacing-md; 
+  padding: 0 $spacing-md; 
+  align-items: center; 
+  color: $color-text-main;
+  min-height: 48px; 
 
   strong {
-    color: #475569;
+    color: $color-text-variant;
     font-weight: 600;
   }
 
-  &:last-child {
+  .action-cell {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    height: 100%; 
+  }
+}
+
+// --- Definições Semânticas das Colunas da Grid ---
+.line {
+  &.cols-1-col         { grid-template-columns: 1fr; }
+  &.cols-1-1           { grid-template-columns: 1fr 1fr; }
+  &.cols-1-2           { grid-template-columns: 1fr 2fr; }
+  &.cols-2-1           { grid-template-columns: 2fr 1fr; }
+  &.cols-4-1           { grid-template-columns: 4fr 1fr; }
+  &.cols-1-1-1         { grid-template-columns: repeat(3, 1fr); }
+  &.cols-2-2-1         { grid-template-columns: 2fr 2fr 1fr; }
+  &.cols-2-3-2         { grid-template-columns: 2fr 3fr 2fr; }
+  &.cols-15-1-1-1-1    { grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr; }
+}
+
+// --- Tabela Customizada para Detalhes de Diárias ---
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
+}
+
+table.custom-detail-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: $radius-md;
+  background: transparent;
+  overflow: hidden;
+
+  th.mat-mdc-header-cell {
+    font-weight: 600;
+    color: $color-text-variant;
+    background-color: transparent !important;
+    padding: $spacing-sm $spacing-md;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  }
+
+  td.mat-mdc-cell {
+    padding: $spacing-sm $spacing-md;
+    vertical-align: middle;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  tr.mat-mdc-row:last-child td.mat-mdc-cell {
     border-bottom: none;
   }
 
-  // Usado para blocos de mensagens únicas ou linhas sem divisores
-  &.grid-1-col {
-    grid-template-columns: 1fr;
-    border-bottom: none;
-  }
-
-  // Perfeito para o bloco superior (Nome + Total, Tipo + Criação)
-  &.grid-2-col {
-    grid-template-columns: 2fr 1fr;
-  }
-
-  // Layout simétrico e interativo para a listagem de diárias (Nome, Valor, Qtd, Subtotal)
-  &.grid-4-col {
-    grid-template-columns: 3fr 1fr 1fr 1fr;
-    transition: background-color 0.2s ease;
-    border-radius: 6px;
-
-    &:hover {
-      background-color: #f8fafc;
-    }
-  }
-
-  // Feedback visual customizado quando não houver registros
-  &.empty-row {
-    grid-template-columns: 1fr !important;
+  .center {
     text-align: center;
-    color: #94a3b8;
-    font-style: italic;
-    padding: 24px 0;
-    border-bottom: none;
-
-    &:hover {
-      background-color: transparent;
-    }
   }
+}
 
-  // Responsividade inteligente (Media Query unificada conforme a referência)
-  @media (max-width: 600px) {
-    &.grid-2-col, &.grid-4-col {
-      grid-template-columns: 1fr !important;
-      gap: 8px;
-      padding: 12px;
-    }
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-lg $spacing-md;
+  color: $color-text-variant;
+
+  p {
+    margin: 0;
+    font-size: 14px;
   }
 }

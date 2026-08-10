@@ -34,6 +34,10 @@ export class PatientService {
     return this.http.get<Patient[]>(`${this.apiUrl}/get-patients`);
   }
 
+  getArchivePatients(): Observable<Patient[]> {
+    return this.http.get<Patient[]>(`${this.apiUrl}/get-archive-patients`);
+  }
+
   createPatient(data: any): Observable<ApiResponse> {
     return this.http.post<ApiResponse>(`${this.apiUrl}/create-patient`, this.mountFormData(data));
   }
@@ -56,6 +60,10 @@ export class PatientService {
 
   validatePatient(patientCareId: number): Observable<ApiResponse> {
     return this.http.patch<ApiResponse>(`${this.apiUrl}/validate-patient/${patientCareId}`, {});
+  }
+
+  finishBackPatient(patientCareId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/finish-back-patient/${patientCareId}`, {});
   }
 
   // --- FLUXO DE ACOMPANHANTES (ESCORTS) ---

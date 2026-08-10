@@ -1,53 +1,63 @@
+@use 'variables' as *;
+
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   width: 100%;
 }
 
-// 🛡️ Garante que o Angular Material respeite o atributo [hidden] usado para os testes unitários
+// Oculta os erros estruturais do MatFormField que não estão ativos no DOM
 mat-error[hidden] {
   display: none !important;
 }
 
 mat-form-field {
   width: 100%;
-  height: auto;
 }
 
 mat-dialog-content {
-  display: flex;
-  flex-direction: column;
-  row-gap: 10px;
-  padding-top: 10px; // Evita que a borda outline do primeiro campo seja cortada no topo da modal
+  padding-top: $spacing-modal-pt;
+  overflow-y: auto;
 }
 
-// Layout de Grid compartilhado para alinhamento dos campos
+// Container do formulário estruturado
+.stepper {
+  margin-top: $spacing-form-gap; 
+  display: flex; 
+  flex-direction: column; 
+  gap: $spacing-form-gap;
+}
+
+// Estrutura base de Linhas em Grid
 .line {
-  display: grid;
-  column-gap: 20px;
-  align-items: start; // Alinha os topos dos componentes de forma consistente
+  display: grid; 
+  grid-template-columns: var(--grid-cols, 1fr); 
+  column-gap: $spacing-xl; 
+  row-gap: $spacing-form-gap; 
+  align-items: start;
+  min-height: 56px;
+
+  &.cols-1-col { 
+    --grid-cols: 1fr; 
+  }
 }
 
-// Alinhamento dinâmico do spinner com o texto dentro do botão de submissão
+// Feedback visual do botão de criação durante o envio
 .waiting {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: $spacing-form-gap;
 
   mat-spinner {
     display: inline-block;
-    flex-shrink: 0; // Impede que o layout flex esmague o tamanho do spinner
+    flex-shrink: 0;
   }
 }
 
-// Estilização customizada para a exibição de contadores (chips) dentro do Autocomplete
-mat-option {
-  mat-chip {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 0.8rem;
-    background-color: rgba(0, 0, 0, 0.06);
-  }
+mat-dialog-actions {
+  gap: $spacing-lg;
+  background-color: inherit;
+  margin-bottom: 0;
 }

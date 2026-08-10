@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs';
+import { CommonModule } from '@angular/common';
 
 // Angular Material
 import { MatButtonModule } from '@angular/material/button';
@@ -11,12 +11,14 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { Overlay } from '@angular/cdk/overlay';
 import { NgxMaskPipe } from 'ngx-mask';
 
-// Core, Modelos e Serviços
+// Core & Shared
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
 import { PatientRequest } from '../../models/patient-request';
 import { Permission } from '../../models/permission';
@@ -25,10 +27,11 @@ import { PaymentService } from '../../services/payment-service';
 // Modais (Dialogs) de Ação de Pagamento
 import { ShowPatientRequestComponent } from '../../components/patient-request/show-patient-request-component/show-patient-request-component';
 import { UndoMessageComponent } from '../../components/shared/undo-message-component/undo-message-component';
-import { PaymentInfoComponent } from '../../components/payment/payment-info-component/payment-info-component';
 import { HaltedPatientRequestComponent } from '../../components/payment/halted-patient-request-component/halted-patient-request-component';
-import { FinishPatientRequestPaymentComponent } from '../../components/payment/finish-patient-request-payment-component/finish-patient-request-payment-component';
 import { UndoPatientRequestComponent } from '../../components/payment/undo-patient-request-component/undo-patient-request-component';
+import { ArchivePatientRequestComponent } from '../../components/payment/archive-patient-request-component/archive-patient-request-component';
+import { UpdatePaymentComponent } from '../../components/payment/update-payment-component/update-payment-component';
+import { PaymentMemoComponent } from '../../components/payment/payment-memo-component/payment-memo-component';
 
 const TFD_PAYMENTS_CHANNEL = new BroadcastChannel('tfd-payments-channel');
 
@@ -44,6 +47,7 @@ const TFD_PAYMENTS_CHANNEL = new BroadcastChannel('tfd-payments-channel');
     MatIconModule,
     MatTooltipModule,
     MatSortModule,
+    MatPaginatorModule,
     MatTabsModule,
     MatDialogModule,
     NgxMaskPipe
@@ -52,85 +56,99 @@ const TFD_PAYMENTS_CHANNEL = new BroadcastChannel('tfd-payments-channel');
   styleUrl: './payments-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class PaymentsPage implements OnInit, OnDestroy {
-  // 🔒 Injeções de dependência modernas via inject()
+export class PaymentsPage implements OnInit {
+  // Injeções de Dependência
   private readonly paymentService = inject(PaymentService);
   private readonly dialog = inject(MatDialog);
+  private readonly overlay = inject(Overlay);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
-
-  // Captura do MatSort do template via Signal reativo
-  protected readonly sort = viewChild.required(MatSort);
 
   private loadingDialog!: MatDialogRef<LoadingComponent>;
   private readonly currentUser = this.route.parent?.parent?.snapshot.data['user'];
 
-  // Definições de colunas das tabelas baseadas nas abas de Pagamento
+  // Capturas reativas dos controles de Sort do Template
+  private readonly ownerSort = viewChild<MatSort>('ownerSort');
+  private readonly othersSort = viewChild<MatSort>('othersSort');
+
+  // Capturas reativas dos controles de Paginator do Template
+  private readonly ownerPaginator = viewChild<MatPaginator>('ownerPaginator');
+  private readonly othersPaginator = viewChild<MatPaginator>('othersPaginator');
+
+  // Definições das Estruturas de Colunas (sem aba finalizadas)
   protected readonly displayedOwnerColumns: string[] = ['bookmark', 'patient', 'cns', 'type', 'consultation_date', 'status', 'actions'];
-  protected readonly displayedFinishColumns: string[] = ['patient', 'cns', 'type', 'consultation_date', 'responsible', 'actions'];
   protected readonly displayedOthersColumns: string[] = ['patient', 'cns', 'type', 'consultation_date', 'responsible', 'actions'];
 
-  // Signals para armazenamento do estado bruto dos dados
+  // Signals internos de estado dos dados brutos
   private readonly rawOwnerList = signal<PatientRequest[]>([]);
-  private readonly rawFinishList = signal<PatientRequest[]>([]);
   private readonly rawOthersList = signal<PatientRequest[]>([]);
 
-  // ⚡ Computed signals injetando dados e acoplando ordenação nativa reativa em TODAS as abas
+  // Computed signals reativos integrando dados, ordenação e paginação
   protected readonly ownerDataSource = computed(() => {
     const dataSource = new MatTableDataSource(this.rawOwnerList());
-    dataSource.sort = this.sort();
-    return dataSource;
-  });
+    const sortRef = this.ownerSort();
+    const paginatorRef = this.ownerPaginator();
 
-  protected readonly finishDataSource = computed(() => {
-    const dataSource = new MatTableDataSource(this.rawFinishList());
-    dataSource.sort = this.sort();
+    if (sortRef) dataSource.sort = sortRef;
+    if (paginatorRef) dataSource.paginator = paginatorRef;
+
     return dataSource;
   });
 
   protected readonly othersDataSource = computed(() => {
     const dataSource = new MatTableDataSource(this.rawOthersList());
-    dataSource.sort = this.sort();
+    const sortRef = this.othersSort();
+    const paginatorRef = this.othersPaginator();
+
+    if (sortRef) dataSource.sort = sortRef;
+    if (paginatorRef) dataSource.paginator = paginatorRef;
+
     return dataSource;
   });
 
   ngOnInit(): void {
-    this.fetchPatientRequests(true);
+    this.fetchPayments(true);
 
     TFD_PAYMENTS_CHANNEL.onmessage = (message) => {
       if (message.data === 'update') {
-        this.fetchPatientRequests(false);
+        this.fetchPayments(false);
       }
     };
+
+    // Fechamento automático e seguro do BroadcastChannel
+    this.destroyRef.onDestroy(() => {
+      TFD_PAYMENTS_CHANNEL.close();
+    });
   }
 
-  ngOnDestroy(): void {
-    TFD_PAYMENTS_CHANNEL.close();
-  }
-
-  // Filtros locais e rápidos de busca nas tabelas acessando os computeds
+  // Métodos de filtragem com prevenção de estarem em páginas inexistentes
   protected applyOwnerFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    this.ownerDataSource().filter = filterValue.trim().toLowerCase();
-  }
+    const dataSource = this.ownerDataSource();
+    dataSource.filter = filterValue.trim().toLowerCase();
 
-  protected applyFinishFilter(event: Event): void {
-    const filterValue = (event.target as HTMLInputElement).value;
-    this.finishDataSource().filter = filterValue.trim().toLowerCase();
+    if (dataSource.paginator) {
+      dataSource.paginator.firstPage();
+    }
   }
 
   protected applyOthersFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    this.othersDataSource().filter = filterValue.trim().toLowerCase();
+    const dataSource = this.othersDataSource();
+    dataSource.filter = filterValue.trim().toLowerCase();
+
+    if (dataSource.paginator) {
+      dataSource.paginator.firstPage();
+    }
   }
 
   /**
-   * Busca centralizada, mapeamento e separação lógica das requisições de pagamentos
+   * Busca centralizada das solicitações de pagamento.
    */
-  private fetchPatientRequests(showLoading = false): void {
+  private fetchPayments(showLoading = false): void {
     if (showLoading) this.openLoading();
 
-    this.paymentService.getPatientRequests()
+    this.paymentService.getPayments()
       .pipe(
         finalize(() => {
           if (showLoading && this.loadingDialog) {
@@ -140,29 +158,30 @@ export class PaymentsPage implements OnInit, OnDestroy {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
-        next: (response) => {
-          const rawList = response || [];
+        next: (response: any) => {
+          const rawList = response ?? [];
 
-          // Nivelamento estrutural idêntico para exibição facilitada nas tabelas
+          // Nivelamento do modelo de dados para visualização simplificada na tabela
           const normalizedRequests = rawList.map((item: any) => ({
             ...item,
-            name: item.report?.patient_care?.patient?.name || '',
-            cns: item.report?.patient_care?.patient?.cns || '',
-            type: item.type,
-            consultation_date: item.consultation_date,
-            status: item.status
+            name: item.patient_request.report?.patient_care?.patient?.name || '',
+            cns: item.patient_request.report?.patient_care?.patient?.cns || '',
+            type: item.patient_request.type,
+            consultation_date: item.patient_request.consultation_date,
+            status: item.patient_request.status
           }));
 
-          // Distribuição exata seguindo as regras de negócio de pagamento originais
+          // Mapeamento e distribuição por pertinência de pagamento
           const owners = normalizedRequests.filter((req: any) => req.payment);
           const others = normalizedRequests.filter((req: any) => !req.payment);
-          const finished = normalizedRequests.filter((req: any) => !req.payment);
 
           this.rawOwnerList.set(owners);
           this.rawOthersList.set(others);
-          this.rawFinishList.set(finished);
         },
-        error: () => {}
+        error: () => {
+          this.rawOwnerList.set([]);
+          this.rawOthersList.set([]);
+        }
       });
   }
 
@@ -175,7 +194,8 @@ export class PaymentsPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Inversão lógica estável: Retorna 'true' caso o usuário NÃO possua a permissão requerida
+   * Avalia as permissões do usuário logado.
+   * Retorna 'true' para desabilitar o elemento se a permissão NÃO for encontrada.
    */
   protected checkPermissions(permissionName: string): boolean {
     if (!this.currentUser?.roles) return true;
@@ -192,14 +212,21 @@ export class PaymentsPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Método privado e único para abertura e monitoramento do retorno de modais interativas
+   * Centralizador para abertura de modais com atualização reativa.
    */
-  private openDialog(component: any, data: any, width = '400px', height = 'auto', requiresRefresh = true): void {
+  private openDialog(
+    component: any,
+    data: any,
+    width = '400px',
+    height = 'auto',
+    requiresRefresh = true
+  ): void {
     this.dialog.open(component, {
       width,
       height,
       disableClose: true,
       autoFocus: false,
+      scrollStrategy: this.overlay.scrollStrategies.noop(),
       data
     }).afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -211,45 +238,78 @@ export class PaymentsPage implements OnInit, OnDestroy {
   }
 
   private handleRequestsChange(): void {
-    this.fetchPatientRequests(false);
+    this.fetchPayments(false);
     TFD_PAYMENTS_CHANNEL.postMessage('update');
   }
 
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE HTML ---
+  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
 
-  protected haltedPatientRequest(patient_request: PatientRequest): void {
-    this.openDialog(HaltedPatientRequestComponent, { patient_request }, '400px');
-  }
+  /**
+   * Realiza o download do PDF compilado (Capa + Anexos unificados) do processo.
+   */
+  protected downloadMergedPdf(patientRequest: PatientRequest): void {
+    this.openLoading();
 
-  protected paymentInfo(patient_request: PatientRequest): void {
-    this.openDialog(PaymentInfoComponent, { patient_request }, '600px');
-  }
+    this.paymentService.downloadMergedPdf(patientRequest.id)
+      .pipe(
+        finalize(() => {
+          if (this.loadingDialog) {
+            this.loadingDialog.close();
+          }
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (blobData: Blob) => {
+          // Instancia o Blob com o tipo application/pdf
+          const file = new Blob([blobData], { type: 'application/pdf' });
+          const fileURL = URL.createObjectURL(file);
 
-  protected undoPatientRequest(patient_request: PatientRequest): void {
-    this.openDialog(UndoPatientRequestComponent, { patient_request }, '500px');
-  }
+          // Cria elemento <a> invisível para acionar a janela de download do navegador
+          const anchor = document.createElement('a');
+          anchor.href = fileURL;
+          anchor.download = `processo_${patientRequest.id}_completo.pdf`;
+          anchor.click();
 
-  protected finishPatientRequestPayment(patient_request: PatientRequest): void {
-    this.openDialog(FinishPatientRequestPaymentComponent, { patient_request }, '400px');
+          // Desaloca a URL temporária da memória
+          URL.revokeObjectURL(fileURL);
+        },
+        error: (err) => {
+          console.error('Erro ao realizar o download do arquivo mesclado:', err);
+        }
+      });
   }
 
   protected showPatientRequest(patient_request: PatientRequest): void {
     this.openDialog(ShowPatientRequestComponent, { patient_request }, '1000px', 'auto', false);
   }
 
+  protected updatePayment(payment: any): void {
+    this.openDialog(UpdatePaymentComponent, { payment }, '400px');
+  }
+
+  protected paymentMemo(payment: any): void {
+    this.openDialog(PaymentMemoComponent, { payment }, '800px', '800px');
+  }
+
+  protected undoPatientRequest(patient_request: PatientRequest): void {
+    this.openDialog(UndoPatientRequestComponent, { patient_request }, '500px');
+  }
+
+  protected archivePatientRequest(patient_request: PatientRequest): void {
+    this.openDialog(ArchivePatientRequestComponent, { patient_request }, '400px');
+  }
+
+  protected haltedPatientRequest(patient_request: PatientRequest): void {
+    this.openDialog(HaltedPatientRequestComponent, { patient_request }, '400px');
+  }
+
   protected undoMessage(message: string): void {
     this.openDialog(UndoMessageComponent, { message }, '400px', 'auto', false);
   }
 
-  protected movePatientRequestFromFinished(patient_request: PatientRequest): void {
-    // Mantido para compatibilidade com assinaturas do template
+  protected movePaymentFromOthers(payment: any): void {
+    this.openDialog(UpdatePaymentComponent, { payment }, '400px');
   }
 
-  protected movePatientRequestFromOthers(patient_request: PatientRequest): void {
-    // Mantido para compatibilidade com assinaturas do template
-  }
-
-  protected accountabilities(patient_request: PatientRequest): void {
-    // Mantido para compatibilidade com assinaturas do template
-  }
 }

@@ -16,9 +16,16 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PatientService } from '../../../services/patient-service';
 import { MessageService } from '../../../../core/services/message-service';
 import { StorageService } from '../../../../core/services/storage-service';
+import { Specialty } from '../../../enums/specialties';
+
+interface SpecialtyOption {
+  key: string;
+  label: string;
+}
 
 @Component({
   selector: 'app-update-patient-report-component',
+  standalone: true,
   imports: [
     CommonModule, 
     FormsModule, 
@@ -48,10 +55,13 @@ export class UpdatePatientReportComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // 🎯 Mapeamento local das mensagens de erro padronizado para a UI
+  // Mapeamento local das mensagens de erro padronizado para a UI
   protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
     protocol: [
       { type: 'required', message: 'O número do protocolo é obrigatório.' }
+    ],
+    specialty: [
+      { type: 'required', message: 'A seleção da especialidade é obrigatória.' }
     ],
     cid_id: [
       { type: 'required', message: 'A seleção do CID é obrigatória para o laudo.' }
@@ -66,7 +76,8 @@ export class UpdatePatientReportComponent implements OnInit {
 
   // Estrutura do Formulário e Controles expostos ao template
   protected reportForm!: FormGroup;
-  protected readonly cidControl = new FormControl<string | any>('', [Validators.required]);
+  protected readonly cidControl = new FormControl<string | any>({ value: '', disabled: this.data?.report?.is_export }, [Validators.required]);
+  protected readonly specialtyControl = new FormControl<string | SpecialtyOption>({ value: '', disabled: this.data?.report?.is_export }, [Validators.required]);
 
   // Estados gerenciados reativamente via Signals
   protected readonly cidReadOnly = signal<boolean>(true);
@@ -77,33 +88,72 @@ export class UpdatePatientReportComponent implements OnInit {
   private cidOptions: any[] = [];
   protected filteredCidOptions!: Observable<any[]>;
 
+  private specialtyOptions: SpecialtyOption[] = [];
+  protected filteredSpecialtyOptions!: Observable<SpecialtyOption[]>;
+
   ngOnInit(): void {
     this.initForm();
+    this.loadSpecialties();
     this.getCids();
-    this.registerCidCleaner();
+    this.registerCleaners();
   }
 
   // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO E SUPORTE ---
 
   private initForm(): void {
     this.reportForm = this.fb.group({
-      protocol: [this.data?.report?.protocol, [Validators.required]],
+      protocol: [{ value: this.data?.report?.protocol, disabled: this.data?.report?.is_export }, [Validators.required]],
+      specialty: [this.data?.report?.specialty, [Validators.required]],
       cid_id: [this.data?.report?.cid_id || this.data?.report?.cid?.id, [Validators.required]],
-      lawsuit: [!!this.data?.report?.lawsuit, [Validators.required]],
+      lawsuit: [{ value: !!this.data?.report?.lawsuit, disabled: this.data?.report?.is_export }, [Validators.required]],
       diagnosis: [this.data?.report?.diagnosis, [Validators.required]],
     });
   }
 
+  private loadSpecialties(): void {
+    this.specialtyOptions = Object.entries(Specialty).map(([key, value]) => ({
+      key,
+      label: value
+    }));
+
+    const initialKey = this.data?.report?.specialty;
+    const initialOption = this.specialtyOptions.find(opt => opt.key === initialKey);
+
+    if (initialOption) {
+      this.specialtyControl.setValue(initialOption);
+    }
+
+    this.filteredSpecialtyOptions = this.specialtyControl.valueChanges.pipe(
+      startWith(this.specialtyControl.value),
+      map(value => {
+        if (value && typeof value === 'object') {
+          return this._filterSpecialty(value.label || '');
+        }
+        return value ? this._filterSpecialty(value as string) : this.specialtyOptions.slice(0, 10);
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    );
+  }
+
   /**
-   * Monitora se o usuário limpou o texto do autocomplete para invalidar o formulário principal
+   * Monitora se o usuário limpou os autocompletes para invalidar o formulário
    */
-  private registerCidCleaner(): void {
+  private registerCleaners(): void {
     this.cidControl.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => {
-        if (!value) {
+        if (!value || typeof value !== 'object') {
           this.reportForm.get('cid_id')?.setValue(null);
           this.reportForm.get('cid_id')?.markAsDirty();
+        }
+      });
+
+    this.specialtyControl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        if (!value || typeof value !== 'object') {
+          this.reportForm.get('specialty')?.setValue(null);
+          this.reportForm.get('specialty')?.markAsDirty();
         }
       });
   }
@@ -136,10 +186,25 @@ export class UpdatePatientReportComponent implements OnInit {
       .slice(0, 10);
   }
 
+  private _filterSpecialty(label: string): SpecialtyOption[] {
+    if (!label) {
+      return this.specialtyOptions.slice(0, 10);
+    }
+
+    const filterValue = label.toLowerCase().trim();
+    return this.specialtyOptions
+      .filter(option => option.label.toLowerCase().includes(filterValue))
+      .slice(0, 10);
+  }
+
   // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
 
   protected displayCid(cid: any): string {
     return cid && cid.name && cid.code ? `${cid.code} - ${cid.name}` : '';
+  }
+
+  protected displaySpecialty(specialty: SpecialtyOption): string {
+    return specialty?.label || '';
   }
 
   protected getCids(): void {
@@ -147,7 +212,7 @@ export class UpdatePatientReportComponent implements OnInit {
     if (!patientCareId) return;
 
     this.cidLoading.set(true);
-    this.cdr.detectChanges(); // Garante o spinner de loading visível imediatamente no OnPush
+    this.cdr.detectChanges();
 
     this.patientService.getCids(patientCareId)
       .pipe(
@@ -182,6 +247,11 @@ export class UpdatePatientReportComponent implements OnInit {
     this.reportForm.get('cid_id')?.markAsDirty();
   }
 
+  protected setSpecialty(option: SpecialtyOption): void {
+    this.reportForm.get('specialty')?.setValue(option.key);
+    this.reportForm.get('specialty')?.markAsDirty();
+  }
+
   protected onSubmit(): void {
     const reportId = this.data?.report?.id;
     if (!reportId) {
@@ -189,14 +259,15 @@ export class UpdatePatientReportComponent implements OnInit {
       return;
     }
 
-    if (this.reportForm.invalid || this.cidControl.invalid) {
+    if (this.reportForm.invalid || this.cidControl.invalid || this.specialtyControl.invalid) {
       this.reportForm.markAllAsTouched();
       this.cidControl.markAsTouched();
+      this.specialtyControl.markAsTouched();
       return;
     }
 
     this.isSubmitting.set(true);
-    this.cdr.detectChanges(); // Sincroniza imediatamente o estado de submissão no DOM
+    this.cdr.detectChanges();
 
     this.patientService.updatePatientReport(reportId, this.reportForm.getRawValue())
       .pipe(

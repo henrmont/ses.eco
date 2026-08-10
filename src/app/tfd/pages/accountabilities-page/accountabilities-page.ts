@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs';
+import { CommonModule } from '@angular/common';
 
 // Angular Material
 import { MatButtonModule } from '@angular/material/button';
@@ -11,12 +11,14 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { Overlay } from '@angular/cdk/overlay';
 import { NgxMaskPipe } from 'ngx-mask';
 
-// Core, Modelos e Serviços
+// Core & Shared
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
 import { PatientRequest } from '../../models/patient-request';
 import { Permission } from '../../models/permission';
@@ -28,7 +30,7 @@ import { UndoMessageComponent } from '../../components/shared/undo-message-compo
 import { PatientRequestAttachmentsComponent } from '../../components/patient-request/patient-request-attachments-component/patient-request-attachments-component';
 import { HaltedPatientRequestComponent } from '../../components/accountability/halted-patient-request-component/halted-patient-request-component';
 import { PatientRequestAccountabilitiesComponent } from '../../components/accountability/patient-request-accountabilities-component/patient-request-accountabilities-component';
-import { FinishPatientRequestAccountabilityComponent } from '../../components/accountability/finish-patient-request-accountability-component/finish-patient-request-accountability-component';
+import { ArchivePatientRequestComponent } from '../../components/accountability/archive-patient-request-component/archive-patient-request-component';
 
 const TFD_ACCOUNTABILITIES_CHANNEL = new BroadcastChannel('tfd-accountabilities-channel');
 
@@ -44,6 +46,7 @@ const TFD_ACCOUNTABILITIES_CHANNEL = new BroadcastChannel('tfd-accountabilities-
     MatIconModule,
     MatTooltipModule,
     MatSortModule,
+    MatPaginatorModule,
     MatTabsModule,
     MatDialogModule,
     NgxMaskPipe
@@ -52,45 +55,53 @@ const TFD_ACCOUNTABILITIES_CHANNEL = new BroadcastChannel('tfd-accountabilities-
   styleUrl: './accountabilities-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AccountabilitiesPage implements OnInit, OnDestroy {
-  // 🔒 Injeções de dependência modernas via inject()
+export class AccountabilitiesPage implements OnInit {
+  // Injeções de Dependência
   private readonly accountabilityService = inject(AccountabilityService);
   private readonly dialog = inject(MatDialog);
+  private readonly overlay = inject(Overlay);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
-
-  // Captura do MatSort do template via Signal reativo
-  protected readonly sort = viewChild.required(MatSort);
 
   private loadingDialog!: MatDialogRef<LoadingComponent>;
   private readonly currentUser = this.route.parent?.parent?.snapshot.data['user'];
 
-  // Definições de colunas das tabelas baseadas nas abas de Prestação de Contas
+  // Capturas reativas dos controles de Sort do Template
+  private readonly ownerSort = viewChild<MatSort>('ownerSort');
+  private readonly othersSort = viewChild<MatSort>('othersSort');
+
+  // Capturas reativas dos controles de Paginator do Template
+  private readonly ownerPaginator = viewChild<MatPaginator>('ownerPaginator');
+  private readonly othersPaginator = viewChild<MatPaginator>('othersPaginator');
+
+  // Definições das Estruturas de Colunas
   protected readonly displayedOwnerColumns: string[] = ['bookmark', 'patient', 'cns', 'type', 'consultation_date', 'status', 'actions'];
-  protected readonly displayedFinishColumns: string[] = ['patient', 'cns', 'type', 'consultation_date', 'responsible', 'actions'];
   protected readonly displayedOthersColumns: string[] = ['patient', 'cns', 'type', 'consultation_date', 'responsible', 'actions'];
 
-  // Signals para armazenamento do estado bruto dos dados
+  // Signals internos de estado dos dados brutos
   private readonly rawOwnerList = signal<PatientRequest[]>([]);
-  private readonly rawFinishList = signal<PatientRequest[]>([]);
   private readonly rawOthersList = signal<PatientRequest[]>([]);
 
-  // ⚡ Computed signals injetando dados e acoplando ordenação nativa reativa em TODAS as abas
+  // Computed signals reativos integrando dados, ordenação e paginação
   protected readonly ownerDataSource = computed(() => {
     const dataSource = new MatTableDataSource(this.rawOwnerList());
-    dataSource.sort = this.sort();
-    return dataSource;
-  });
+    const sortRef = this.ownerSort();
+    const paginatorRef = this.ownerPaginator();
 
-  protected readonly finishDataSource = computed(() => {
-    const dataSource = new MatTableDataSource(this.rawFinishList());
-    dataSource.sort = this.sort();
+    if (sortRef) dataSource.sort = sortRef;
+    if (paginatorRef) dataSource.paginator = paginatorRef;
+
     return dataSource;
   });
 
   protected readonly othersDataSource = computed(() => {
     const dataSource = new MatTableDataSource(this.rawOthersList());
-    dataSource.sort = this.sort();
+    const sortRef = this.othersSort();
+    const paginatorRef = this.othersPaginator();
+
+    if (sortRef) dataSource.sort = sortRef;
+    if (paginatorRef) dataSource.paginator = paginatorRef;
+
     return dataSource;
   });
 
@@ -102,30 +113,36 @@ export class AccountabilitiesPage implements OnInit, OnDestroy {
         this.fetchPatientRequests(false);
       }
     };
+
+    // Fechamento automático e seguro do BroadcastChannel
+    this.destroyRef.onDestroy(() => {
+      TFD_ACCOUNTABILITIES_CHANNEL.close();
+    });
   }
 
-  ngOnDestroy(): void {
-    TFD_ACCOUNTABILITIES_CHANNEL.close();
-  }
-
-  // Filtros locais e rápidos de busca nas tabelas acessando os computeds
+  // Métodos de filtragem com prevenção de estarem em páginas inexistentes
   protected applyOwnerFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    this.ownerDataSource().filter = filterValue.trim().toLowerCase();
-  }
+    const dataSource = this.ownerDataSource();
+    dataSource.filter = filterValue.trim().toLowerCase();
 
-  protected applyFinishFilter(event: Event): void {
-    const filterValue = (event.target as HTMLInputElement).value;
-    this.finishDataSource().filter = filterValue.trim().toLowerCase();
+    if (dataSource.paginator) {
+      dataSource.paginator.firstPage();
+    }
   }
 
   protected applyOthersFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    this.othersDataSource().filter = filterValue.trim().toLowerCase();
+    const dataSource = this.othersDataSource();
+    dataSource.filter = filterValue.trim().toLowerCase();
+
+    if (dataSource.paginator) {
+      dataSource.paginator.firstPage();
+    }
   }
 
   /**
-   * Busca centralizada, mapeamento e separação lógica das requisições de prestação de contas
+   * Busca centralizada das solicitações de prestação de contas.
    */
   private fetchPatientRequests(showLoading = false): void {
     if (showLoading) this.openLoading();
@@ -140,10 +157,10 @@ export class AccountabilitiesPage implements OnInit, OnDestroy {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
-        next: (response) => {
-          const rawList = response || [];
+        next: (response: any) => {
+          const rawList = response ?? [];
 
-          // Nivelamento estrutural igual ao modelo para exibição facilitada
+          // Nivelamento do modelo de dados para visualização simplificada na tabela
           const normalizedRequests = rawList.map((item: any) => ({
             ...item,
             name: item.report?.patient_care?.patient?.name || '',
@@ -153,16 +170,17 @@ export class AccountabilitiesPage implements OnInit, OnDestroy {
             status: item.status
           }));
 
-          // Distribuição exata seguindo as regras de negócio de prestação de contas
+          // Mapeamento e distribuição por pertinência de prestação de contas (excluindo finalizadas)
           const owners = normalizedRequests.filter((req: any) => req.accountability && !req.is_accountability_finished);
           const others = normalizedRequests.filter((req: any) => !req.accountability && !req.is_accountability_finished);
-          const finished = normalizedRequests.filter((req: any) => req.is_accountability_finished);
 
           this.rawOwnerList.set(owners);
           this.rawOthersList.set(others);
-          this.rawFinishList.set(finished);
         },
-        error: () => {}
+        error: () => {
+          this.rawOwnerList.set([]);
+          this.rawOthersList.set([]);
+        }
       });
   }
 
@@ -175,7 +193,8 @@ export class AccountabilitiesPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Inversão lógica estável: Retorna 'true' caso o usuário NÃO possua a permissão requerida
+   * Avalia as permissões do usuário logado.
+   * Retorna 'true' para desabilitar o elemento se a permissão NÃO for encontrada.
    */
   protected checkPermissions(permissionName: string): boolean {
     if (!this.currentUser?.roles) return true;
@@ -192,14 +211,21 @@ export class AccountabilitiesPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Método privado e único para abertura e monitoramento do retorno de modais interativas
+   * Centralizador para abertura de modais com atualização reativa.
    */
-  private openDialog(component: any, data: any, width = '400px', height = 'auto', requiresRefresh = true): void {
+  private openDialog(
+    component: any,
+    data: any,
+    width = '400px',
+    height = 'auto',
+    requiresRefresh = true
+  ): void {
     this.dialog.open(component, {
       width,
       height,
       disableClose: true,
       autoFocus: false,
+      scrollStrategy: this.overlay.scrollStrategies.noop(),
       data
     }).afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -215,37 +241,33 @@ export class AccountabilitiesPage implements OnInit, OnDestroy {
     TFD_ACCOUNTABILITIES_CHANNEL.postMessage('update');
   }
 
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE HTML ---
+  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
 
-  protected haltedPatientRequest(patient_request: PatientRequest): void {
-    this.openDialog(HaltedPatientRequestComponent, { patient_request }, '400px');
+  protected showPatientRequest(patient_request: PatientRequest): void {
+    this.openDialog(ShowPatientRequestComponent, { patient_request }, '1000px', 'auto', false);
   }
 
   protected patientRequestAttachments(patient_request: PatientRequest): void {
     this.openDialog(PatientRequestAttachmentsComponent, { patient_request }, '600px', 'auto', false);
   }
 
-  protected finishPatientRequestAccountability(patient_request: PatientRequest): void {
-    this.openDialog(FinishPatientRequestAccountabilityComponent, { patient_request }, '400px');
-  }
-
   protected accountabilities(patient_request: PatientRequest): void {
     this.openDialog(PatientRequestAccountabilitiesComponent, { patient_request, permissions: this.currentUser?.roles }, '1000px', 'auto');
   }
 
-  protected showPatientRequest(patient_request: PatientRequest): void {
-    this.openDialog(ShowPatientRequestComponent, { patient_request }, '1000px', 'auto', false);
+  protected archivePatientRequest(patient_request: PatientRequest): void {
+    this.openDialog(ArchivePatientRequestComponent, { patient_request }, '400px');
+  }
+
+  protected haltPatientRequest(patient_request: PatientRequest): void {
+    this.openDialog(HaltedPatientRequestComponent, { patient_request }, '400px');
   }
 
   protected undoMessage(message: string): void {
     this.openDialog(UndoMessageComponent, { message }, '400px', 'auto', false);
   }
 
-  protected movePatientRequestFromFinished(patient_request: PatientRequest): void {
-    // Implementação futura mantendo consistência estrutural
-  }
-
   protected movePatientRequestFromOthers(patient_request: PatientRequest): void {
-    // Implementação futura mantendo consistência estrutural
+    // Implementação mantida para integrações futuras
   }
 }

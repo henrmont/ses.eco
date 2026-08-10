@@ -1,75 +1,99 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { PatientRequest } from '../models/patient-request';
+
 import { environment } from '../../../environments/environment.development';
-import { DailyCost } from '../models/daily-cost';
+import { PatientRequest } from '../models/patient-request';
 import { Accountability } from '../models/accountability';
 import { AccountabilityDaily } from '../models/accountability-daily';
+import { DailyCost } from '../models/daily-cost';
 
-const requestOptions = {
-  'Authorization': `Bearer ${window.localStorage.getItem('token')}`
+// Interface genérica para padronizar as respostas de mutação do back-end (Laravel)
+export interface ApiResponse {
+  message: string;
+  status?: string;
+  [key: string]: any;
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class AccountabilityService {
+  // 🔒 Injeções e URLs configuradas como imutáveis
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${environment.apiTfdUrl}/accountability`;
 
-  constructor(
-    private http: HttpClient,
-  ) {}
+  // --- FLUXO DE SOLICITAÇÕES DE PACIENTE (PATIENT REQUESTS) ---
 
   getPatientRequests(): Observable<PatientRequest[]> {
-    return this.http.get<PatientRequest[]>(`${environment.apiTfdUrl}/accountability/get-patient-requests`, {headers: requestOptions})
+    return this.http.get<PatientRequest[]>(`${this.apiUrl}/get-patient-requests`);
   }
 
-  haltedPatientRequest(patient_request: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/accountability/halted-patient-request/${patient_request}`, {headers: requestOptions})
+  getArchivePatientRequests(): Observable<PatientRequest[]> {
+    return this.http.get<PatientRequest[]>(`${this.apiUrl}/get-archive-patient-requests`);
   }
 
-  getAccountabilities(patient_request: number): Observable<Accountability[]> {
-    return this.http.get<Accountability[]>(`${environment.apiTfdUrl}/accountability/get-accountabilities/${patient_request}`, {headers: requestOptions})
+  haltedPatientRequest(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/halted-patient-request/${patientRequestId}`, {});
   }
 
-  getBalance(patient_care: number): Observable<number> {
-    return this.http.get<number>(`${environment.apiTfdUrl}/accountability/get-balance/${patient_care}`, {headers: requestOptions})
+  finishPatientRequestAccountability(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/finish-patient-request-accountability/${patientRequestId}`, {});
   }
 
-  createAccountability(patient_request: number, data: any): Observable<any> {
-    return this.http.post(`${environment.apiTfdUrl}/accountability/create-accountability/${patient_request}`, data, {headers: requestOptions})
+  finishBackPatientRequest(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/finish-back-patient-request/${patientRequestId}`, {});
   }
 
-  updateAccountability(accountability: number, data: any): Observable<any> {
-    return this.http.patch(`${environment.apiTfdUrl}/accountability/update-accountability/${accountability}`, data, {headers: requestOptions})
+  archivePatientRequest(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/archive-patient-request/${patientRequestId}`, {});
   }
 
-  deleteAccountability(accountability: number): Observable<any> {
-    return this.http.delete(`${environment.apiTfdUrl}/accountability/delete-accountability/${accountability}`, {headers: requestOptions})
+  // --- FLUXO DE PRESTAÇÃO DE CONTAS (ACCOUNTABILITIES) ---
+
+  getAccountabilities(patientRequestId: number): Observable<Accountability[]> {
+    return this.http.get<Accountability[]>(`${this.apiUrl}/get-accountabilities/${patientRequestId}`);
   }
 
-  getAccountabilityDailies(accountability: number): Observable<AccountabilityDaily[]> {
-    return this.http.get<AccountabilityDaily[]>(`${environment.apiTfdUrl}/accountability/get-accountability-dailies/${accountability}`, {headers: requestOptions})
+  getBalance(patientCareId: number): Observable<number> {
+    return this.http.get<number>(`${this.apiUrl}/get-balance/${patientCareId}`);
+  }
+
+  createAccountability(patientRequestId: number, data: any): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/create-accountability/${patientRequestId}`, data);
+  }
+
+  updateAccountability(accountabilityId: number, data: any): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-accountability/${accountabilityId}`, data);
+  }
+
+  deleteAccountability(accountabilityId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/delete-accountability/${accountabilityId}`);
+  }
+
+  // --- FLUXO DE DIÁRIAS (ACCOUNTABILITY DAILIES) ---
+
+  getAccountabilityDailies(accountabilityId: number): Observable<AccountabilityDaily[]> {
+    return this.http.get<AccountabilityDaily[]>(`${this.apiUrl}/get-accountability-dailies/${accountabilityId}`);
   }
 
   getDailyCosts(): Observable<DailyCost[]> {
-    return this.http.get<DailyCost[]>(`${environment.apiTfdUrl}/cost-assistance/get-daily-costs`, {headers: requestOptions})
+    return this.http.get<DailyCost[]>(`${environment.apiTfdUrl}/cost-assistance/get-daily-costs`);
   }
 
-  createAccountabilityDaily(accountability: number, data: AccountabilityDaily): Observable<Array<any>> {
-    return this.http.post<Array<any>>(`${environment.apiTfdUrl}/accountability/create-accountability-daily/${accountability}`, data, {headers: requestOptions})
+  createAccountabilityDaily(accountabilityId: number, data: AccountabilityDaily): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/create-accountability-daily/${accountabilityId}`, data);
   }
 
-  updateAccountabilityDaily(accountability_daily: number, data: AccountabilityDaily): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/accountability/update-accountability-daily/${accountability_daily}`, data, {headers: requestOptions})
+  updateAccountabilityDaily(accountabilityDailyId: number, data: AccountabilityDaily): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-accountability-daily/${accountabilityDailyId}`, data);
   }
 
-  deleteAccountabilityDaily(accountability_daily: number): Observable<Array<any>> {
-    return this.http.delete<Array<any>>(`${environment.apiTfdUrl}/accountability/delete-accountability-daily/${accountability_daily}`, {headers: requestOptions})
+  deleteAccountabilityDaily(accountabilityDailyId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/delete-accountability-daily/${accountabilityDailyId}`);
   }
 
-  finishPatientRequestAccountability(patient_request: number): Observable<Array<any>> {
-    return this.http.patch<Array<any>>(`${environment.apiTfdUrl}/accountability/finish-patient-request-accountability/${patient_request}`, {headers: requestOptions})
+  movePatientRequestFromArchive(patient_request: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-request-from-archive/${patient_request}`, {});
   }
-  
 }

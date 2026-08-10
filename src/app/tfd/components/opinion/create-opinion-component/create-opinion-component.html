@@ -1,29 +1,29 @@
 <h2 mat-dialog-title>Novo parecer</h2>
 
-<form [formGroup]="createOpinionForm" (ngSubmit)="onSubmit()">
+<form [formGroup]="opinionForm" (ngSubmit)="onSubmit()">
   <mat-dialog-content>
-    <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+    <div class="stepper">
       
-      <div class="line" style="grid-template-columns: 2fr 1fr;">
+      <div class="line cols-1-1">
         <mat-form-field appearance="outline">
           <mat-label>Nome</mat-label>
           <input matInput type="text" formControlName="name">
           
-          @for (item of errorMessages['name']; track $index) {
-            <mat-error [hidden]="!createOpinionForm.get('name')?.hasError(item.type)">
+          @for (item of errorMessages['name']; track item.type) {
+            <mat-error [hidden]="!opinionForm.get('name')?.hasError(item.type)">
               {{ item.message }}
             </mat-error>
           }
         </mat-form-field>
 
-        <div class="toggle">
+        <div class="toggle-cell">
           <mat-slide-toggle formControlName="is_approved">
             <span>Parecer favorável</span>
           </mat-slide-toggle>
         </div>
       </div>
 
-      <div class="line" style="grid-template-columns: 1fr;" class="my-custom-editor line">
+      <div class="line cols-1-col my-custom-editor">
         <div class="NgxEditor__Wrapper" style="width: 100%;">
           <ngx-editor-menu [editor]="editor" [toolbar]="toolbar"></ngx-editor-menu>
           <ngx-editor
@@ -34,8 +34,8 @@
           ></ngx-editor>
         </div>
         
-        @for (item of errorMessages['content']; track $index) {
-          @if (createOpinionForm.get('content')?.touched && createOpinionForm.get('content')?.hasError(item.type)) {
+        @for (item of errorMessages['content']; track item.type) {
+          @if (opinionForm.get('content')?.touched && opinionForm.get('content')?.hasError(item.type)) {
             <small class="mat-mdc-form-field-error" style="color: #f44336; font-size: 75%; padding: 0 16px;">
               {{ item.message }}
             </small>
@@ -47,20 +47,21 @@
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
-    <button matButton type="button" [mat-dialog-close]="false">
-      Fechar
+    <button mat-button type="button" [disabled]="isSubmitting()" [mat-dialog-close]="false">
+      Cancelar
     </button>
     
     <button 
-      matButton="filled" 
+      mat-flat-button 
+      color="primary" 
       type="submit" 
-      [disabled]="createOpinionForm.invalid || createOpinionForm.pending || isSubmitting()"
+      [disabled]="opinionForm.invalid || opinionForm.pending || isSubmitting()"
     >
       <div class="waiting">
         @if (isSubmitting()) {
-          <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+          <mat-spinner [diameter]="20"></mat-spinner>
         }
-        Criar
+        <span>{{ isSubmitting() ? 'Criando...' : 'Criar' }}</span>
       </div>
     </button>
   </mat-dialog-actions>

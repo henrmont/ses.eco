@@ -100,13 +100,12 @@
       <div class="line cols-1-1">
         <mat-form-field appearance="outline">
           <mat-label>Tipo de Solicitação</mat-label>
-          <mat-select formControlName="type">
-            @for (item of types; track item) {
-              <mat-option [value]="item">
-                {{ item }}
-              </mat-option>
-            }
-          </mat-select>
+          <input 
+            matInput 
+            formControlName="type" 
+            readonly 
+            placeholder="Sem solicitação de entrada aprovada" />
+          <mat-icon matSuffix class="locked-icon">lock</mat-icon>
           
           @for (item of errorMessages['type']; track item.type) {
             <mat-error [hidden]="!patientRequestForm.get('type')?.hasError(item.type)">

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal, ChangeDetectorRef } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -9,6 +9,7 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { map, Observable, startWith, finalize } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { OpinionService } from '../../../services/opinion-service';
 import { MessageService } from '../../../../core/services/message-service';
@@ -33,67 +34,76 @@ import { MessageService } from '../../../../core/services/message-service';
   changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima com OnPush + Signals
 })
 export class ProcessPatientRequestToSocialComponent implements OnInit {
-  // Injeções de Dependência via inject()
+  // Injeções de Dependência Dinâmicas
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly opinionService = inject(OpinionService);
   private readonly messageService = inject(MessageService);
   private readonly dialogRef = inject(MatDialogRef<ProcessPatientRequestToSocialComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
 
-  // Mapeamento local das mensagens de erro (idêntico ao modelo de referência)
+  // 🎯 Mapeamento local das mensagens de erro padronizadas para a UI
   protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
-    social_professional_id: [
+    social_professional_control: [
       { type: 'required', message: 'A escolha de um profissional social é obrigatória.' }
     ]
   };
 
-  // Formulário e Controles expostos ao template
-  protected tramitPatientRequestForm!: FormGroup;
-  protected readonly socialProfessionalControl = new FormControl<string | any>('');
+  // Estrutura do Formulário e Controles expostos ao template
+  protected processForm!: FormGroup;
+  protected readonly socialProfessionalControl = new FormControl<string | any>('', [Validators.required]);
 
-  // Estados reativos com Signals
+  // Estados gerenciados reativamente via Signals
   protected readonly socialProfessionalReadOnly = signal<boolean>(true);
   protected readonly socialProfessionalLoading = signal<boolean>(false);
   protected readonly isSubmitting = signal<boolean>(false);
 
-  // Filtros e opções do Autocomplete
+  // Listagem e Filtros de Autocomplete
   protected socialProfessionalOptions: any[] = [];
   protected filteredSocialProfessionalOptions!: Observable<any[]>;
 
-  constructor() {
-    this.initForm();
-  }
-
   ngOnInit(): void {
+    this.initForm();
     this.getSocialProfessionals();
+    this.registerCleaners();
   }
 
-  // --- MÉTODOS PRIVADOS DE SUPORTE ---
+  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO E SUPORTE ---
 
   private initForm(): void {
-    this.tramitPatientRequestForm = this.fb.group({
+    this.processForm = this.fb.group({
       social_professional_id: [null, [Validators.required]],
     });
   }
 
+  /**
+   * Monitora se o usuário limpou o texto do autocomplete para invalidar o formulário principal
+   */
+  private registerCleaners(): void {
+    this.socialProfessionalControl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        if (!value) {
+          this.processForm.get('social_professional_id')?.setValue(null);
+          this.processForm.get('social_professional_id')?.markAsDirty();
+          this.cdr.markForCheck();
+        }
+      });
+  }
+
   private setSocialProfessionalOptions(): void {
     this.filteredSocialProfessionalOptions = this.socialProfessionalControl.valueChanges.pipe(
-      startWith(this.socialProfessionalControl.value),
+      startWith(''),
       map(value => {
-        if (value && typeof value === 'object') {
-          return this._filterSocialProfessional(value.name || '');
-        }
-        return value ? this._filterSocialProfessional(value as string) : this.socialProfessionalOptions.slice(0, 10);
-      })
+        const name = typeof value === 'string' ? value : value?.name;
+        return name ? this._filterSocialProfessional(name) : this.socialProfessionalOptions.slice(0, 10);
+      }),
+      takeUntilDestroyed(this.destroyRef)
     );
   }
 
   private _filterSocialProfessional(searchTerm: string): any[] {
-    if (!searchTerm) {
-      return this.socialProfessionalOptions.slice(0, 10);
-    }
-
     const filterValue = searchTerm.toLowerCase().trim();
 
     return this.socialProfessionalOptions
@@ -109,12 +119,16 @@ export class ProcessPatientRequestToSocialComponent implements OnInit {
 
   protected getSocialProfessionals(): void {
     this.socialProfessionalLoading.set(true);
+    this.cdr.markForCheck();
 
     this.opinionService.getSocialProfessionals()
-      .pipe(finalize(() => {
-        this.socialProfessionalLoading.set(false);
-        this.cdr.markForCheck(); // Sincroniza view após stream assíncrona
-      }))
+      .pipe(
+        finalize(() => {
+          this.socialProfessionalLoading.set(false);
+          this.cdr.markForCheck();
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
       .subscribe({
         next: (response) => {
           if (response) {
@@ -130,43 +144,53 @@ export class ProcessPatientRequestToSocialComponent implements OnInit {
         },
         error: () => {
           this.socialProfessionalReadOnly.set(true);
+          this.socialProfessionalOptions = [];
+          this.cdr.markForCheck();
         }
       });
   }
 
-  protected setSocialProfessional(option: any): void {
-    this.tramitPatientRequestForm.get('social_professional_id')?.setValue(option.id);
-    this.tramitPatientRequestForm.markAsDirty();
+  protected onSocialProfessionalSelected(option: any): void {
+    if (option?.id) {
+      this.processForm.get('social_professional_id')?.setValue(option.id);
+      this.processForm.get('social_professional_id')?.markAsDirty();
+      this.cdr.markForCheck();
+    }
   }
 
   protected onSubmit(): void {
-    if (this.tramitPatientRequestForm.invalid) {
-      this.tramitPatientRequestForm.markAllAsTouched();
-      this.socialProfessionalControl.markAsTouched();
+    this.socialProfessionalControl.markAsTouched();
+
+    if (this.processForm.invalid || this.socialProfessionalControl.invalid) {
+      this.processForm.markAllAsTouched();
       return;
     }
 
     const requestId = this.data?.patient_request?.id;
     if (!requestId) {
-      this.messageService.showMessage('Erro: Identificador da solicitação não encontrado.');
+      this.messageService.showMessage('Identificador da solicitação não encontrado.');
       return;
     }
 
     this.isSubmitting.set(true);
+    this.cdr.markForCheck();
 
-    this.opinionService.processPatientRequestToSocial(requestId, this.tramitPatientRequestForm.getRawValue())
-      .pipe(finalize(() => {
-        this.isSubmitting.set(false);
-        this.cdr.markForCheck(); // Assegura desligamento visual estável
-      }))
+    this.opinionService.processPatientRequestToSocial(requestId, this.processForm.getRawValue())
+      .pipe(
+        finalize(() => {
+          this.isSubmitting.set(false);
+          this.cdr.markForCheck();
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
       .subscribe({
         next: (response: any) => {
-          this.messageService.showMessage(response.message || 'Solicitação encaminhada com sucesso!');
+          this.messageService.showMessage(response?.message || 'Solicitação encaminhada com sucesso!');
           this.dialogRef.close(true);
         },
         error: (err) => {
-          const errMsg = err?.error?.message || 'Erro ao tentar encaminhar a solicitação.';
-          this.messageService.showMessage(errMsg);
+          const fallbackError = 'Erro ao tentar encaminhar a solicitação.';
+          this.messageService.showMessage(err?.error?.message || fallbackError);
         }
       });
   }

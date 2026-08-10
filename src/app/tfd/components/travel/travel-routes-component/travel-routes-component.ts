@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal, ChangeDetectorRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { CommonModule } from '@angular/common';
+import { Overlay } from '@angular/cdk/overlay';
 
 // Angular Material
 import { MatButtonModule } from '@angular/material/button';
@@ -14,11 +15,15 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 // Models e Serviços
 import { Route } from '../../../models/route';
 import { TravelService } from '../../../services/travel-service';
+import { MessageService } from '../../../../core/services/message-service';
 
 // Modais do Contexto de Rotas
 import { CreateRouteComponent } from '../create-route-component/create-route-component';
 import { UpdateRouteComponent } from '../update-route-component/update-route-component';
 import { DeleteRouteComponent } from '../delete-route-component/delete-route-component';
+import { ShowRouteComponent } from '../show-route-component/show-route-component';
+
+const TFD_TRAVELS_CHANNEL = new BroadcastChannel('tfd-travels-channel');
 
 @Component({
   selector: 'app-travel-routes-component',
@@ -34,17 +39,20 @@ import { DeleteRouteComponent } from '../delete-route-component/delete-route-com
   ],
   templateUrl: './travel-routes-component.html',
   styleUrl: './travel-routes-component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima unindo OnPush + Signals + Computed
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TravelRoutesComponent implements OnInit {
-  // Injeções de dependência modernas
+  // Injeções de Dependência
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly dialog = inject(MatDialog);
+  private readonly overlay = inject(Overlay);
   private readonly travelService = inject(TravelService);
+  private readonly messageService = inject(MessageService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  // Propriedades expostas para o Template com computed e signals
-  protected readonly displayedColumns: string[] = ['origin', 'destination', 'distance', 'actions'];
+  // Colunas e Coleções
+  protected readonly displayedColumns: string[] = ['route', 'departure', 'arrival', 'distance', 'actions'];
   protected readonly routesList = signal<Route[]>([]);
   protected readonly isLoading = signal<boolean>(true);
 
@@ -61,13 +69,14 @@ export class TravelRoutesComponent implements OnInit {
   }
 
   /**
-   * Busca as rotas vinculadas à viagem de forma reativa e segura.
+   * Busca as rotas vinculadas à viagem de forma reativa.
    */
-  private fetchRoutes(showLoading = false): void {
+  private fetchRoutes(showLoading: boolean = false): void {
     const travelId = this.data?.travel?.id;
 
     if (!travelId) {
       this.isLoading.set(false);
+      this.cdr.markForCheck();
       return;
     }
 
@@ -78,9 +87,8 @@ export class TravelRoutesComponent implements OnInit {
     this.travelService.getRoutes(travelId)
       .pipe(
         finalize(() => {
-          if (showLoading) {
-            this.isLoading.set(false);
-          }
+          this.isLoading.set(false);
+          this.cdr.markForCheck();
         }),
         takeUntilDestroyed(this.destroyRef)
       )
@@ -88,53 +96,61 @@ export class TravelRoutesComponent implements OnInit {
         next: (response) => {
           this.routesList.set(response || []);
         },
-        error: () => {
-          // Trata falhas de rede de forma silenciosa e limpa
+        error: (err) => {
+          this.routesList.set([]);
+          const fallbackError = 'Não foi possível carregar as rotas da viagem.';
+          this.messageService.showMessage(err?.error?.message || fallbackError);
         }
       });
   }
 
   /**
-   * Centraliza a abertura das modais internas de rota com atualização do estado pós-fechamento
+   * Centraliza a abertura de modais com tratamento automático do pós-fechamento
    */
   private openDialog(
     component: any, 
     data: any, 
-    options: { width?: string; refreshWithLoading?: boolean } = {}
+    width: string = '800px', 
+    height: string = 'auto', 
+    requiresRefresh: boolean = true, 
+    emitGlobalBroadcast: boolean = true
   ): void {
     this.dialog.open(component, {
-      width: options.width || '400px',
+      width,
+      height,
       disableClose: true,
       autoFocus: false,
+      scrollStrategy: this.overlay.scrollStrategies.noop(),
       data
     }).afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((result) => {
         if (result) {
-          this.fetchRoutes(options.refreshWithLoading || false);
+          this.fetchRoutes(requiresRefresh || false);
+          
+          if (emitGlobalBroadcast) {
+            TFD_TRAVELS_CHANNEL.postMessage('update');
+          }
+          this.cdr.markForCheck();
         }
       });
   }
 
-  // Métodos de ação disparados pelo template HTML (Modificadores Protected)
+  // --- MÉTODOS DE AÇÃO DO TEMPLATE ---
+
   protected createRoute(): void {
-    this.openDialog(CreateRouteComponent, 
-      { travel: this.data.travel }, 
-      { refreshWithLoading: true }
-    );
+    this.openDialog(CreateRouteComponent, { travel: this.data?.travel }, '800px');
+  }
+
+  protected showRoute(route: Route): void {
+    this.openDialog(ShowRouteComponent, { route }, '800px', 'auto', false, false);
   }
 
   protected updateRoute(route: Route): void {
-    this.openDialog(UpdateRouteComponent, 
-      { route }, 
-      { refreshWithLoading: true }
-    );
+    this.openDialog(UpdateRouteComponent, { route }, '800px');
   }
 
   protected deleteRoute(route: Route): void {
-    this.openDialog(DeleteRouteComponent, 
-      { route }, 
-      { refreshWithLoading: true }
-    );
+    this.openDialog(DeleteRouteComponent, { route }, '400px', 'auto', true);
   }
 }

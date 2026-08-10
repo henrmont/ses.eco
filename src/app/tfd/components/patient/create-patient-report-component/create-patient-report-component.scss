@@ -47,13 +47,11 @@ mat-dialog-content {
   }
 }
 
-// --- Definições Semânticas das Colunas da Grid ---
 .line {
   &.cols-1-1   { --grid-cols: 1fr 1fr; }
   &.cols-1-col { --grid-cols: 1fr; }
 }
 
-// Alinhamento perfeito do spinner de carregamento no autocomplete
 .field-spinner {
   margin-right: $spacing-sm;
 }

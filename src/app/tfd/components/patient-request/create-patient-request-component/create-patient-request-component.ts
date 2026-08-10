@@ -9,13 +9,13 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDatepickerInputEvent, MatDatepickerModule } from '@angular/material/datepicker';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatSelectModule } from '@angular/material/select';
+import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { map, Observable, startWith, finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MAT_DATE_LOCALE, MatNativeDateModule } from '@angular/material/core';
 
-// Importação segura do Moment para evitar problemas de assinatura e chamadas em tempo de execução
+// Importação segura do Moment
 import * as _moment from 'moment';
 const moment = (_moment as any).default || _moment;
 
@@ -39,8 +39,8 @@ import { CustomValidators } from '../../../../core/validators/custom.validator';
     MatProgressSpinnerModule, 
     MatDatepickerModule, 
     MatNativeDateModule,
-    MatChipsModule, 
-    MatSelectModule
+    MatChipsModule,
+    MatIconModule
   ],
   templateUrl: './create-patient-request-component.html',
   styleUrl: './create-patient-request-component.scss',
@@ -51,7 +51,6 @@ import { CustomValidators } from '../../../../core/validators/custom.validator';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CreatePatientRequestComponent implements OnInit {
-  // Injeções de Dependência Dinâmicas
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly patientRequestService = inject(PatientRequestService);
@@ -60,14 +59,11 @@ export class CreatePatientRequestComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Estrutura do Formulário e Controles expostos ao template
   protected patientRequestForm!: FormGroup;
   protected readonly patientControl = new FormControl<string | any>('', [Validators.required]);
   protected readonly cidControl = new FormControl<string | any>('', [Validators.required]);
   protected readonly hospitalControl = new FormControl<string | any>('', [Validators.required]);
 
-  // Estados gerenciados reativamente via Signals
-  protected readonly types: string[] = Object.values(PatientRequestType);
   protected readonly isScheduling = signal<boolean>(false);
   protected readonly isSubmitting = signal<boolean>(false);
 
@@ -80,10 +76,8 @@ export class CreatePatientRequestComponent implements OnInit {
   protected readonly hospitalLoading = signal<boolean>(false);
   protected readonly hospitalReadOnly = signal<boolean>(true);
 
-  // Armazena as flags do relatório selecionado para aplicar as regras de bloqueio
   protected readonly currentReportFlags = signal<{ lawsuit: boolean; hasEntranceOrLawsuit: boolean } | null>(null);
 
-  // Listagem e Filtros de Autocomplete
   private patientOptions: any[] = [];
   private cidOptions: any[] = [];
   private hospitalOptions: any[] = [];
@@ -92,12 +86,11 @@ export class CreatePatientRequestComponent implements OnInit {
   protected filteredCidOptions!: Observable<any[]>;
   protected filteredHospitalOptions!: Observable<any[]>;
 
-  // 🎯 Mapeamento local das mensagens de erro padronizado para a UI
   protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
     patient_control: [{ type: 'required', message: 'A seleção do paciente é obrigatória.' }],
     cid_control: [{ type: 'required', message: 'A seleção de um CID/Laudo é obrigatória.' }],
     hospital_control: [{ type: 'required', message: 'A unidade hospitalar é obrigatória.' }],
-    type: [{ type: 'required', message: 'Selecione o tipo de solicitação.' }],
+    type: [{ type: 'required', message: 'Sem solicitação de entrada aprovada' }],
     consultation_date: [{ type: 'required', message: 'A data do agendamento é obrigatória.' }],
     observation: [{ type: 'required', message: 'Insira uma observação para a solicitação.' }]
   };
@@ -109,23 +102,18 @@ export class CreatePatientRequestComponent implements OnInit {
     this.registerCleaners();
   }
 
-  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO E SUPORTE ---
-
   private initForm(): void {
     this.patientRequestForm = this.fb.group({
       report_id: [null, [Validators.required]],
-      type: [{ value: null, disabled: true }, [Validators.required]],
+      // Mantemos ativo com Validators.required para travar o form enquanto null
+      type: [null, [Validators.required]],
       consultation_date: [{ value: null, disabled: true }],
       hospital_unity_id: [null, [Validators.required]],
       observation: [null, [Validators.required]]
     });
   }
 
-  /**
-   * Monitora se o usuário limpou o texto dos autocompletes para invalidar o formulário principal
-   */
   private registerCleaners(): void {
-    // Cleaner do Paciente
     this.patientControl.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => {
@@ -133,8 +121,6 @@ export class CreatePatientRequestComponent implements OnInit {
           this.cidControl.setValue('');
           this.patientRequestForm.get('report_id')?.setValue(null);
           this.patientRequestForm.get('report_id')?.markAsDirty();
-          
-          this.patientRequestForm.get('type')?.disable();
           
           this.cidOptions = [];
           this.cidReadOnly.set(true);
@@ -144,7 +130,6 @@ export class CreatePatientRequestComponent implements OnInit {
         }
       });
 
-    // Cleaner do CID / Laudo
     this.cidControl.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => {
@@ -152,15 +137,12 @@ export class CreatePatientRequestComponent implements OnInit {
           this.patientRequestForm.get('report_id')?.setValue(null);
           this.patientRequestForm.get('report_id')?.markAsDirty();
           
-          this.patientRequestForm.get('type')?.disable();
-          
           this.currentReportFlags.set(null);
           this.resetTypeSelection();
           this.cdr.markForCheck();
         }
       });
 
-    // Cleaner da Unidade Hospitalar
     this.hospitalControl.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => {
@@ -171,7 +153,6 @@ export class CreatePatientRequestComponent implements OnInit {
       });
   }
 
-  // Reseta a seleção do tipo de solicitação quando as condições do CID mudarem ou forem limpas
   private resetTypeSelection(): void {
     const typeControl = this.patientRequestForm.get('type');
     const dateControl = this.patientRequestForm.get('consultation_date');
@@ -187,8 +168,6 @@ export class CreatePatientRequestComponent implements OnInit {
     }
     this.isScheduling.set(false);
   }
-
-  // --- CONTROLE DE ALTERAÇÃO DE TIPO (REATIVO) ---
 
   protected onTypeSelectionChange(value: string): void {
     const isSched = value === 'Agendamento' || value === 'Ação Judicial';
@@ -209,9 +188,6 @@ export class CreatePatientRequestComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
-  /**
-   * Tratamento de mudança de data baseado na implementação padronizada
-   */
   protected setConsultationDate(event: MatDatepickerInputEvent<Date>): void {
     if (event.value) {
       const parsedDate = moment(event.value);
@@ -220,9 +196,6 @@ export class CreatePatientRequestComponent implements OnInit {
     }
   }
 
-  /**
-   * Evita a digitação manual de caracteres indesejados no campo de data
-   */
   protected onlyNumbersAndSlashes(event: KeyboardEvent): boolean {
     const charCode = event.key;
     const allowedCharacters = /^[0-9\/]$/;
@@ -234,25 +207,7 @@ export class CreatePatientRequestComponent implements OnInit {
     return true;
   }
 
-  /**
-   * Avalia dinamicamente se uma opção de tipo deve ser desabilitada no template.
-   */
-  protected isTypeOptionDisabled(option: string): boolean {
-    const flags = this.currentReportFlags();
-    if (!flags) return false;
-
-    if (flags.hasEntranceOrLawsuit) {
-      return option !== 'Agendamento';
-    } else {
-      if (flags.lawsuit) {
-        return option !== 'Ação Judicial';
-      } else {
-        return option !== 'Entrada';
-      }
-    }
-  }
-
-  // --- FLUXO DE PACIENTES (AUTOCOMPLETE) ---
+  // --- FLUXO DE PACIENTES ---
 
   protected fetchPatients(): void {
     this.patientLoading.set(true);
@@ -310,11 +265,11 @@ export class CreatePatientRequestComponent implements OnInit {
     }
   }
 
-  // --- FLUXO DE CIDS / LAUDOS (AUTOCOMPLETE) ---
+  // --- FLUXO DE CIDS / LAUDOS ---
 
   private fetchCidsByPatient(patientCareId: number): void {
     this.patientRequestForm.patchValue({ report_id: null });
-    this.patientRequestForm.get('type')?.disable();
+    // REMOVIDO: this.patientRequestForm.get('type')?.disable();
     this.cidControl.setValue('');
     this.currentReportFlags.set(null);
     this.resetTypeSelection();
@@ -370,26 +325,27 @@ export class CreatePatientRequestComponent implements OnInit {
   }
 
   protected onCidSelected(report: any): void {
-    console.log('CID/Laudo selecionado:', report);
     if (report?.id) {
       this.patientRequestForm.get('report_id')?.setValue(report.id);
       this.patientRequestForm.get('report_id')?.markAsDirty();
 
       const lawsuit = !!report.lawsuit;
       const hasEntranceOrLawsuit = !!report.has_entrance_or_lawsuit;
+      const hasEntranceOrLawsuitFinished = !!report.has_entrance_or_lawsuit_finished;
 
       this.currentReportFlags.set({ lawsuit, hasEntranceOrLawsuit });
 
-      // --- DETERMINAÇÃO DO AUTOFILL COM BASE NAS REGRAS ---
       let autoValue: string | null = null;
 
-      if (hasEntranceOrLawsuit) {
+      if (hasEntranceOrLawsuitFinished) {
         autoValue = 'Agendamento';
       } else {
-        if (lawsuit) {
-          autoValue = 'Ação Judicial';
-        } else {
-          autoValue = 'Entrada';
+        if (!hasEntranceOrLawsuit) {
+          if (lawsuit) {
+            autoValue = 'Ação Judicial';
+          } else {
+            autoValue = 'Entrada';
+          }
         }
       }
 
@@ -397,8 +353,6 @@ export class CreatePatientRequestComponent implements OnInit {
         const typeCtrl = this.patientRequestForm.get('type');
         typeCtrl?.setValue(autoValue);
         typeCtrl?.markAsDirty();
-        
-        typeCtrl?.disable();
 
         this.onTypeSelectionChange(autoValue);
       }
@@ -407,7 +361,7 @@ export class CreatePatientRequestComponent implements OnInit {
     }
   }
 
-  // --- FLUXO DE UNIDADES HOSPITALARES (AUTOCOMPLETE) ---
+  // --- FLUXO DE UNIDADES HOSPITALARES ---
 
   protected fetchHospitalUnities(): void {
     this.hospitalLoading.set(true);
@@ -461,7 +415,7 @@ export class CreatePatientRequestComponent implements OnInit {
     }
   }
 
-  // --- SUBMISSÃO DO FORMULÁRIO ---
+  // --- SUBMISSÃO ---
 
   protected onSubmit(): void {
     this.patientControl.markAsTouched();

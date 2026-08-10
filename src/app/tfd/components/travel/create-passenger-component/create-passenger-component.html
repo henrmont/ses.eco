@@ -1,69 +1,137 @@
 <h2 mat-dialog-title>Novo passageiro</h2>
 
-<form [formGroup]="passengerForm" (ngSubmit)="onSubmit()">
+<form [formGroup]="createPassengerForm" (ngSubmit)="onSubmit()">
   <mat-dialog-content>
-    
-    <div class="line" style="grid-template-columns: 1fr 3fr;">
-      <div class="toggle">
-        <mat-slide-toggle formControlName="is_patient" (change)="onToggleChange($event)">
-          <span>É paciente</span>
-        </mat-slide-toggle>
+    <div class="stepper">
+
+      <!-- Linha 1: Seleção de Passageiro -->
+      <div class="line cols-1-col">
+        <mat-form-field appearance="outline">
+          <mat-label>Passageiro</mat-label>
+          <mat-select formControlName="passenger" [disabled]="isSubmitting()">
+            @for (item of passengersOptions(); track item.id + '-' + item.isPatient) {
+              <mat-option [value]="item">
+                {{ item.name }} ({{ item.typeLabel }})
+              </mat-option>
+            }
+          </mat-select>
+          
+          @for (item of errorMessages['passenger']; track item.type) {
+            <mat-error [hidden]="!createPassengerForm.get('passenger')?.hasError(item.type)">
+              {{ item.message }}
+            </mat-error>
+          }
+        </mat-form-field>
       </div>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Passageiro</mat-label>
-        <mat-select formControlName="passenger">
-          @for (item of passengersOptions(); track $index) {
-            <mat-option [value]="item.id">{{ item.name }}</mat-option>
+      <!-- Linha 2: Tarifa, Taxa e Desconto (3 colunas) -->
+      <div class="line cols-1-1-1">
+        <mat-form-field appearance="outline">
+          <mat-label>Tarifa</mat-label>
+          <input 
+            matInput 
+            type="number" 
+            formControlName="tariff" 
+            placeholder="0.00"
+            [readonly]="isSubmitting()"
+          >
+          
+          @for (item of errorMessages['tariff']; track item.type) {
+            <mat-error [hidden]="!createPassengerForm.get('tariff')?.hasError(item.type)">
+              {{ item.message }}
+            </mat-error>
           }
-        </mat-select>
-        
-        @for (item of errorMessages['passenger']; track $index) {
-          <mat-error [hidden]="!passengerForm.get('passenger')?.hasError(item.type)">
-            {{ item.message }}
-          </mat-error>
-        }
-      </mat-form-field>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Taxa</mat-label>
+          <input 
+            matInput 
+            type="number" 
+            formControlName="tax" 
+            placeholder="0.00"
+            [readonly]="isSubmitting()"
+          >
+          
+          @for (item of errorMessages['tax']; track item.type) {
+            <mat-error [hidden]="!createPassengerForm.get('tax')?.hasError(item.type)">
+              {{ item.message }}
+            </mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Desconto</mat-label>
+          <input 
+            matInput 
+            type="number" 
+            formControlName="discount" 
+            placeholder="0.00"
+            [readonly]="isSubmitting()"
+          >
+
+          <mat-icon matSuffix>percent</mat-icon>
+          
+          @for (item of errorMessages['discount']; track item.type) {
+            <mat-error [hidden]="!createPassengerForm.get('discount')?.hasError(item.type)">
+              {{ item.message }}
+            </mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <!-- Linha 3: Sexo, Assento e Bilhete (3 colunas) -->
+      <div class="line cols-1-1-1">
+        <mat-form-field appearance="outline">
+          <mat-label>Sexo</mat-label>
+          <mat-select formControlName="gender" [disabled]="isSubmitting()">
+            <mat-option [value]="null">Selecione...</mat-option>
+            @for (gender of genders; track gender.key) {
+              <mat-option [value]="gender.key">{{ gender.value }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Assento</mat-label>
+          <input 
+            matInput 
+            type="text" 
+            formControlName="seat" 
+            [readonly]="isSubmitting()"
+          >
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Bilhete</mat-label>
+          <input 
+            matInput 
+            type="text" 
+            formControlName="ticket" 
+            [readonly]="isSubmitting()"
+          >
+        </mat-form-field>
+      </div>
+
     </div>
-
-    <div class="line" style="grid-template-columns: 1fr 1fr;">
-      <mat-form-field appearance="outline">
-        <mat-label>Tarifa</mat-label>
-        <input matInput type="text" formControlName="tariff">
-        
-        @for (item of errorMessages['tariff']; track $index) {
-          <mat-error [hidden]="!passengerForm.get('tariff')?.hasError(item.type)">
-            {{ item.message }}
-          </mat-error>
-        }
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Taxa</mat-label>
-        <input matInput type="text" formControlName="tax">
-        
-        @for (item of errorMessages['tax']; track $index) {
-          <mat-error [hidden]="!passengerForm.get('tax')?.hasError(item.type)">
-            {{ item.message }}
-          </mat-error>
-        }
-      </mat-form-field>
-    </div>
-
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
-    <button matButton type="button" [mat-dialog-close]="false">Fechar</button>
+    <button mat-button type="button" [disabled]="isSubmitting()" [mat-dialog-close]="false">
+      Cancelar
+    </button>
+    
     <button 
-      matButton="filled" 
+      mat-flat-button 
+      color="primary" 
       type="submit" 
-      [disabled]="passengerForm.invalid || passengerForm.pending || isSubmitting()"
+      [disabled]="createPassengerForm.invalid || createPassengerForm.pending || isSubmitting()"
     >
       <div class="waiting">
         @if (isSubmitting()) {
-          <mat-spinner matPrefix [diameter]="20"></mat-spinner>
+          <mat-spinner [diameter]="20"></mat-spinner>
         }
-        Criar
+        <span>{{ isSubmitting() ? 'Criando...' : 'Criar' }}</span>
       </div>
     </button>
   </mat-dialog-actions>
