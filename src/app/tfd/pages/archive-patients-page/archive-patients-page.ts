@@ -20,15 +20,15 @@ import { NgxMaskPipe } from 'ngx-mask';
 
 // Core & Shared
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
-import { PatientCare } from '../../models/patient-care';
+import { PatientCare } from '../../models/patient-care.model';
 import { Permission } from '../../models/permission.model';
-import { PatientService } from '../../services/patient-service';
+import { PatientService } from '../../services/patient.service';
 
 // Components (Dialogs)
-import { ShowPatientComponent } from '../../components/patient/show-patient-component/show-patient-component';
-import { ArchivedPatientEscortsComponent } from '../../components/patient/archived-patient-escorts-component/archived-patient-escorts-component';
-import { ArchivedPatientReportsComponent } from '../../components/patient/archived-patient-reports-component/archived-patient-reports-component';
-import { MovePatientFromArchiveComponent } from '../../components/patient/move-patient-from-archive-component/move-patient-from-archive-component';
+import { PatientDetailComponent } from '../../components/patient/patient-detail/patient-detail.component';
+import { PatientArchivedEscortsComponent } from '../../components/patient/patient-archived-escorts/patient-archived-escorts.component';
+import { PatientArchivedReportsComponent } from '../../components/patient/patient-archived-reports/patient-archived-reports.component';
+import { PatientMoveFromArchiveComponent } from '../../components/patient/patient-move-from-archive/patient-move-from-archive.component';
 
 const TFD_PATIENTS_CHANNEL = new BroadcastChannel('tfd-patients-channel');
 
@@ -202,19 +202,19 @@ export class ArchivePatientsPage implements OnInit {
   // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
 
   protected showPatient(patientCare: PatientCare): void {
-    this.openDialog(ShowPatientComponent, { patient_care: patientCare.patient }, '1200px', '700px', false);
+    this.openDialog(PatientDetailComponent, { patient_care: patientCare.patient }, '1200px', '700px', false);
   }
 
   protected patientEscorts(patientCare: PatientCare): void {
-    this.openDialog(ArchivedPatientEscortsComponent, { patient_care: patientCare }, '800px', 'auto', false);
+    this.openDialog(PatientArchivedEscortsComponent, { patient_care: patientCare }, '800px', 'auto', false);
   }
 
   protected patientReports(patientCare: PatientCare): void {
-    this.openDialog(ArchivedPatientReportsComponent, { patient_care: patientCare }, '800px', 'auto', false);
+    this.openDialog(PatientArchivedReportsComponent, { patient_care: patientCare }, '800px', 'auto', false);
   }
 
   protected movePatientFromArchive(patientCare: PatientCare): void {
-    this.openDialog(MovePatientFromArchiveComponent, { patient_care: patientCare }, '400px');
+    this.openDialog(PatientMoveFromArchiveComponent, { patient_care: patientCare }, '400px');
   }
  
 }

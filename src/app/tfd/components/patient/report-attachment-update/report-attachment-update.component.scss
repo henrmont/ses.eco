@@ -1,0 +1,73 @@
+@use 'variables' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+mat-dialog-content {
+  padding-top: $spacing-modal-pt;
+  overflow-y: auto;
+}
+
+// Container do formulário estruturado
+.stepper {
+  margin-top: $spacing-form-gap; 
+  display: flex; 
+  flex-direction: column; 
+  gap: $spacing-form-gap;
+}
+
+// Estrutura base de Linhas em Grid
+.line {
+  display: grid; 
+  grid-template-columns: var(--grid-cols, 1fr); 
+  column-gap: $spacing-xl; 
+  row-gap: $spacing-form-gap; 
+  align-items: start;
+  min-height: $material-field-outline-height;
+
+  // Alinhamento perfeito do botão de download com o Extended FAB de anexo
+  .file-actions-cell {
+    display: flex;
+    align-items: center;
+    column-gap: $spacing-xl;
+    height: $material-field-outline-height;
+    width: 100%;
+
+    // Garante que o botão de download mantenha o tamanho circular padrão
+    button[mat-icon-button] {
+      flex-shrink: 0;
+    }
+
+    // Adaptação para o botão Extended FAB não quebrar as proporções
+    button[mat-fab][extended] {
+      height: $line-height-min-item;
+      border-radius: $radius-md;
+      flex-shrink: 0;
+    }
+
+    // Estilização para o nome do arquivo anexado ao lado dos botões
+    .file-name-indicator {
+      font-size: $font-size-md;
+      font-weight: $font-weight-medium;
+      color: var(--mdc-outlined-text-field-label-text-color, $color-text-label-fallback);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 250px;
+    }
+  }
+}
+
+// Mapeamento semântico das colunas
+.line {
+  &.cols-1-1   { --grid-cols: 1fr 1fr; }
+  &.cols-1-col { --grid-cols: 1fr; }
+}

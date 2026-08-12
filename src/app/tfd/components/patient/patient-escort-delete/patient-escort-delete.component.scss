@@ -1,0 +1,14 @@
+@use 'variables' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+mat-dialog-content {
+  span {
+    color: $color-danger; // Destaca visualmente a mensagem de ação irreversível
+    font-size: $font-size-sm;
+  }
+}

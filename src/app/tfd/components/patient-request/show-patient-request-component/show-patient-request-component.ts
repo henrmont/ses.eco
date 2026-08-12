@@ -8,14 +8,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { saveAs } from 'file-saver';
 
 import { StorageService } from '../../../../core/services/storage-service';
-import { PatientCare } from '../../../models/patient-care';
+import { PatientCare } from '../../../models/patient-care.model';
 import { Opinion } from '../../../models/opinion';
 import { Travel } from '../../../models/travel';
 import { CostAssistance } from '../../../models/cost-assistance';
 import { Accountability } from '../../../models/accountability';
 
-import { ShowPatientComponent } from '../../patient/show-patient-component/show-patient-component';
-import { ShowPatientReportComponent } from '../../patient/show-patient-report-component/show-patient-report-component';
+import { PatientDetailComponent } from '../../patient/patient-detail/patient-detail.component';
+import { PatientReportDetailComponent } from '../../patient/patient-report-detail/patient-report-detail.component';
 import { ShowOpinionComponent } from '../../opinion/show-opinion-component/show-opinion-component';
 import { ShowTravelComponent } from '../../travel/show-travel-component/show-travel-component';
 import { ShowCostAssistanceComponent } from '../../cost-assistance/show-cost-assistance-component/show-cost-assistance-component';
@@ -83,11 +83,11 @@ export class ShowPatientRequestComponent {
    * Utilizam exatamente as mesmas dimensões mapeadas na listagem original.
    */
   protected showPatient(patientCare: PatientCare): void {
-    this.openSubDialog(ShowPatientComponent, { patient_care: patientCare }, '1200px', '700px');
+    this.openSubDialog(PatientDetailComponent, { patient_care: patientCare }, '1200px', '700px');
   }
 
   protected showPatientReport(report: any): void {
-    this.openSubDialog(ShowPatientReportComponent, { report }, '800px');
+    this.openSubDialog(PatientReportDetailComponent, { report }, '800px');
   }
 
   protected showOpinion(opinion: Opinion): void {

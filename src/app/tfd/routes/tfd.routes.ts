@@ -33,7 +33,7 @@ export const tfdRoutes: Routes = [
     },
     {
         path: 'pacientes',
-        loadComponent: () => import('./../pages/patients-page/patients-page').then( m => m.PatientsPage),
+        loadComponent: () => import('./../pages/patients-page/patients.page').then( m => m.PatientsPage),
         data: { permission: 'tfd/paciente listar' } // Adicionado
     },
     {

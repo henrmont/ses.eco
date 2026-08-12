@@ -6,10 +6,10 @@ import * as moment from 'moment';
 // Environments & Models
 import { environment } from '../../../environments/environment.development';
 import { HospitalUnity } from '../models/hospital-unity';
-import { Patient } from '../models/patient';
+import { Patient } from '../models/patient.model';
 import { PatientRequest } from '../models/patient-request';
 import { PatientRequestAttachment } from '../models/patient-request-attachment';
-import { Professional } from '../models/professional';
+import { Professional } from '../models/professional.model';
 
 // Interface genérica para padronizar as respostas de mutação do back-end (Laravel)
 export interface ApiResponse {

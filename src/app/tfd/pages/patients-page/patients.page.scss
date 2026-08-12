@@ -1,0 +1,94 @@
+@use 'variables' as *;
+
+:host {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: calc(100vh - 100px);
+}
+
+section {
+  margin-top: $spacing-xxl; 
+  width: 85%;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl; 
+
+  .tab-icon {
+    margin-right: $spacing-sm;
+  }
+
+  // Div container interna de cada aba
+  div.table {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xl;
+    width: 100%;
+    padding: $spacing-lg;
+    box-sizing: border-box;
+  }
+
+  // Container de busca centralizado
+  div.search {
+    @include flex-center(0);
+    width: 100%;
+
+    mat-form-field {
+      width: 100%;
+      max-width: 500px; 
+    }
+  }
+
+  // Estilização da Tabela
+  table.mat-mdc-table {
+    margin: 0 auto $spacing-sm auto;
+    background: $color-surface;
+    border-radius: $radius-md; 
+    overflow: hidden;
+    box-shadow: $shadow-card; 
+    border-collapse: separate;
+
+    th.mat-mdc-header-cell, 
+    td.mat-mdc-cell {
+      padding: $spacing-md $spacing-lg; 
+      vertical-align: middle;
+    }
+
+    th.mat-mdc-header-cell {
+      font-weight: $font-weight-semibold;
+      background-color: $color-table-header-bg;
+      color: $color-table-header-text;
+    }
+
+    // Alinhamento das colunas centralizadas
+    .center {
+      text-align: center;
+      div {
+        @include flex-center($spacing-xs);
+      }
+    }
+
+    // Definições de cores de status
+    .valid { color: $color-success; }
+    .invalid { color: $color-danger; }
+    .warning { color: $color-warning; }
+
+    // --- Configuração de Distribuição das Colunas (Pacientes) ---
+    th.status-column-header {
+      width: 10%;
+    }
+
+    // Acomoda harmoniosamente os 5 botões de ação sem sobreposição
+    th.actions-column-header-owner {
+      width: 20%; 
+    }
+
+    th.actions-column-header-others {
+      width: 10%;
+    }
+
+    td.actions-cell {
+      @include flex-center($spacing-xs);
+    }
+  }
+}

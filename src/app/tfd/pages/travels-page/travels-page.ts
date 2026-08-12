@@ -29,7 +29,7 @@ import { ShowPatientRequestComponent } from '../../components/patient-request/sh
 import { UndoMessageComponent } from '../../components/shared/undo-message-component/undo-message-component';
 import { HaltedPatientRequestComponent } from '../../components/travel/halted-patient-request-component/halted-patient-request-component';
 import { PatientRequestAttachmentsComponent } from '../../components/patient-request/patient-request-attachments-component/patient-request-attachments-component';
-import { PatientEscortsComponent } from '../../components/patient/patient-escorts-component/patient-escorts-component';
+import { PatientEscortsComponent } from '../../components/patient/patient-escorts/patient-escorts.component';
 import { UndoPatientRequestComponent } from '../../components/travel/undo-patient-request-component/undo-patient-request-component';
 import { PatientRequestTravelsComponent } from '../../components/travel/patient-request-travels-component/patient-request-travels-component';
 import { ArchivePatientRequestComponent } from '../../components/travel/archive-patient-request-component/archive-patient-request-component';

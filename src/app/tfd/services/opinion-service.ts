@@ -5,7 +5,7 @@ import { Observable } from 'rxjs';
 // Environments & Models
 import { environment } from '../../../environments/environment.development';
 import { PatientRequest } from '../models/patient-request';
-import { Professional } from '../models/professional';
+import { Professional } from '../models/professional.model';
 import { Opinion } from '../models/opinion';
 
 // Interface genérica para padronizar as respostas de mutação do back-end (Laravel)

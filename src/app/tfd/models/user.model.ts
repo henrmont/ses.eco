@@ -1,5 +1,5 @@
-import { Module } from "./module";
-import { Professional } from "./professional";
+import { Module } from "./module.model";
+import { Professional } from "./professional.model";
 import { Role } from "./role.model";
 
 export interface User {

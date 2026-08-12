@@ -1,6 +1,6 @@
 import { HospitalUnity } from "./hospital-unity";
-import { Professional } from "./professional";
-import { Report } from "./report";
+import { Professional } from "./professional.model";
+import { PatientReport } from "./patient-report.model";
 
 export interface PatientRequest {
     id: number,
@@ -15,7 +15,7 @@ export interface PatientRequest {
     type: string,
     consultation_date: string,
     observation: string,
-    report?: Report,
+    report?: PatientReport,
     medical_professional?: Professional,
     social_professional?: Professional,
     travel_professional?: Professional,

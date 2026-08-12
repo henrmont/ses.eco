@@ -1,4 +1,4 @@
-import { Archive } from "./archive";
+import { Archive } from "./archive.model";
 import { PatientRequest } from "./patient-request";
 
 export interface PatientRequestAttachment {

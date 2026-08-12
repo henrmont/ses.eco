@@ -18,7 +18,7 @@ import { DatasusService } from '../../services/datasus-service';
 
 // Modais (Dialogs)
 import { CreateHospitalUnityComponent } from '../../components/hospital-unity/create-hospital-unity-component/create-hospital-unity-component';
-import { CreatePatientComponent } from '../../components/patient/create-patient-component/create-patient-component';
+import { PatientCreateComponent } from '../../components/patient/patient-create/patient-create.component';
 import { CreatePatientRequestComponent } from '../../components/patient-request/create-patient-request-component/create-patient-request-component';
 import { ImportTravelsComponent } from '../../components/travel/import-travels-component/import-travels-component';
 import { UserCreateComponent } from '../../components/user/user-create/user-create.component';
@@ -278,7 +278,7 @@ export class TfdLayout {
   }
         
   protected createPatient(): void {
-    this.openDialog(CreatePatientComponent, '1200px', '700px', CHANNELS.PATIENTS);
+    this.openDialog(PatientCreateComponent, '1200px', '700px', CHANNELS.PATIENTS);
   }
 
   protected createPatientRequest(): void {
