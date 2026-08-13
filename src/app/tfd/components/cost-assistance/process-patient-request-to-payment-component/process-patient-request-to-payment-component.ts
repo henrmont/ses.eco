@@ -17,7 +17,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CostAssistanceService } from '../../../services/cost-assistance-service';
 import { MessageService } from '../../../../core/services/message-service';
 import { CommonModule } from '@angular/common';
-import { PatientRequestAttachment } from '../../../models/patient-request-attachment';
+import { PatientRequestAttachment } from '../../../models/patient-request-attachment.model';
 
 export interface FixedSlot {
   key: string;

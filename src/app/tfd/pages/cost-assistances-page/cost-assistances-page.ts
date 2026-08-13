@@ -20,15 +20,15 @@ import { NgxMaskPipe } from 'ngx-mask';
 
 // Core, Modelos e Serviços
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
-import { PatientRequest } from '../../models/patient-request';
+import { PatientRequest } from '../../models/patient-request.model';
 import { Permission } from '../../models/permission.model';
 import { Role } from '../../models/role.model';
 import { CostAssistanceService } from '../../services/cost-assistance-service';
 
 // Modais (Dialogs)
 import { HaltedPatientRequestComponent } from '../../components/cost-assistance/halted-patient-request-component/halted-patient-request-component';
-import { ShowPatientRequestComponent } from '../../components/patient-request/show-patient-request-component/show-patient-request-component';
-import { PatientRequestAttachmentsComponent } from '../../components/patient-request/patient-request-attachments-component/patient-request-attachments-component';
+import { PatientRequestDetailComponent } from '../../components/patient-request/patient-request-detail/patient-request-detail.component';
+import { PatientRequestAttachmentsComponent } from '../../components/patient-request/patient-request-attachments/patient-request-attachments.component';
 import { PatientRequestCostAssistancesComponent } from '../../components/cost-assistance/patient-request-cost-assistances-component/patient-request-cost-assistances-component';
 import { HistoryPatientRequestComponent } from '../../components/cost-assistance/history-patient-request-component/history-patient-request-component';
 import { MovePatientRequestFromProcessesComponent } from '../../components/cost-assistance/move-patient-request-from-processes-component/move-patient-request-from-processes-component';
@@ -301,7 +301,7 @@ export class CostAssistancesPage implements OnInit, OnDestroy {
   }
 
   protected showPatientRequest(patientRequest: PatientRequest): void {
-    this.openDialog(ShowPatientRequestComponent, { patient_request: patientRequest }, '1000px', 'auto', false);
+    this.openDialog(PatientRequestDetailComponent, { patient_request: patientRequest }, '1000px', 'auto', false);
   }
 
   protected finishBackPatientRequest(patientRequest: PatientRequest): void {

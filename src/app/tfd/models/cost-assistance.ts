@@ -1,6 +1,6 @@
 import { CostAssistanceType } from "../enums/cost-assistance-type";
 import { CostAssistanceDaily } from "./cost-assistance-daily";
-import { PatientRequest } from "./patient-request";
+import { PatientRequest } from "./patient-request.model";
 
 export interface CostAssistance {
     id: number,

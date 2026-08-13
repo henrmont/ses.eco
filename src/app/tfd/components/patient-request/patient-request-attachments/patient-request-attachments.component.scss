@@ -1,0 +1,102 @@
+@use 'variables' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow: hidden;
+}
+
+mat-dialog-content {
+  overflow-y: auto !important;
+  padding-bottom: 0 !important; // Evita cortes de conteúdo ao final do modal
+}
+
+.attachments-container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 100%;
+}
+
+// Container responsivo que envolve a tabela
+.table-responsive {
+  padding: $spacing-lg; 
+  width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
+}
+
+// Estilização da Tabela de Anexos
+table.mat-mdc-table {
+  margin: 0 auto $spacing-sm auto;
+  background: $color-card-bg;
+  border-radius: $radius-md; 
+  overflow: hidden;
+  box-shadow: $shadow-card; 
+  border-collapse: separate; // Garante o funcionamento correto do border-radius com overflow
+
+  tr.mat-mdc-header-row {
+    height: $material-field-outline-height;
+  }
+
+  tr.mat-mdc-row {
+    height: 52px;
+    transition: background-color $transition-fast;
+  }
+
+  th.mat-mdc-header-cell, 
+  td.mat-mdc-cell {
+    padding: $spacing-md $spacing-lg; 
+    vertical-align: middle;
+  }
+
+  th.mat-mdc-header-cell {
+    font-weight: $font-weight-semibold;
+    background-color: $color-table-header-bg;
+    color: $color-table-header-text;
+  }
+
+  // Alinhamentos e dimensões da coluna de ações
+  .center {
+    text-align: center;
+  }
+
+  th.actions-column-header {
+    width: 160px; // Largura estática ideal para acomodar confortavelmente 3 botões de ação
+  }
+
+  td.actions-cell {
+    vertical-align: middle; 
+  }
+
+  // Wrapper flexível para alinhar perfeitamente os botões de ação
+  .actions-wrapper {
+    @include flex-center($spacing-xs);
+    height: 100%;
+  }
+
+  .icon-edit {
+    color: $color-text-variant; 
+  }
+}
+
+// Feedbacks visuais
+.loading-shade {
+  @include flex-center($spacing-form-gap);
+  padding: $spacing-xl;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-md;
+  color: $color-text-variant;
+  padding: $spacing-xl 0;
+
+  p {
+    margin: 0;
+  }
+}

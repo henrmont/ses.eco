@@ -43,7 +43,7 @@ export const tfdRoutes: Routes = [
     },
     {
         path: 'solicitacoes',
-        loadComponent: () => import('./../pages/patient-requests-page/patient-requests-page').then( m => m.PatientRequestsPage),
+        loadComponent: () => import('./../pages/patient-requests-page/patient-requests.page').then( m => m.PatientRequestsPage),
         data: { permission: 'tfd/solicitação listar' } // Adicionado
     },
     {

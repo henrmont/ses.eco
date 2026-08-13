@@ -20,12 +20,12 @@ import { NgxMaskPipe } from 'ngx-mask';
 
 // Core & Shared
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
-import { PatientRequest } from '../../models/patient-request';
+import { PatientRequest } from '../../models/patient-request.model';
 import { Permission } from '../../models/permission.model';
 import { PaymentService } from '../../services/payment-service';
 
 // Components (Dialogs)
-import { ShowPatientRequestComponent } from '../../components/patient-request/show-patient-request-component/show-patient-request-component';
+import { PatientRequestDetailComponent } from '../../components/patient-request/patient-request-detail/patient-request-detail.component';
 import { MovePatientRequestFromArchiveComponent } from '../../components/payment/move-patient-request-from-archive-component/move-patient-request-from-archive-component';
 
 const TFD_PAYMENTS_CHANNEL = new BroadcastChannel('tfd-payments-channel');
@@ -201,7 +201,7 @@ export class ArchivePaymentPatientRequestsPage implements OnInit {
   // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
 
   protected showPatientRequest(patientRequest: PatientRequest): void {
-    this.openDialog(ShowPatientRequestComponent, { patient_request: patientRequest }, '1000px', 'auto', false);
+    this.openDialog(PatientRequestDetailComponent, { patient_request: patientRequest }, '1000px', 'auto', false);
   }
 
   protected movePatientRequestFromArchive(patientRequest: PatientRequest): void {

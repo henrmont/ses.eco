@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 
 // Environments & Models
 import { environment } from '../../../environments/environment.development';
-import { PatientRequest } from '../models/patient-request';
+import { PatientRequest } from '../models/patient-request.model';
 import { Professional } from '../models/professional.model';
 import { Opinion } from '../models/opinion';
 

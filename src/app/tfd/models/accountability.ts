@@ -1,5 +1,5 @@
 import { AccountabilityDaily } from "./accountability-daily";
-import { PatientRequest } from "./patient-request";
+import { PatientRequest } from "./patient-request.model";
 
 export interface Accountability {
     id: number,

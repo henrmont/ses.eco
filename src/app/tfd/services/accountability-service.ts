@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment.development';
-import { PatientRequest } from '../models/patient-request';
+import { PatientRequest } from '../models/patient-request.model';
 import { Accountability } from '../models/accountability';
 import { AccountabilityDaily } from '../models/accountability-daily';
 import { DailyCost } from '../models/daily-cost.model';

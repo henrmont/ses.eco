@@ -58,6 +58,10 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
   }
 }
 
+mat-form-field mat-spinner {
+  margin-right: 10px !important;
+}
+
 // Oculta o contador incremental de páginas em todos os paginadores do app
 .mat-mdc-paginator-range-label {
   display: none !important;

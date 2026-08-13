@@ -10,7 +10,7 @@ import { ActivatedRoute } from '@angular/router';
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
 import { Permission } from '../../models/permission.model';
 import { HospitalUnityService } from '../../services/hospital-unity-service';
-import { HospitalUnity } from '../../models/hospital-unity';
+import { HospitalUnity } from '../../models/hospital-unity.model';
 import { UpdateHospitalUnityComponent } from '../../components/hospital-unity/update-hospital-unity-component/update-hospital-unity-component';
 import { DeleteHospitalUnityComponent } from '../../components/hospital-unity/delete-hospital-unity-component/delete-hospital-unity-component';
 import { ShowHospitalUnityComponent } from '../../components/hospital-unity/show-hospital-unity-component/show-hospital-unity-component';

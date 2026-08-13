@@ -20,14 +20,14 @@ import { NgxMaskPipe } from 'ngx-mask';
 
 // Core & Shared
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
-import { PatientRequest } from '../../models/patient-request';
+import { PatientRequest } from '../../models/patient-request.model';
 import { Permission } from '../../models/permission.model';
 import { AccountabilityService } from '../../services/accountability-service';
 
 // Modais (Dialogs)
-import { ShowPatientRequestComponent } from '../../components/patient-request/show-patient-request-component/show-patient-request-component';
+import { PatientRequestDetailComponent } from '../../components/patient-request/patient-request-detail/patient-request-detail.component';
 import { UndoMessageComponent } from '../../components/shared/undo-message-component/undo-message-component';
-import { PatientRequestAttachmentsComponent } from '../../components/patient-request/patient-request-attachments-component/patient-request-attachments-component';
+import { PatientRequestAttachmentsComponent } from '../../components/patient-request/patient-request-attachments/patient-request-attachments.component';
 import { HaltedPatientRequestComponent } from '../../components/accountability/halted-patient-request-component/halted-patient-request-component';
 import { PatientRequestAccountabilitiesComponent } from '../../components/accountability/patient-request-accountabilities-component/patient-request-accountabilities-component';
 import { ArchivePatientRequestComponent } from '../../components/accountability/archive-patient-request-component/archive-patient-request-component';
@@ -244,7 +244,7 @@ export class AccountabilitiesPage implements OnInit {
   // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
 
   protected showPatientRequest(patient_request: PatientRequest): void {
-    this.openDialog(ShowPatientRequestComponent, { patient_request }, '1000px', 'auto', false);
+    this.openDialog(PatientRequestDetailComponent, { patient_request }, '1000px', 'auto', false);
   }
 
   protected patientRequestAttachments(patient_request: PatientRequest): void {

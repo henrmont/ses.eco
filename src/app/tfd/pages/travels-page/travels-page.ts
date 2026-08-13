@@ -20,15 +20,15 @@ import { NgxMaskPipe } from 'ngx-mask';
 
 // Core & Shared
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
-import { PatientRequest } from '../../models/patient-request';
+import { PatientRequest } from '../../models/patient-request.model';
 import { Permission } from '../../models/permission.model';
 import { TravelService } from '../../services/travel-service';
 
 // Modais (Dialogs)
-import { ShowPatientRequestComponent } from '../../components/patient-request/show-patient-request-component/show-patient-request-component';
+import { PatientRequestDetailComponent } from '../../components/patient-request/patient-request-detail/patient-request-detail.component';
 import { UndoMessageComponent } from '../../components/shared/undo-message-component/undo-message-component';
 import { HaltedPatientRequestComponent } from '../../components/travel/halted-patient-request-component/halted-patient-request-component';
-import { PatientRequestAttachmentsComponent } from '../../components/patient-request/patient-request-attachments-component/patient-request-attachments-component';
+import { PatientRequestAttachmentsComponent } from '../../components/patient-request/patient-request-attachments/patient-request-attachments.component';
 import { PatientEscortsComponent } from '../../components/patient/patient-escorts/patient-escorts.component';
 import { UndoPatientRequestComponent } from '../../components/travel/undo-patient-request-component/undo-patient-request-component';
 import { PatientRequestTravelsComponent } from '../../components/travel/patient-request-travels-component/patient-request-travels-component';
@@ -272,7 +272,7 @@ export class TravelsPage implements OnInit {
   }
 
   protected showPatientRequest(patient_request: PatientRequest): void {
-    this.openDialog(ShowPatientRequestComponent, { patient_request }, '1000px', 'auto', false);
+    this.openDialog(PatientRequestDetailComponent, { patient_request }, '1000px', 'auto', false);
   }
 
   protected archivePatientRequest(patientRequest: PatientRequest): void {

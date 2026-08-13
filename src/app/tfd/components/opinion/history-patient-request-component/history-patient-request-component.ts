@@ -14,11 +14,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCardModule } from '@angular/material/card';
 
 // Modelos, Serviços e Componentes Relacionados
-import { PatientRequest } from '../../../models/patient-request';
+import { PatientRequest } from '../../../models/patient-request.model';
 import { Opinion } from '../../../models/opinion';
 import { OpinionService } from '../../../services/opinion-service';
 import { StorageService } from '../../../../core/services/storage-service';
-import { ShowPatientRequestComponent } from '../../patient-request/show-patient-request-component/show-patient-request-component';
+import { PatientRequestDetailComponent } from '../../patient-request/patient-request-detail/patient-request-detail.component';
 import { ShowOpinionComponent } from '../show-opinion-component/show-opinion-component';
 
 @Component({
@@ -113,7 +113,7 @@ export class HistoryPatientRequestComponent implements OnInit {
   }
 
   protected showPatientRequest(patient_request: PatientRequest): void {
-    this.openDialog(ShowPatientRequestComponent, { patient_request }, { width: '1000px', height: 'auto' });
+    this.openDialog(PatientRequestDetailComponent, { patient_request }, { width: '1000px', height: 'auto' });
   }
 
   protected showOpinion(opinion: Opinion): void {

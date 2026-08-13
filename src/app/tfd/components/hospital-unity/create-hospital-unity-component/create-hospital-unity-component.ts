@@ -6,7 +6,6 @@ import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
 import { CommonModule } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { ERRORS } from '../../../consts/errors';
 import { MessageService } from '../../../../core/services/message-service';
 import { HospitalUnityService } from '../../../services/hospital-unity-service';
 
@@ -19,7 +18,6 @@ import { HospitalUnityService } from '../../../services/hospital-unity-service';
 export class CreateHospitalUnityComponent {
 
   createHospitalUnityForm: FormGroup;
-  errorMessages = ERRORS
 
   constructor(
     private formBuilder: FormBuilder,

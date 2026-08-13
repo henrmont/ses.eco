@@ -5,7 +5,7 @@ import { Observable, catchError, map, of } from 'rxjs';
 import * as moment from 'moment';
 
 import { environment } from '../../../environments/environment.development';
-import { PatientRequest } from '../models/patient-request';
+import { PatientRequest } from '../models/patient-request.model';
 
 // Interface de apoio para o validador assíncrono de passageiros
 export interface UnifiedPassengerOption {

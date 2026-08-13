@@ -1,5 +1,5 @@
 import { PatientCare } from "./patient-care.model";
-import { PatientRequest } from "./patient-request";
+import { PatientRequest } from "./patient-request.model";
 import { ReportAttachment } from "./report-attachment.model";
 
 export interface PatientReport {

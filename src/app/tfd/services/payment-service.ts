@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment.development';
-import { PatientRequest } from '../models/patient-request';
+import { PatientRequest } from '../models/patient-request.model';
 
 // Interface genérica para padronizar as respostas de mutação do back-end (Laravel)
 export interface ApiResponse {

@@ -20,7 +20,7 @@ import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
 
 // Core & Shared
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
-import { PatientRequest } from '../../models/patient-request';
+import { PatientRequest } from '../../models/patient-request.model';
 import { Permission } from '../../models/permission.model';
 import { OpinionService } from '../../services/opinion-service';
 
@@ -29,10 +29,10 @@ import { ProcessPatientRequestToSocialComponent } from '../../components/opinion
 import { OpinionsComponent } from '../../components/opinion/opinions-component/opinions-component';
 import { UndoPatientRequestComponent } from '../../components/opinion/undo-patient-request-component/undo-patient-request-component';
 import { UndoMessageComponent } from '../../components/shared/undo-message-component/undo-message-component';
-import { PatientRequestAttachmentsComponent } from '../../components/patient-request/patient-request-attachments-component/patient-request-attachments-component';
+import { PatientRequestAttachmentsComponent } from '../../components/patient-request/patient-request-attachments/patient-request-attachments.component';
 import { ArchivePatientRequestComponent } from '../../components/opinion/archive-patient-request-component/archive-patient-request-component';
 import { HaltedPatientRequestComponent } from '../../components/opinion/halted-patient-request-component/halted-patient-request-component';
-import { ShowPatientRequestComponent } from '../../components/patient-request/show-patient-request-component/show-patient-request-component';
+import { PatientRequestDetailComponent } from '../../components/patient-request/patient-request-detail/patient-request-detail.component';
 import { MovePatientRequestFromOthersComponent } from '../../components/opinion/move-patient-request-from-others-component/move-patient-request-from-others-component';
 import { MovePatientRequestFromProcessesComponent } from '../../components/opinion/move-patient-request-from-processes-component/move-patient-request-from-processes-component';
 import { HistoryPatientRequestComponent } from '../../components/opinion/history-patient-request-component/history-patient-request-component';
@@ -303,7 +303,7 @@ export class OpinionsPage implements OnInit {
   // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
 
   protected showPatientRequest(patientRequest: PatientRequest): void {
-    this.openDialog(ShowPatientRequestComponent, { patient_request: patientRequest }, '1000px', 'auto', false);
+    this.openDialog(PatientRequestDetailComponent, { patient_request: patientRequest }, '1000px', 'auto', false);
   }
 
   protected movePatientRequestFromOthers(patientRequest: PatientRequest): void {

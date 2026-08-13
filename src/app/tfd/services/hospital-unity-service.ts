@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { HospitalUnity } from '../models/hospital-unity';
+import { HospitalUnity } from '../models/hospital-unity.model';
 import { environment } from '../../../environments/environment.development';
 
 const requestOptions = {
