@@ -69,9 +69,12 @@ section {
     .bookmark, .warning { color: $color-warning; }
 
     // Colunas de Largura Fixa
-    th.mat-column-is_editable { width: 3%; }
-    th.mat-column-is_valid    { width: 5%; }
-    th.mat-column-actions     { width: 12%; }
+    th.mat-column-is_editable { width: 5%; }
+    th.mat-column-email { width: 27%; }
+    th.mat-column-name { width: 32%; }
+    th.mat-column-type { width: 15%; }
+    th.mat-column-is_valid    { width: 6%; }
+    th.mat-column-actions     { width: 15%; }
 
     td.actions-cell {
       @include flex-center($spacing-xs);

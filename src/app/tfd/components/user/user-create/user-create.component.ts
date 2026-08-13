@@ -1,61 +1,57 @@
-import { 
-  ChangeDetectionStrategy, 
-  Component, 
-  DestroyRef, 
-  OnInit, 
-  inject, 
-  signal 
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatSelectChange, MatSelectModule } from '@angular/material/select';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { finalize } from 'rxjs';
+import { MatSelectChange, MatSelectModule } from '@angular/material/select';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 import { NgxMaskDirective } from 'ngx-mask';
 
-import { UserService } from '../../../services/user.service';
-import { MessageService } from '../../../../core/services/message-service';
+// Core & Models
 import { ApiResponse } from '../../../../core/models/api-response.model';
+import { MessageService } from '../../../../core/services/message-service';
+
+// Services, Enums & Local Components
 import { Professionals } from '../../../enums/professionals';
+import { UserService } from '../../../services/user.service';
 
 @Component({
   selector: 'app-user-create',
   standalone: true,
   imports: [
     FormsModule,
-    ReactiveFormsModule,
-    MatDialogModule,
     MatButtonModule,
+    MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
-    MatSelectModule,
     MatProgressSpinnerModule,
-    NgxMaskDirective
+    MatSelectModule,
+    NgxMaskDirective,
+    ReactiveFormsModule
   ],
   templateUrl: './user-create.component.html',
   styleUrl: './user-create.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UserCreateComponent implements OnInit {
-  // Injeções de Dependência
-  protected readonly data = inject(MAT_DIALOG_DATA, { optional: true });
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
+  protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly userService = inject(UserService);
   private readonly messageService = inject(MessageService);
   private readonly dialogRef = inject(MatDialogRef<UserCreateComponent>);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Formulário Reativo
+  // ==========================================
+  // Propriedades e Estado Reativo
+  // ==========================================
   protected userForm!: FormGroup;
-
-  // Listagem de Enums para o Select
   protected readonly types: string[] = Object.values(Professionals);
-
-  // Estado de Submissão em Signal
   protected readonly isSubmitting = signal<boolean>(false);
 
   // Mapeamento de Mensagens de Erro Tipado
@@ -80,47 +76,16 @@ export class UserCreateComponent implements OnInit {
     ]
   };
 
+  // ==========================================
+  // Ciclo de Vida (Hooks)
+  // ==========================================
   ngOnInit(): void {
     this.initForm();
   }
 
-  private initForm(): void {
-    this.userForm = this.fb.group({
-      name: ['', [Validators.required]],
-      email: ['', [Validators.required, Validators.email], [this.userService.emailUserExistsValidator(null)]],
-      type: ['', [Validators.required]],
-      cns: ['', [Validators.required], [this.userService.cnsUserExistsValidator(null)]],
-      registration: ['', [Validators.required]],
-      professional_register: [{ value: '', disabled: true }],
-      cbo: [{ value: '', disabled: true }]
-    });
-  }
-
-  /**
-   * Avalia o tipo de profissional e ajusta a obrigatoriedade/estado dos campos síncronos
-   */
-  private evaluateProfessionalControls(selectedType: string): void {
-    const isMedico = selectedType === Professionals.MEDICO;
-    const isAssistenteSocial = selectedType === Professionals.ASSISTENTE_SOCIAL;
-
-    const professionalRegisterCtrl = this.userForm.get('professional_register');
-    const cboCtrl = this.userForm.get('cbo');
-
-    if (isMedico || isAssistenteSocial) {
-      professionalRegisterCtrl?.enable();
-    } else {
-      professionalRegisterCtrl?.disable();
-      professionalRegisterCtrl?.reset();
-    }
-
-    if (isMedico) {
-      cboCtrl?.enable();
-    } else {
-      cboCtrl?.disable();
-      cboCtrl?.reset();
-    }
-  }
-
+  // ==========================================
+  // Métodos Acessíveis pelo Template
+  // ==========================================
   protected onSelection(event: MatSelectChange): void {
     this.evaluateProfessionalControls(event.value);
   }
@@ -148,5 +113,50 @@ export class UserCreateComponent implements OnInit {
           this.messageService.showMessage(err?.error?.message || fallbackError);
         }
       });
+  }
+
+  // ==========================================
+  // Métodos Privados
+  // ==========================================
+  private initForm(): void {
+    this.userForm = this.fb.group({
+      name: ['', [Validators.required]],
+      email: [
+        '', 
+        [Validators.required, Validators.email], 
+        [this.userService.emailUserExistsValidator(null)]
+      ],
+      type: ['', [Validators.required]],
+      cns: [
+        '', 
+        [Validators.required], 
+        [this.userService.cnsUserExistsValidator(null)]
+      ],
+      registration: ['', [Validators.required]],
+      professional_register: [{ value: '', disabled: true }],
+      cbo: [{ value: '', disabled: true }]
+    });
+  }
+
+  private evaluateProfessionalControls(selectedType: string): void {
+    const isMedico = selectedType === Professionals.MEDICO;
+    const isAssistenteSocial = selectedType === Professionals.ASSISTENTE_SOCIAL;
+
+    const professionalRegisterCtrl = this.userForm.get('professional_register');
+    const cboCtrl = this.userForm.get('cbo');
+
+    if (isMedico || isAssistenteSocial) {
+      professionalRegisterCtrl?.enable();
+    } else {
+      professionalRegisterCtrl?.disable();
+      professionalRegisterCtrl?.reset();
+    }
+
+    if (isMedico) {
+      cboCtrl?.enable();
+    } else {
+      cboCtrl?.disable();
+      cboCtrl?.reset();
+    }
   }
 }

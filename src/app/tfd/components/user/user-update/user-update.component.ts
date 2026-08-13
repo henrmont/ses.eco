@@ -1,63 +1,59 @@
-import { 
-  ChangeDetectionStrategy, 
-  Component, 
-  DestroyRef, 
-  OnInit, 
-  inject, 
-  signal 
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectChange, MatSelectModule } from '@angular/material/select';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
-import { finalize } from 'rxjs';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectChange, MatSelectModule } from '@angular/material/select';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 import { NgxMaskDirective } from 'ngx-mask';
 
-import { UserService } from '../../../services/user.service';
-import { MessageService } from '../../../../core/services/message-service';
+// Core & Models
 import { ApiResponse } from '../../../../core/models/api-response.model';
+import { MessageService } from '../../../../core/services/message-service';
+
+// Services, Enums & Local Components
 import { Professionals } from '../../../enums/professionals';
+import { UserService } from '../../../services/user.service';
 
 @Component({
   selector: 'app-user-update',
   standalone: true,
   imports: [
     FormsModule,
-    ReactiveFormsModule,
-    MatDialogModule,
     MatButtonModule,
+    MatDialogModule,
     MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatProgressSpinnerModule,
     MatIconModule,
-    NgxMaskDirective
+    MatInputModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+    NgxMaskDirective,
+    ReactiveFormsModule
   ],
   templateUrl: './user-update.component.html',
   styleUrl: './user-update.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UserUpdateComponent implements OnInit {
-  // Injeções de Dependência
-  protected readonly data = inject(MAT_DIALOG_DATA, { optional: true });
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
+  protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly userService = inject(UserService);
   private readonly messageService = inject(MessageService);
   private readonly dialogRef = inject(MatDialogRef<UserUpdateComponent>);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Formulário Reativo
+  // ==========================================
+  // Propriedades e Estado Reativo
+  // ==========================================
   protected userForm!: FormGroup;
-
-  // Listagem de Enums para o Select
   protected readonly types: string[] = Object.values(Professionals);
-
-  // Estado de Submissão em Signal
   protected readonly isSubmitting = signal<boolean>(false);
 
   // Mapeamento de Mensagens de Erro Tipado
@@ -82,11 +78,57 @@ export class UserUpdateComponent implements OnInit {
     ]
   };
 
+  // ==========================================
+  // Ciclo de Vida (Hooks)
+  // ==========================================
   ngOnInit(): void {
     this.initForm();
     this.loadInitialPermissions();
   }
 
+  // ==========================================
+  // Métodos Acessíveis pelo Template (Protected)
+  // ==========================================
+  protected onSelection(event: MatSelectChange): void {
+    this.evaluateProfessionalControls(event.value);
+    this.userForm.markAsDirty();
+  }
+
+  protected onSubmit(): void {
+    const userId = this.data?.user?.id;
+    
+    if (!userId) {
+      this.messageService.showMessage('Identificador do usuário inválido.');
+      return;
+    }
+
+    if (this.userForm.invalid) {
+      this.userForm.markAllAsTouched();
+      return;
+    }
+
+    this.isSubmitting.set(true);
+
+    this.userService.updateUser(userId, this.userForm.getRawValue())
+      .pipe(
+        finalize(() => this.isSubmitting.set(false)),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (response: ApiResponse) => {
+          this.messageService.showMessage(response?.message || 'Usuário atualizado com sucesso!');
+          this.dialogRef.close(true);
+        },
+        error: (err) => {
+          const fallbackError = 'Erro ao atualizar o usuário.';
+          this.messageService.showMessage(err?.error?.message || fallbackError);
+        }
+      });
+  }
+
+  // ==========================================
+  // Métodos Privados / Auxiliares
+  // ==========================================
   private initForm(): void {
     const professional = this.data?.user?.professional;
     const initialEmail = this.data?.user?.email || null;
@@ -115,7 +157,6 @@ export class UserUpdateComponent implements OnInit {
     const initialType = this.userForm.get('type')?.value;
     if (initialType) {
       this.evaluateProfessionalControls(initialType);
-      this.userForm.updateValueAndValidity();
     }
   }
 
@@ -139,42 +180,5 @@ export class UserUpdateComponent implements OnInit {
       cboCtrl?.disable();
       cboCtrl?.reset();
     }
-  }
-
-  protected onSelection(event: MatSelectChange): void {
-    this.evaluateProfessionalControls(event.value);
-    this.userForm.markAsDirty();
-    this.userForm.updateValueAndValidity();
-  }
-
-  protected onSubmit(): void {
-    const userId = this.data?.user?.id;
-    if (!userId) {
-      this.messageService.showMessage('Identificador do usuário inválido.');
-      return;
-    }
-
-    if (this.userForm.invalid) {
-      this.userForm.markAllAsTouched();
-      return;
-    }
-
-    this.isSubmitting.set(true);
-
-    this.userService.updateUser(userId, this.userForm.getRawValue())
-      .pipe(
-        finalize(() => this.isSubmitting.set(false)),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe({
-        next: (response: ApiResponse) => {
-          this.messageService.showMessage(response?.message || 'Usuário atualizado com sucesso!');
-          this.dialogRef.close(true);
-        },
-        error: (err) => {
-          const fallbackError = 'Erro ao atualizar o usuário.';
-          this.messageService.showMessage(err?.error?.message || fallbackError);
-        }
-      });
   }
 }

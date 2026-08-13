@@ -1,22 +1,19 @@
 @use 'variables' as *;
 
 :host {
-  display: block;
-  width: 100%;
+  @include dialog-base;
 }
 
 mat-dialog-content {
-  display: flex;
-  flex-direction: column;
-  row-gap: $spacing-form-gap;
-  padding-top: $spacing-form-gap; // Preserva a margem para evitar corte do outline
+  @include dialog-content;
+  padding-top: $spacing-modal-pt;
 }
 
-// Grid para campos divididos na mesma linha
 .line {
   display: grid;
   grid-template-columns: 1fr;
   column-gap: $spacing-xl;
+  row-gap: $spacing-form-gap;
 
   &.double-columns {
     grid-template-columns: 1fr 1fr;

@@ -3,11 +3,13 @@
 </h2>
 
 <mat-dialog-content>
-  @if (data?.user?.module?.pivot?.is_editable) {
-    Você deseja travar a edição do usuário <strong>{{ data?.user?.professional?.name || data?.user?.name }}</strong>?
-  } @else {
-    Você deseja destravar a edição do usuário <strong>{{ data?.user?.professional?.name || data?.user?.name }}</strong>?
-  }
+  <p>
+    @if (data?.user?.module?.pivot?.is_editable) {
+      Você deseja travar a edição do usuário <strong>{{ data?.user?.professional?.name || data?.user?.name }}</strong>?
+    } @else {
+      Você deseja destravar a edição do usuário <strong>{{ data?.user?.professional?.name || data?.user?.name }}</strong>?
+    }
+  </p>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">

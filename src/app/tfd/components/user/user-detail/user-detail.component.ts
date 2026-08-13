@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { NgxMaskPipe } from 'ngx-mask';
 
@@ -9,10 +9,10 @@ import { NgxMaskPipe } from 'ngx-mask';
   selector: 'app-user-detail',
   standalone: true,
   imports: [
-    MatDialogModule, 
-    MatButtonModule, 
-    MatCardModule, 
-    MatIconModule, 
+    MatButtonModule,
+    MatCardModule,
+    MatDialogModule,
+    MatIconModule,
     NgxMaskPipe
   ],
   templateUrl: './user-detail.component.html',
@@ -20,6 +20,8 @@ import { NgxMaskPipe } from 'ngx-mask';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UserDetailComponent {
-  // Injeção de Dados Padronizada
-  protected readonly data = inject(MAT_DIALOG_DATA, { optional: true });
+  // ==========================================
+  // Injeção de Dependências e Dados
+  // ==========================================
+  protected readonly data = inject(MAT_DIALOG_DATA);
 }

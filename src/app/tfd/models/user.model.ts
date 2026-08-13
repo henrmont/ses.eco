@@ -6,12 +6,10 @@ export interface User {
     id?: number;
     name?: string;
     email?: string;
+    image?: string;
+    module_id?: number,
+    is_valid?: boolean;
     roles?: Role[];
     module?: Module;
-    modules?: Module[];
-    image?: string;
-    is_valid?: boolean;
-    is_editable?: boolean;
     professional?: Professional;
-    type?: string;
 }

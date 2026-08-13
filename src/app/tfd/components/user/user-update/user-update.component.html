@@ -7,7 +7,7 @@
       <mat-form-field appearance="outline">
         <mat-label>Nome</mat-label>
         <input matInput type="text" formControlName="name">
-        @for (item of errorMessages['name']; track item.type) {
+        @for (item of errorMessages['name']; track $index) {
           <mat-error [hidden]="!userForm.get('name')?.hasError(item.type)">
             {{ item.message }}
           </mat-error>
@@ -20,7 +20,7 @@
         <mat-label>Email</mat-label>
         <input matInput type="email" formControlName="email" readonly>
         <mat-icon matSuffix class="locked-icon">lock</mat-icon>
-        @for (item of errorMessages['email']; track item.type) {
+        @for (item of errorMessages['email']; track $index) {
           <mat-error [hidden]="!userForm.get('email')?.hasError(item.type)">
             {{ item.message }}
           </mat-error>
@@ -30,11 +30,11 @@
       <mat-form-field appearance="outline">
         <mat-label>Tipo</mat-label>
         <mat-select formControlName="type" (selectionChange)="onSelection($event)">
-          @for (item of types; track item) {
+          @for (item of types; track $index) {
             <mat-option [value]="item">{{ item }}</mat-option>
           }
         </mat-select>
-        @for (item of errorMessages['type']; track item.type) {
+        @for (item of errorMessages['type']; track $index) {
           <mat-error [hidden]="!userForm.get('type')?.hasError(item.type)">
             {{ item.message }}
           </mat-error>
@@ -46,7 +46,7 @@
       <mat-form-field appearance="outline">
         <mat-label>CNS</mat-label>
         <input matInput type="text" mask="000 0000 0000 0000" formControlName="cns">
-        @for (item of errorMessages['cns']; track item.type) {
+        @for (item of errorMessages['cns']; track $index) {
           <mat-error [hidden]="!userForm.get('cns')?.hasError(item.type)">
             {{ item.message }}
           </mat-error>
@@ -56,7 +56,7 @@
       <mat-form-field appearance="outline">
         <mat-label>Matrícula</mat-label>
         <input matInput type="text" mask="000000" formControlName="registration">
-        @for (item of errorMessages['registration']; track item.type) {
+        @for (item of errorMessages['registration']; track $index) {
           <mat-error [hidden]="!userForm.get('registration')?.hasError(item.type)">
             {{ item.message }}
           </mat-error>

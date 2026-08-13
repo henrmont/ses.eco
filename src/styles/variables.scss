@@ -93,7 +93,15 @@ $search-input-max-width: 500px;
   gap: $gap;
 }
 
-@mixin modal-dialog-base {
+@mixin dialog-content {
+  display: flex;
+  flex-direction: column;
+  row-gap: $spacing-form-gap;
+  overflow-y: auto;
+  max-height: $modal-content-max-height;
+}
+
+@mixin dialog-base {
   display: flex;
   flex-direction: column;
   width: 100%;

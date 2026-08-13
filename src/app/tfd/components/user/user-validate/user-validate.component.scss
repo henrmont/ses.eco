@@ -1,4 +1,9 @@
+@use 'variables' as *;
+
 :host {
-  display: block;
-  width: 100%;
+  @include dialog-base;
+}
+
+mat-dialog-content {
+  @include dialog-content;
 }

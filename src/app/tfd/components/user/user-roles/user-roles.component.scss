@@ -1,12 +1,12 @@
 @use 'variables' as *;
 
 :host {
-  @include modal-dialog-base;
+  @include dialog-base;
 }
 
 mat-dialog-content {
-  overflow-y: auto !important; 
-  padding-top: $spacing-sm !important;
+  @include dialog-content;
+  padding-top: $spacing-modal-pt;
 }
 
 .subtitle {

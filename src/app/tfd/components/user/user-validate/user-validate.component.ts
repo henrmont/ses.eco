@@ -2,19 +2,22 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 
-import { UserService } from '../../../services/user.service';
-import { MessageService } from '../../../../core/services/message-service';
+// Core & Models
 import { ApiResponse } from '../../../../core/models/api-response.model';
+import { MessageService } from '../../../../core/services/message-service';
+
+// Services & Local Components
+import { UserService } from '../../../services/user.service';
 
 @Component({
   selector: 'app-user-validate',
   standalone: true,
   imports: [
-    MatDialogModule,
     MatButtonModule,
+    MatDialogModule,
     MatProgressSpinnerModule
   ],
   templateUrl: './user-validate.component.html',
@@ -22,18 +25,26 @@ import { ApiResponse } from '../../../../core/models/api-response.model';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UserValidateComponent {
-  // Injeções de Dependência
-  protected readonly data = inject(MAT_DIALOG_DATA, { optional: true });
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
+  protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly userService = inject(UserService);
   private readonly messageService = inject(MessageService);
   private readonly dialogRef = inject(MatDialogRef<UserValidateComponent>);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Estado Reativo via Signal
+  // ==========================================
+  // Propriedades e Estado Reativo
+  // ==========================================
   protected readonly isSubmitting = signal<boolean>(false);
 
+  // ==========================================
+  // Métodos Acessíveis pelo Template (Protected)
+  // ==========================================
   protected onSubmit(): void {
     const userId = this.data?.user?.id;
+
     if (!userId) {
       this.messageService.showMessage('Identificador do usuário inválido.');
       return;
@@ -52,8 +63,8 @@ export class UserValidateComponent {
           this.dialogRef.close(true);
         },
         error: (err) => {
-          const fallbackMessage = 'Erro ao tentar alterar a validação do usuário.';
-          this.messageService.showMessage(err?.error?.message || fallbackMessage);
+          const fallbackError = 'Erro ao tentar alterar a validação do usuário.';
+          this.messageService.showMessage(err?.error?.message || fallbackError);
         }
       });
   }

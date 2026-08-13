@@ -1,7 +1,7 @@
 @use 'variables' as *;
 
 :host {
-  @include modal-dialog-base;
+  @include dialog-base;
 }
 
 mat-dialog-content {

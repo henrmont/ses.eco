@@ -50,7 +50,7 @@
                   type="button"
                   [matTooltip]="element.module?.pivot?.is_valid ? 'Invalidar usuário' : 'Validar usuário'" 
                   (click)="userValidate(element)" 
-                  [disabled]="element.isEditable || checkPermissions('tfd/usuário validar')">
+                  [disabled]="element.is_editable || checkPermissions('tfd/usuário validar')">
             <mat-icon [className]="element.module?.pivot?.is_valid ? 'valid' : 'invalid'">
               {{ element.module?.pivot?.is_valid ? 'check' : 'close' }}
             </mat-icon>
@@ -66,7 +66,7 @@
                   type="button" 
                   matTooltip="Detalhes do usuário" 
                   (click)="userDetail(element)" 
-                  [disabled]="element.isEditable">
+                  [disabled]="element.is_editable">
             <mat-icon>visibility</mat-icon>
           </button>
           
@@ -74,7 +74,7 @@
                   type="button" 
                   matTooltip="Regras do usuário" 
                   (click)="userRoles(element)" 
-                  [disabled]="element.isEditable || checkPermissions('tfd/usuário atualizar')">
+                  [disabled]="element.is_editable || checkPermissions('tfd/usuário atualizar')">
             <mat-icon>rule</mat-icon>
           </button>
           
@@ -82,7 +82,7 @@
                   type="button" 
                   matTooltip="Atualizar usuário" 
                   (click)="userUpdate(element)" 
-                  [disabled]="element.isEditable || checkPermissions('tfd/usuário atualizar')">
+                  [disabled]="element.is_editable || checkPermissions('tfd/usuário atualizar')">
             <mat-icon>drive_file_rename_outline</mat-icon>
           </button>
           
@@ -90,7 +90,7 @@
                   type="button" 
                   matTooltip="Deletar usuário" 
                   (click)="userDelete(element)" 
-                  [disabled]="element.isEditable || checkPermissions('tfd/usuário deletar')">
+                  [disabled]="element.is_editable || checkPermissions('tfd/usuário deletar')">
             <mat-icon>delete</mat-icon>
           </button>
         </td>
