@@ -9,14 +9,14 @@ import { saveAs } from 'file-saver';
 
 import { StorageService } from '../../../../core/services/storage-service';
 import { PatientCare } from '../../../models/patient-care.model';
-import { Opinion } from '../../../models/opinion';
+import { PatientRequestOpinion } from '../../../models/patient-request-opinion.model';
 import { Travel } from '../../../models/travel';
 import { CostAssistance } from '../../../models/cost-assistance';
 import { Accountability } from '../../../models/accountability';
 
 import { PatientDetailComponent } from '../../patient/patient-detail/patient-detail.component';
 import { PatientReportDetailComponent } from '../../patient/patient-report-detail/patient-report-detail.component';
-import { ShowOpinionComponent } from '../../opinion/show-opinion-component/show-opinion-component';
+import { PatientRequestOpinionDetailComponent } from '../../patient-request-opinions/patient-request-opinion-detail/patient-request-opinion-detail.component';
 import { ShowTravelComponent } from '../../travel/show-travel-component/show-travel-component';
 import { ShowCostAssistanceComponent } from '../../cost-assistance/show-cost-assistance-component/show-cost-assistance-component';
 import { ShowAccountabilityComponent } from '../../accountability/show-accountability-component/show-accountability-component';
@@ -93,8 +93,8 @@ export class PatientRequestDetailComponent {
     this.openSubDialog(PatientReportDetailComponent, { report }, '800px');
   }
 
-  protected showOpinion(opinion: Opinion): void {
-    this.openSubDialog(ShowOpinionComponent, { opinion }, '1200px', '700px');
+  protected showOpinion(opinion: PatientRequestOpinion): void {
+    this.openSubDialog(PatientRequestOpinionDetailComponent, { opinion }, '1200px', '700px');
   }
 
   protected showTravel(travel: Travel): void {

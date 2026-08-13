@@ -48,12 +48,12 @@ export const tfdRoutes: Routes = [
     },
     {
         path: 'pareceres',
-        loadComponent: () => import('./../pages/opinions-page/opinions-page').then( m => m.OpinionsPage),
+        loadComponent: () => import('./../pages/patient-request-opinions-page/patient-request-opinions.page').then( m => m.PatientRequestOpinionsPage),
         data: { permission: 'tfd/parecer listar' } // Adicionado
     },
     {
         path: 'arquivo-pareceres',
-        loadComponent: () => import('./../pages/archive-opinion-patient-requests-page/archive-opinion-patient-requests-page').then( m => m.ArchiveOpinionPatientRequestsPage),
+        loadComponent: () => import('./../pages/archive-patient-request-opinions-page/archive-patient-request-opinions.page').then( m => m.ArchivePatientRequestOpinionsPage),
         data: { permission: 'tfd/parecer listar' } // Adicionado
     },
     {

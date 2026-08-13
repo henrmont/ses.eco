@@ -16,14 +16,13 @@ import { MatCardModule } from '@angular/material/card';
 // Modelos, Serviços e Componentes Relacionados
 import { PatientRequest } from '../../../models/patient-request.model';
 import { PatientRequestOpinion } from '../../../models/patient-request-opinion.model';
-import { CostAssistanceService } from '../../../services/cost-assistance-service';
+import { PatientRequestOpinionService } from '../../../services/patient-request-opinion.service';
 import { StorageService } from '../../../../core/services/storage-service';
 import { PatientRequestDetailComponent } from '../../patient-request/patient-request-detail/patient-request-detail.component';
-import { MovePatientRequestFromHistoryComponent } from '../move-patient-request-from-history-component/move-patient-request-from-history-component';
-import { PatientRequestOpinionDetailComponent } from '../../patient-request-opinions/patient-request-opinion-detail/patient-request-opinion-detail.component';
+import { PatientRequestOpinionDetailComponent } from '../patient-request-opinion-detail/patient-request-opinion-detail.component';
 
 @Component({
-  selector: 'app-history-patient-request-component',
+  selector: 'app-patient-request-history',
   standalone: true,
   imports: [
     CommonModule,
@@ -35,15 +34,15 @@ import { PatientRequestOpinionDetailComponent } from '../../patient-request-opin
     MatExpansionModule,
     MatCardModule
   ],
-  templateUrl: './history-patient-request-component.html',
-  styleUrl: './history-patient-request-component.scss',
+  templateUrl: './patient-request-history.component.html',
+  styleUrl: './patient-request-history.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class HistoryPatientRequestComponent implements OnInit {
+export class PatientRequestHistoryComponent implements OnInit {
   // Injeções de dependência modernas via inject()
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly dialog = inject(MatDialog);
-  private readonly costAssistanceService = inject(CostAssistanceService);
+  private readonly opinionService = inject(PatientRequestOpinionService);
   private readonly storageService = inject(StorageService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -69,7 +68,7 @@ export class HistoryPatientRequestComponent implements OnInit {
 
     this.isLoading.set(true);
 
-    this.costAssistanceService.getHistoryPatientRequests(reportId, requestId)
+    this.opinionService.getHistoryPatientRequests(reportId, requestId)
       .pipe(
         finalize(() => this.isLoading.set(false)),
         takeUntilDestroyed(this.destroyRef)
@@ -85,8 +84,8 @@ export class HistoryPatientRequestComponent implements OnInit {
   /**
    * Centraliza a abertura de modais com tipagem genérica básica para reutilização limpa.
    */
-  private openDialog(component: any, data: any, options: { width?: string; height?: string } = {}): any {
-    return this.dialog.open(component, {
+  private openDialog(component: any, data: any, options: { width?: string; height?: string } = {}): void {
+    this.dialog.open(component, {
       width: options.width || '1200px',
       height: options.height || '700px',
       disableClose: true,
@@ -119,16 +118,5 @@ export class HistoryPatientRequestComponent implements OnInit {
 
   protected showOpinion(opinion: PatientRequestOpinion): void {
     this.openDialog(PatientRequestOpinionDetailComponent, { opinion });
-  }
-
-  protected movePatientRequestFromHistory(patient_request: PatientRequest): void {
-    this.openDialog(MovePatientRequestFromHistoryComponent, { patient_request }, { width: '400px', height: 'auto' })
-      .afterClosed()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((result: any) => {
-        if (result) {
-          this.getHistoryPatientRequests();
-        }
-      });
   }
 }

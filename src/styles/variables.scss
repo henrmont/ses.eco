@@ -13,6 +13,9 @@ $color-primary: var(--mdc-theme-primary, #6750a4);
 // Cores de Tabela e Estruturais
 $color-table-header-bg: #f1f5f9;  
 $color-table-header-text: #334155;
+$color-table-text-muted: #64748b;     // ✨ Adicionado para textos secundários e descrições
+$color-table-hover: #f8fafc;          // ✨ Adicionado para hover de linhas zebradas
+$color-table-empty-text: #94a3b8;     // ✨ Adicionado para textos vazios/itálico
 $color-divider: #e5e7eb; 
 $color-border-divider: rgba(0, 0, 0, 0.1);
 $color-border-subtle: rgba(0, 0, 0, 0.08); // ✨ Adicionado
