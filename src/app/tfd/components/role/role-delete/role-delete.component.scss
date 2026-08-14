@@ -1,13 +1,13 @@
 @use 'variables' as *;
 
 :host {
-  display: block;
-  width: 100%;
+  @include dialog-base;
 }
 
 mat-dialog-content {
+  @include dialog-content;
   span {
     color: $color-danger;
-    font-size: $font-size-sm;
+    font-size: $font-size-sm; // Utiliza o token padronizado
   }
 }

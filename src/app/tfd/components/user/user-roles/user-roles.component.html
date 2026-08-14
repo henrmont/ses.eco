@@ -13,12 +13,12 @@
       
       <div class="details-container">
         <div class="line cols-1-1">
-          @for (item of roles(); track item.id) {
+          @for (item of roles(); track $index) {
             <mat-card appearance="outlined" class="detail-card role-card">
               <mat-card-content class="role-card-content">
-                <span class="role-name">{{ formatRoleName(item.name) }}</span>
+                <span class="role-name">{{ formatRoleName(item.name!) }}</span>
                 <mat-slide-toggle
-                  [checked]="checkRole(item.id)"
+                  [checked]="checkRole(item.id!)"
                   (toggleChange)="toggleRole(item)"
                   color="primary">
                 </mat-slide-toggle>

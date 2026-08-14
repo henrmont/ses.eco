@@ -1,15 +1,12 @@
 @use 'variables' as *;
 
 :host {
-  display: block;
-  width: 100%;
+  @include dialog-base;
 }
 
 mat-dialog-content {
-  display: flex;
-  flex-direction: column;
-  row-gap: $spacing-form-gap;
-  padding-top: $spacing-form-gap;
+  @include dialog-content;
+  padding-top: $spacing-modal-pt;
 }
 
 // Grid estrutural para linhas do formulário

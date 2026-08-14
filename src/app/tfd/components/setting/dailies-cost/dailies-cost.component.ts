@@ -1,19 +1,19 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 
 // Angular Material & CDK
+import { Overlay } from '@angular/cdk/overlay';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatListModule } from '@angular/material/list';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { Overlay } from '@angular/cdk/overlay';
 
-// Core & Shared
+// Core, Services & Models
 import { DailyCost } from '../../../models/daily-cost.model';
 import { SettingService } from '../../../services/setting.service';
 import { DailyCostUpdateComponent } from '../daily-cost-update/daily-cost-update.component';
@@ -25,7 +25,7 @@ const TFD_SETTINGS_CHANNEL = new BroadcastChannel('tfd-settings-channel');
   standalone: true,
   imports: [
     CommonModule, 
-    MatDialogModule,
+    MatDialogModule, 
     MatCardModule, 
     MatListModule, 
     MatIconModule, 
@@ -38,21 +38,27 @@ const TFD_SETTINGS_CHANNEL = new BroadcastChannel('tfd-settings-channel');
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DailiesCostComponent implements OnInit, OnDestroy {
-  // Injeções de Dependência Dinâmicas
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
   private readonly dialog = inject(MatDialog);
   private readonly overlay = inject(Overlay);
   private readonly settingService = inject(SettingService);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Estados gerenciados reativamente via Signals
+  // ==========================================
+  // Propriedades e Estado Reativo
+  // ==========================================
   protected readonly dailiesCost = signal<DailyCost[]>([]);
   protected readonly isLoading = signal<boolean>(true);
 
+  // ==========================================
+  // Ciclo de Vida (Hooks)
+  // ==========================================
   ngOnInit(): void {
     this.fetchDailiesCost();
 
-    // Sincronização em tempo real entre abas/módulos do sistema
-    TFD_SETTINGS_CHANNEL.onmessage = (message) => {
+    TFD_SETTINGS_CHANNEL.onmessage = (message: MessageEvent<string>) => {
       if (message.data === 'update_dailies') {
         this.fetchDailiesCost();
       }
@@ -63,10 +69,16 @@ export class DailiesCostComponent implements OnInit, OnDestroy {
     TFD_SETTINGS_CHANNEL.close();
   }
 
-  /**
-   * Obtém a listagem atualizada de custos de diárias do servidor
-   * e desliga o estado reativo de carregamento da tela.
-   */
+  // ==========================================
+  // Métodos Acessíveis pelo Template (Protected)
+  // ==========================================
+  protected updateDailyCost(dailyCost: DailyCost): void {
+    this.openDialog(DailyCostUpdateComponent, { daily_cost: dailyCost });
+  }
+
+  // ==========================================
+  // Métodos Privados / Auxiliares
+  // ==========================================
   private fetchDailiesCost(): void {
     this.isLoading.set(true);
 
@@ -80,19 +92,16 @@ export class DailiesCostComponent implements OnInit, OnDestroy {
           this.dailiesCost.set(response || []);
         },
         error: () => {
-          this.dailiesCost.set([]); // Fallback seguro em caso de erro na API
+          this.dailiesCost.set([]);
         }
       });
   }
 
-  /**
-   * Centralizador genérico para abertura e gerenciamento de modais dialógicos padronizado.
-   */
   private openDialog<T>(
-    component: new (...args: any[]) => T, 
-    data: { daily_cost: DailyCost }, 
-    width = '400px', 
-    height = 'auto', 
+    component: new (...args: any[]) => T,
+    data: { daily_cost: DailyCost },
+    width = '400px',
+    height = 'auto',
     requiresRefresh = true
   ): void {
     this.dialog.open(component, {
@@ -104,24 +113,15 @@ export class DailiesCostComponent implements OnInit, OnDestroy {
       data
     }).afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(result => {
+      .subscribe((result) => {
         if (result && requiresRefresh) {
           this.handleDataChange();
         }
       });
   }
 
-  /**
-   * Executa a atualização local dos dados e notifica outras abas ativas.
-   */
   private handleDataChange(): void {
     this.fetchDailiesCost();
     TFD_SETTINGS_CHANNEL.postMessage('update_dailies');
-  }
-
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
-
-  protected updateDailyCost(dailyCost: DailyCost): void { 
-    this.openDialog(DailyCostUpdateComponent, { daily_cost: dailyCost }); 
   }
 }

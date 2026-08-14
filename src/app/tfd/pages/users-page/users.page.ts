@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnDestroy, OnInit, signal, viewChild, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, Injector, inject, OnDestroy, OnInit, viewChild, effect } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -40,16 +40,7 @@ interface UserTableRow extends User {
 @Component({
   selector: 'app-users-page',
   standalone: true,
-  imports: [
-    MatButtonModule,
-    MatFormFieldModule, 
-    MatIconModule, 
-    MatInputModule, 
-    MatPaginatorModule,
-    MatSortModule,
-    MatTableModule, 
-    MatTooltipModule
-  ],
+  imports: [MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatPaginatorModule, MatSortModule, MatTableModule, MatTooltipModule],
   templateUrl: './users.page.html',
   styleUrl: './users.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -63,6 +54,7 @@ export class UsersPage implements OnInit, OnDestroy {
   private readonly overlay = inject(Overlay);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // ViewChildren / Elementos da View
@@ -85,30 +77,15 @@ export class UsersPage implements OnInit, OnDestroy {
     'actions'
   ];
 
-  private readonly rawList = signal<UserTableRow[]>([]);
-
-  protected readonly dataSource = computed(() => {
-    const dataSource = new MatTableDataSource(this.rawList());
-    const sortRef = this.userSort();
-    const paginatorRef = this.userPaginator();
-
-    if (sortRef) dataSource.sort = sortRef;
-    if (paginatorRef) dataSource.paginator = paginatorRef;
-
-    return dataSource;
-  });
+  protected readonly dataSource = new MatTableDataSource<UserTableRow>([]);
 
   // ==========================================
   // Ciclo de Vida (Hooks)
   // ==========================================
   ngOnInit(): void {
+    this.setupTableBindings();
     this.fetchUsers(true);
-
-    TFD_USERS_CHANNEL.onmessage = (message: MessageEvent<string>) => {
-      if (message.data === 'update') {
-        this.fetchUsers(false);
-      }
-    };
+    this.listenToBroadcastChannel();
   }
 
   ngOnDestroy(): void {
@@ -120,12 +97,10 @@ export class UsersPage implements OnInit, OnDestroy {
   // ==========================================
   protected applyFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    const dataSource = this.dataSource();
+    this.dataSource.filter = filterValue.trim().toLowerCase();
     
-    dataSource.filter = filterValue.trim().toLowerCase();
-    
-    if (dataSource.paginator) {
-      dataSource.paginator.firstPage();
+    if (this.dataSource.paginator) {
+      this.dataSource.paginator.firstPage();
     }
   }
 
@@ -167,6 +142,16 @@ export class UsersPage implements OnInit, OnDestroy {
   // ==========================================
   // Métodos Privados / Auxiliares
   // ==========================================
+  private setupTableBindings(): void {
+    effect(() => {
+      const sort = this.userSort();
+      const paginator = this.userPaginator();
+
+      if (sort) this.dataSource.sort = sort;
+      if (paginator) this.dataSource.paginator = paginator;
+    }, { injector: this.injector });
+  }
+
   private fetchUsers(showLoading = false): void {
     if (showLoading) this.openLoading();
 
@@ -182,18 +167,22 @@ export class UsersPage implements OnInit, OnDestroy {
       .subscribe({
         next: (response) => {
           const rawData = response || [];
-          const mappedUsers = rawData.map(item => this.mapUserToRow(item));
-          this.rawList.set(mappedUsers);
+          this.dataSource.data = rawData.map(item => this.mapUserToRow(item));
         },
         error: () => {
-          this.rawList.set([]);
+          this.dataSource.data = [];
         }
       });
   }
 
-  /**
-   * Mapeador de Dados (Lógica de apresentação temporária até migração total para a API)
-   */
+  private listenToBroadcastChannel(): void {
+    TFD_USERS_CHANNEL.onmessage = (message: MessageEvent<string>) => {
+      if (message.data === 'update') {
+        this.fetchUsers(false);
+      }
+    };
+  }
+
   private mapUserToRow(item: any): UserTableRow {
     const userObj: User = {
       id: item.id,

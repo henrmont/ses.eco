@@ -5,8 +5,8 @@
 }
 
 mat-dialog-content {
-  overflow-y: auto !important; 
-  padding-top: $spacing-modal-pt !important;
+  @include dialog-content;
+  padding-top: $spacing-modal-pt;
 }
 
 .details-container {
@@ -41,9 +41,8 @@ mat-card {
   }
 
   mat-card-title {
-    font-weight: $font-weight-semibold;
+    margin-left: $spacing-sm;
     font-size: $font-size-lg;
-    margin: 0;
   }
 }
 

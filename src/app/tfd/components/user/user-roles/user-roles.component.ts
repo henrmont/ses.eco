@@ -70,12 +70,12 @@ export class UserRolesComponent implements OnInit {
     if (!rolesControl) return;
 
     const currentRoles: number[] = [...rolesControl.value];
-    const index = currentRoles.indexOf(item.id);
+    const index = currentRoles.indexOf(item.id!);
 
     if (index !== -1) {
       currentRoles.splice(index, 1);
     } else {
-      currentRoles.push(item.id);
+      currentRoles.push(item.id!);
     }
 
     this.userRolesForm.markAsDirty();

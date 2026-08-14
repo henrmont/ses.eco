@@ -12,7 +12,7 @@
           placeholder="Ex: Programa de Gestão" 
           formControlName="program"
         >
-        @for (item of errorMessages['program']; track item.type) {
+        @for (item of errorMessages['program']; track $index) {
           <mat-error [hidden]="!budgetAllocationForm.get('program')?.hasError(item.type)">
             {{ item.message }}
           </mat-error>
@@ -27,7 +27,7 @@
           placeholder="Ex: Projeto Expansão" 
           formControlName="active_project"
         >
-        @for (item of errorMessages['active_project']; track item.type) {
+        @for (item of errorMessages['active_project']; track $index) {
           <mat-error [hidden]="!budgetAllocationForm.get('active_project')?.hasError(item.type)">
             {{ item.message }}
           </mat-error>
@@ -44,7 +44,7 @@
           placeholder="Ex: 3.3.90.30" 
           formControlName="nature_of_expenditure"
         >
-        @for (item of errorMessages['nature_of_expenditure']; track item.type) {
+        @for (item of errorMessages['nature_of_expenditure']; track $index) {
           <mat-error [hidden]="!budgetAllocationForm.get('nature_of_expenditure')?.hasError(item.type)">
             {{ item.message }}
           </mat-error>
@@ -59,7 +59,7 @@
           placeholder="Ex: Recursos Próprios / Tesouro" 
           formControlName="source"
         >
-        @for (item of errorMessages['source']; track item.type) {
+        @for (item of errorMessages['source']; track $index) {
           <mat-error [hidden]="!budgetAllocationForm.get('source')?.hasError(item.type)">
             {{ item.message }}
           </mat-error>

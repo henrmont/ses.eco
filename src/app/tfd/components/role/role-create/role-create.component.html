@@ -11,7 +11,7 @@
         <mat-form-field appearance="outline">
           <mat-label>Nome</mat-label>
           <input matInput type="text" formControlName="name">
-          @for (item of errorMessages['name']; track item.type) {
+          @for (item of errorMessages['name']; track $index) {
             <mat-error [hidden]="!roleForm.get('name')?.hasError(item.type)">
               {{ item.message }}
             </mat-error>
@@ -20,7 +20,7 @@
       </div>
 
       <div class="details-container">
-        @for (group of permissionGroups; track group.label) {
+        @for (group of permissionGroups; track $index) {
           <mat-card appearance="outlined" class="detail-card permission-card">
             <mat-card-header>
               <div class="title-header">
@@ -31,7 +31,7 @@
             
             <mat-card-content>
               <div class="group-grid">
-                @for (item of getFilteredRole(group.filter); track item.id) {
+                @for (item of getFilteredRole(group.filter); track $index) {
                   <div class="toggle-item">
                     <mat-slide-toggle (toggleChange)="togglePermission(item)" color="primary">
                       {{ item.name.split('/').pop() }}
@@ -44,7 +44,7 @@
         }
       </div>
 
-      @for (item of errorMessages['permissions']; track item.type) {
+      @for (item of errorMessages['permissions']; track $index) {
         <mat-error class="permissions-error" [hidden]="!roleForm.get('permissions')?.hasError(item.type)">
           {{ item.message }}
         </mat-error>
@@ -60,7 +60,7 @@
         @if (isSubmitting()) {
           <mat-spinner [diameter]="20"></mat-spinner>
         }
-        Criar
+        Criar regra
       </div>
     </button>
   </mat-dialog-actions>

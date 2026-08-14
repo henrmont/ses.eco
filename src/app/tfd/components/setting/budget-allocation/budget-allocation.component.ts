@@ -1,21 +1,21 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 
 // Angular Material & CDK
+import { Overlay } from '@angular/cdk/overlay';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { Overlay } from '@angular/cdk/overlay';
 
-// Core & Shared
+// Core, Services & Models
 import { BudgetAllocation } from '../../../models/budget-allocation.model';
-import { BudgetAllocationUpdateComponent } from '../budget-allocation-update/budget-allocation-update.component';
 import { SettingService } from '../../../services/setting.service';
+import { BudgetAllocationUpdateComponent } from '../budget-allocation-update/budget-allocation-update.component';
 
 const TFD_SETTINGS_CHANNEL = new BroadcastChannel('tfd-settings-channel');
 
@@ -24,7 +24,7 @@ const TFD_SETTINGS_CHANNEL = new BroadcastChannel('tfd-settings-channel');
   standalone: true,
   imports: [
     CommonModule, 
-    MatDialogModule,
+    MatDialogModule, 
     MatCardModule, 
     MatIconModule, 
     MatButtonModule, 
@@ -36,20 +36,26 @@ const TFD_SETTINGS_CHANNEL = new BroadcastChannel('tfd-settings-channel');
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BudgetAllocationComponent implements OnInit, OnDestroy {
-  // Injeções de Dependência
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
   private readonly dialog = inject(MatDialog);
   private readonly overlay = inject(Overlay);
   private readonly settingService = inject(SettingService);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Estados gerenciados reativamente via Signals
+  // ==========================================
+  // Propriedades e Estado Reativo
+  // ==========================================
   protected readonly budgetAllocation = signal<BudgetAllocation | null>(null);
   protected readonly isLoading = signal<boolean>(true);
 
+  // ==========================================
+  // Ciclo de Vida (Hooks)
+  // ==========================================
   ngOnInit(): void {
     this.fetchBudgetAllocation();
 
-    // Sincronização reativa via BroadcastChannel
     TFD_SETTINGS_CHANNEL.onmessage = (message: MessageEvent<string>) => {
       if (message.data === 'update_budget') {
         this.fetchBudgetAllocation();
@@ -61,6 +67,16 @@ export class BudgetAllocationComponent implements OnInit, OnDestroy {
     TFD_SETTINGS_CHANNEL.close();
   }
 
+  // ==========================================
+  // Métodos Acessíveis pelo Template (Protected)
+  // ==========================================
+  protected budgetAllocationUpdate(budgetAllocation: BudgetAllocation): void {
+    this.openDialog(BudgetAllocationUpdateComponent, { budget_allocation: budgetAllocation });
+  }
+
+  // ==========================================
+  // Métodos Privados / Auxiliares
+  // ==========================================
   private fetchBudgetAllocation(): void {
     this.isLoading.set(true);
 
@@ -79,14 +95,11 @@ export class BudgetAllocationComponent implements OnInit, OnDestroy {
       });
   }
 
-  /**
-   * Método de abertura de dialog padronizado no sistema
-   */
   private openDialog<T>(
-    component: new (...args: any[]) => T, 
-    data: { budgetAllocation: BudgetAllocation }, 
-    width = '600px', 
-    height = 'auto', 
+    component: new (...args: any[]) => T,
+    data: { budget_allocation: BudgetAllocation },
+    width = '600px',
+    height = 'auto',
     requiresRefresh = true
   ): void {
     this.dialog.open(component, {
@@ -98,7 +111,7 @@ export class BudgetAllocationComponent implements OnInit, OnDestroy {
       data
     }).afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(result => {
+      .subscribe((result) => {
         if (result && requiresRefresh) {
           this.handleDataChange();
         }
@@ -108,12 +121,5 @@ export class BudgetAllocationComponent implements OnInit, OnDestroy {
   private handleDataChange(): void {
     this.fetchBudgetAllocation();
     TFD_SETTINGS_CHANNEL.postMessage('update_budget');
-  }
-
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
-
-  protected updateBudgetAllocation(budgetAllocation: BudgetAllocation | null): void { 
-    if (!budgetAllocation) return;
-    this.openDialog(BudgetAllocationUpdateComponent, { budgetAllocation }); 
   }
 }

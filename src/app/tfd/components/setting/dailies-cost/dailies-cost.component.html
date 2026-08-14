@@ -13,7 +13,7 @@
       </div>
     } @else {
       <mat-list class="dailies-list">
-        @for (item of dailiesCost(); track item.id) {
+        @for (item of dailiesCost(); track $index) {
           <mat-list-item class="daily-item">
             @if (item.overnight) {
               <mat-icon matListItemIcon matTooltip="Pernoite" class="icon-variant icon-night">dark_mode</mat-icon>

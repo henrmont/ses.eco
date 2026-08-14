@@ -1,18 +1,22 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 
-import { RoleService } from '../../../services/role.service';
+// Angular Material
+import { MatButtonModule } from '@angular/material/button';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+
+// Core & Services
 import { MessageService } from '../../../../core/services/message-service';
+import { RoleService } from '../../../services/role.service';
 
 @Component({
   selector: 'app-role-delete',
+  standalone: true,
   imports: [
-    MatDialogModule,
-    MatButtonModule,
+    MatDialogModule, 
+    MatButtonModule, 
     MatProgressSpinnerModule
   ],
   templateUrl: './role-delete.component.html',
@@ -20,18 +24,23 @@ import { MessageService } from '../../../../core/services/message-service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RoleDeleteComponent {
-  // Injeções de Dependência Dinâmicas
-  protected readonly data = inject(MAT_DIALOG_DATA, { optional: true });
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
+  protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly roleService = inject(RoleService);
   private readonly messageService = inject(MessageService);
   private readonly dialogRef = inject(MatDialogRef<RoleDeleteComponent>);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Estados gerenciados reativamente via Signals
+  // ==========================================
+  // Propriedades e Estado Reativo
+  // ==========================================
   protected readonly isSubmitting = signal<boolean>(false);
 
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
-
+  // ==========================================
+  // Métodos Acessíveis pelo Template (Protected)
+  // ==========================================
   protected onSubmit(): void {
     const roleId = this.data?.role?.id;
     if (!roleId) {

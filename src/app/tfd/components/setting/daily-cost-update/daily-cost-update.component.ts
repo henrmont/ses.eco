@@ -1,38 +1,34 @@
-import { 
-  ChangeDetectionStrategy, 
-  Component, 
-  DestroyRef, 
-  OnInit, 
-  inject, 
-  signal 
-} from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatIconModule } from '@angular/material/icon';
-import { finalize } from 'rxjs';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { finalize } from 'rxjs';
 import { NgxMaskDirective } from 'ngx-mask';
 
-import { SettingService } from '../../../services/setting.service';
-import { MessageService } from '../../../../core/services/message-service';
+// Angular Material
+import { MatButtonModule } from '@angular/material/button';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+
+// Core, Services & Models
 import { ApiResponse } from '../../../../core/models/api-response.model';
+import { MessageService } from '../../../../core/services/message-service';
 import { DailyCost } from '../../../models/daily-cost.model';
+import { SettingService } from '../../../services/setting.service';
 
 @Component({
   selector: 'app-daily-cost-update',
   standalone: true,
   imports: [
-    ReactiveFormsModule,
-    MatDialogModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatProgressSpinnerModule,
-    MatIconModule,
+    ReactiveFormsModule, 
+    MatDialogModule, 
+    MatButtonModule, 
+    MatFormFieldModule, 
+    MatInputModule, 
+    MatProgressSpinnerModule, 
+    MatIconModule, 
     NgxMaskDirective
   ],
   templateUrl: './daily-cost-update.component.html',
@@ -40,21 +36,22 @@ import { DailyCost } from '../../../models/daily-cost.model';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DailyCostUpdateComponent implements OnInit {
-  // Injeções de Dependência
-  protected readonly data = inject(MAT_DIALOG_DATA, { optional: true }) as { daily_cost?: DailyCost };
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
+  protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly settingService = inject(SettingService);
   private readonly messageService = inject(MessageService);
   private readonly dialogRef = inject(MatDialogRef<DailyCostUpdateComponent>);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Formulário Reativo
+  // ==========================================
+  // Propriedades e Estado Reativo
+  // ==========================================
   protected dailyCostForm!: FormGroup;
-
-  // Estado de Submissão em Signal
   protected readonly isSubmitting = signal<boolean>(false);
 
-  // Mapeamento de Mensagens de Erro Tipado
   protected readonly errorMessages: Record<string, Array<{ type: string; message: string }>> = {
     value: [
       { type: 'required', message: 'O valor é obrigatório.' },
@@ -62,20 +59,19 @@ export class DailyCostUpdateComponent implements OnInit {
     ]
   };
 
+  // ==========================================
+  // Ciclo de Vida (Hooks)
+  // ==========================================
   ngOnInit(): void {
     this.initForm();
   }
 
-  private initForm(): void {
-    this.dailyCostForm = this.fb.group({
-      value: [this.data?.daily_cost?.value ?? '', [Validators.required, Validators.min(0.01)]]
-    });
-  }
-
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
-
+  // ==========================================
+  // Métodos Acessíveis pelo Template (Protected)
+  // ==========================================
   protected onSubmit(): void {
     const dailyCostId = this.data?.daily_cost?.id;
+
     if (!dailyCostId) {
       this.messageService.showMessage('Identificador do custo de diária inválido.');
       return;
@@ -103,5 +99,16 @@ export class DailyCostUpdateComponent implements OnInit {
           this.messageService.showMessage(err?.error?.message || fallbackError);
         }
       });
+  }
+
+  // ==========================================
+  // Métodos Privados / Auxiliares
+  // ==========================================
+  private initForm(): void {
+    const dailyCost = this.data?.daily_cost;
+
+    this.dailyCostForm = this.fb.group({
+      value: [dailyCost?.value ?? '', [Validators.required, Validators.min(0.01)]]
+    });
   }
 }

@@ -17,7 +17,7 @@
           [dropSpecialCharacters]="true" 
           formControlName="value"
         >
-        @for (item of errorMessages['value']; track item.type) {
+        @for (item of errorMessages['value']; track $index) {
           <mat-error [hidden]="!dailyCostForm.get('value')?.hasError(item.type)">
             {{ item.message }}
           </mat-error>
