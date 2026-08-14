@@ -18,27 +18,27 @@ export class SettingService {
   // Injeção de Dependências e Propriedades
   // ==========================================
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = `${environment.apiTfdUrl}/setting`;
+  private readonly apiUrl = `${environment.apiTfdUrl}/settings`;
 
   // ==========================================
   // Métodos de Diárias / Custos (Daily Costs)
   // ==========================================
   public getDailiesCost(): Observable<DailyCost[]> {
-    return this.http.get<DailyCost[]>(`${this.apiUrl}/get-daily-costs`);
+    return this.http.get<DailyCost[]>(`${this.apiUrl}/daily-costs`);
   }
 
   public updateDailyCost(dailyCostId: number, data: DailyCost): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-daily-cost/${dailyCostId}`, data);
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/daily-costs/${dailyCostId}`, data);
   }
 
   // ==========================================
   // Métodos de Dotação Orçamentária (Budget Allocation)
   // ==========================================
   public getBudgetAllocation(): Observable<BudgetAllocation> {
-    return this.http.get<BudgetAllocation>(`${this.apiUrl}/get-budget-allocation`);
+    return this.http.get<BudgetAllocation>(`${this.apiUrl}/budget-allocation`);
   }
 
   public updateBudgetAllocation(budgetAllocationId: number, data: BudgetAllocation): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-budget-allocation/${budgetAllocationId}`, data);
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/budget-allocation/${budgetAllocationId}`, data);
   }
 }

@@ -62,14 +62,14 @@ export class UserService {
   checkEmailExists(email: string, currentEmail?: string | null): Observable<boolean> {
     const encodedEmail = encodeURIComponent(email);
     const encodedCompare = encodeURIComponent(currentEmail || '');
-    return this.http.get<boolean>(`${this.apiUrl}/exists/email/${encodedEmail}/${encodedCompare}`);
+    return this.http.get<boolean>(`${this.apiUrl}/exists-email/${encodedEmail}/${encodedCompare}`);
   }
 
   checkCnsExists(cns: string, currentCns?: string | null): Observable<boolean> {
     const cleanCns = cns.replace(/\D/g, '');
     const encodedCns = encodeURIComponent(cleanCns);
     const encodedCompare = encodeURIComponent(currentCns || '');
-    return this.http.get<boolean>(`${this.apiUrl}/exists/cns/${encodedCns}/${encodedCompare}`);
+    return this.http.get<boolean>(`${this.apiUrl}/exists-cns/${encodedCns}/${encodedCompare}`);
   }
 
   // ==========================================
