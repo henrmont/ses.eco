@@ -1,18 +1,18 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { AbstractControl, AsyncValidatorFn, ValidationErrors } from '@angular/forms';
-import { Observable, catchError, first, map, of } from 'rxjs';
+import { Observable, catchError, map, of, switchMap, timer } from 'rxjs';
 import * as moment from 'moment';
 
 import { environment } from '../../../environments/environment.development';
 import { ApiResponse } from '../../core/models/api-response.model';
-import { Patient } from '../models/patient.model';
+import { PatientCare } from '../models/patient-care.model';
 import { PatientEscort } from '../models/patient-escort.model';
 import { PatientReport } from '../models/patient-report.model';
+import { Patient } from '../models/patient.model';
 import { ReportAttachment } from '../models/report-attachment.model';
-import { PatientCare } from '../models/patient-care.model';
 
-interface CidOption {
+export interface CidOption {
   id: number;
   code: string;
   description: string;
@@ -23,260 +23,291 @@ interface CidOption {
 })
 export class PatientService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = `${environment.apiTfdUrl}/patient`;
-  private readonly checksUrl = `${environment.apiTfdUrl}/checks`;
-  private readonly validatorUrl = `${environment.apiTfdUrl}/validator`;
+  private readonly apiUrl = `${environment.apiTfdUrl}/patients`;
 
-  // --- FLUXO DE PACIENTES ---
+  // ==========================================
+  // 1. FLUXO DE PACIENTES
+  // ==========================================
 
   getPatients(): Observable<Patient[]> {
-    return this.http.get<Patient[]>(`${this.apiUrl}/get-patients`);
+    return this.http.get<Patient[]>(`${this.apiUrl}`);
   }
 
   getArchivePatients(): Observable<Patient[]> {
-    return this.http.get<Patient[]>(`${this.apiUrl}/get-archive-patients`);
+    return this.http.get<Patient[]>(`${this.apiUrl}/archived`);
   }
 
   createPatient(data: Partial<Patient>): Observable<ApiResponse> {
-    return this.http.post<ApiResponse>(`${this.apiUrl}/create-patient`, this.mountFormData(data));
+    return this.http.post<ApiResponse>(`${this.apiUrl}`, this.mountFormData(data));
   }
 
   updatePatient(patientCareId: number, data: Partial<Patient>): Observable<ApiResponse> {
-    return this.http.post<ApiResponse>(`${this.apiUrl}/update-patient/${patientCareId}`, this.mountFormData(data));
+    return this.http.post<ApiResponse>(`${this.apiUrl}/${patientCareId}`, this.mountFormData(data));
   }
 
   archivePatient(patientCareId: number): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/archive-patient/${patientCareId}`, {});
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/${patientCareId}/archive`, {});
   }
 
   movePatientFromArchive(patientCareId: number): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-from-archive/${patientCareId}`, {});
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/${patientCareId}/move-from-archive`, {});
   }
 
   movePatientFromOthers(patientCareId: number): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-from-others/${patientCareId}`, {});
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/${patientCareId}/move-from-others`, {});
   }
 
   validatePatient(patientCareId: number): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/validate-patient/${patientCareId}`, {});
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/${patientCareId}/validate`, {});
   }
 
   finishBackPatient(patientCareId: number): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/finish-back-patient/${patientCareId}`, {});
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/${patientCareId}/finish-back`, {});
   }
 
-  // --- FLUXO DE ACOMPANHANTES (ESCORTS) ---
+  // ==========================================
+  // 2. FLUXO DE ACOMPANHANTES (ESCORTS)
+  // ==========================================
 
   getPatientEscorts(patientCareId: number): Observable<PatientEscort[]> {
-    return this.http.get<PatientEscort[]>(`${this.apiUrl}/get-patient-escorts/${patientCareId}`);
+    return this.http.get<PatientEscort[]>(`${this.apiUrl}/${patientCareId}/escorts`);
   }
 
   createPatientEscort(patientCareId: number, data: Partial<PatientEscort>): Observable<ApiResponse> {
-    return this.http.post<ApiResponse>(`${this.apiUrl}/create-patient-escort/${patientCareId}`, this.mountFormData(data));
+    return this.http.post<ApiResponse>(`${this.apiUrl}/${patientCareId}/escorts`, this.mountFormData(data));
   }
 
   updatePatientEscort(escortId: number, data: Partial<PatientEscort>): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-patient-escort/${escortId}`, this.mountFormData(data));
+    return this.http.post<ApiResponse>(`${this.apiUrl}/escorts/${escortId}`, this.mountFormData(data));
   }
 
-  deletePatientEscort(escortId: number): Observable<ApiResponse> {
-    return this.http.delete<ApiResponse>(`${this.apiUrl}/delete-patient-escort/${escortId}`);
+  deletePatientEscort(patientCareEscortId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/escorts/${patientCareEscortId}`);
   }
 
-  // --- FLUXO DE PRONTUÁRIOS / LAUDOS (REPORTS) ---
+  // ==========================================
+  // 3. FLUXO DE PRONTUÁRIOS / LAUDOS (REPORTS)
+  // ==========================================
 
   getPatientReports(patientCareId: number): Observable<PatientReport[]> {
-    return this.http.get<PatientReport[]>(`${this.apiUrl}/get-patient-reports/${patientCareId}`);
-  }
-
-  createPatientReport(patientCareId: number, data: Partial<PatientReport>): Observable<ApiResponse> {
-    return this.http.post<ApiResponse>(`${this.apiUrl}/create-patient-report/${patientCareId}`, data);
-  }
-
-  updatePatientReport(reportId: number, data: Partial<PatientReport>): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-patient-report/${reportId}`, data);
-  }
-
-  deletePatientReport(reportId: number): Observable<ApiResponse> {
-    return this.http.delete<ApiResponse>(`${this.apiUrl}/delete-patient-report/${reportId}`);
+    return this.http.get<PatientReport[]>(`${this.apiUrl}/${patientCareId}/reports`);
   }
 
   getCids(patientCareId: number): Observable<CidOption[]> {
-    return this.http.get<CidOption[]>(`${this.apiUrl}/get-cids/${patientCareId}`);
+    return this.http.get<CidOption[]>(`${this.apiUrl}/${patientCareId}/cids`);
   }
 
-  // --- FLUXO DE ANEXOS DE LAUDO (REPORT ATTACHMENTS) ---
+  createPatientReport(patientCareId: number, data: Partial<PatientReport>): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/${patientCareId}/reports`, data);
+  }
+
+  updatePatientReport(reportId: number, data: Partial<PatientReport>): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/reports/${reportId}`, data);
+  }
+
+  deletePatientReport(reportId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/reports/${reportId}`);
+  }
+
+  // ==========================================
+  // 4. FLUXO DE ANEXOS DE LAUDO (REPORT ATTACHMENTS)
+  // ==========================================
 
   getReportAttachments(reportId: number): Observable<ReportAttachment[]> {
-    return this.http.get<ReportAttachment[]>(`${this.apiUrl}/get-report-attachments/${reportId}`);
+    return this.http.get<ReportAttachment[]>(`${this.apiUrl}/reports/${reportId}/attachments`);
   }
 
   createReportAttachment(reportId: number, data: Partial<ReportAttachment>): Observable<ApiResponse> {
-    return this.http.post<ApiResponse>(`${this.apiUrl}/create-report-attachment/${reportId}`, this.mountFormData(data));
+    return this.http.post<ApiResponse>(`${this.apiUrl}/reports/${reportId}/attachments`, this.mountFormData(data));
   }
 
   updateReportAttachment(reportAttachmentId: number, data: Partial<ReportAttachment>): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-report-attachment/${reportAttachmentId}`, this.mountFormData(data));
+    return this.http.post<ApiResponse>(`${this.apiUrl}/attachments/${reportAttachmentId}`, this.mountFormData(data));
   }
 
   deleteReportAttachment(reportAttachmentId: number): Observable<ApiResponse> {
-    return this.http.delete<ApiResponse>(`${this.apiUrl}/delete-report-attachment/${reportAttachmentId}`);
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/attachments/${reportAttachmentId}`);
   }
 
-  // --- CONSULTAS DIRETAS (CHECKS) ---
+  // ==========================================
+  // 5. CONSULTAS DIRETAS
+  // ==========================================
 
-  getPatientCns(cns: string | number): Observable<Patient> {
-    return this.http.get<Patient>(`${this.checksUrl}/get-patient-cns/${cns}`);
+  getPatientCns(cns: string | number): Observable<Patient & { exists_in_tfd?: boolean }> {
+    return this.http.get<Patient & { exists_in_tfd?: boolean }>(`${this.apiUrl}/cns/${cns}`);
   }
 
-  getPatientDocument(document: string | number): Observable<Patient> {
-    return this.http.get<Patient>(`${this.checksUrl}/get-patient-document/${document}`);
+  getPatientDocument(document: string | number): Observable<Patient & { exists_in_tfd?: boolean }> {
+    return this.http.get<Patient & { exists_in_tfd?: boolean }>(`${this.apiUrl}/document/${document}`);
   }
 
   getEscortCns(cns: string | number): Observable<PatientEscort> {
-    return this.http.get<PatientEscort>(`${this.checksUrl}/get-escort-cns/${cns}`);
+    return this.http.get<PatientEscort>(`${this.apiUrl}/escorts/cns/${cns}`);
   }
 
   getEscortDocument(document: string | number): Observable<PatientEscort> {
-    return this.http.get<PatientEscort>(`${this.checksUrl}/get-escort-document/${document}`);
+    return this.http.get<PatientEscort>(`${this.apiUrl}/escorts/document/${document}`);
   }
 
-  // --- VALIDATORS ASSÍNCRONOS BLINDADOS ---
+  // ==========================================
+  // 6. VALIDATORS ASSÍNCRONOS REATIVOS
+  // ==========================================
 
-  cnsPatientExistsValidator(currentCns: string | null | undefined): AsyncValidatorFn {
+  cnsPatientExistsValidator(
+    currentCns?: string | null,
+    onFound?: (patient: Patient) => void
+  ): AsyncValidatorFn {
     return (control: AbstractControl): Observable<ValidationErrors | null> => {
-      // 1. Limpa pontuações/espaços do valor do input e do CNS atual
-      const cns = control.value ? String(control.value).replace(/\D/g, '') : '';
-      const current = currentCns ? String(currentCns).replace(/\D/g, '') : '';
+      const cnsClean = control.value ? String(control.value).replace(/\D/g, '') : '';
+      const currentClean = currentCns ? String(currentCns).replace(/\D/g, '') : '';
 
-      if (!cns || (current && cns === current)) {
+      if (cnsClean.length !== 15 || (currentClean && cnsClean === currentClean) || !control.dirty) {
         return of(null);
       }
 
-      return this.http
-        .get<boolean | { cnsExists: boolean }>(`${this.validatorUrl}/cns-patient-exists/${cns}/${current}`)
-        .pipe(
-          map(res => {
-            // Trata se a API retornar booleano puro (true/false) OU objeto ({ cnsExists: true })
-            const exists = typeof res === 'boolean' ? res : res?.cnsExists;
-            return exists ? { cnsExists: true } : null;
-          }),
-          catchError(() => of(null)),
-          first()
-        );
+      return timer(400).pipe(
+        switchMap(() => this.getPatientCns(cnsClean)),
+        map((patient) => {
+          if (patient) {
+            if (onFound) onFound(patient);
+            return patient.exists_in_tfd ? { cnsExists: true } : null;
+          }
+          return null;
+        }),
+        catchError(() => of(null))
+      );
+    };
+  }
+
+  documentPatientExistsValidator(
+    currentDocument?: string | null,
+    onFound?: (patient: Patient) => void
+  ): AsyncValidatorFn {
+    return (control: AbstractControl): Observable<ValidationErrors | null> => {
+      const docClean = control.value ? String(control.value).replace(/\D/g, '') : '';
+      const currentClean = currentDocument ? String(currentDocument).replace(/\D/g, '') : '';
+
+      if (
+        (docClean.length !== 11 && docClean.length !== 14) ||
+        (currentClean && docClean === currentClean) ||
+        !control.dirty
+      ) {
+        return of(null);
+      }
+
+      return timer(400).pipe(
+        switchMap(() => this.getPatientDocument(docClean)),
+        map((patient) => {
+          if (patient) {
+            if (onFound) onFound(patient);
+            return patient.exists_in_tfd ? { documentExists: true } : null;
+          }
+          return null;
+        }),
+        catchError(() => of(null))
+      );
     };
   }
 
   cnsEscortExistsValidator(
-    patientCare: PatientCare | null | undefined, 
-    currentCns: string | null | undefined
+    patientCare: PatientCare | null | undefined,
+    currentCns?: string | null,
+    onFound?: (escort: PatientEscort) => void
   ): AsyncValidatorFn {
     return (control: AbstractControl): Observable<ValidationErrors | null> => {
-      // 1. Limpa pontuações/espaços do valor do input
       const cns = control.value ? String(control.value).replace(/\D/g, '') : '';
       const current = currentCns ? String(currentCns).replace(/\D/g, '') : '';
 
-      if (!cns || (current && cns === current)) {
+      if (cns.length !== 15 || (current && cns === current) || !control.dirty) {
         return of(null);
       }
 
-      // 2. Compara com o paciente limpando caracteres
       const patientCns = patientCare?.patient?.cns ? String(patientCare.patient.cns).replace(/\D/g, '') : '';
       if (patientCns && patientCns === cns) {
         return of({ cnsPatientExists: true });
       }
 
-      if (!patientCare?.id) {
-        return of(null);
-      }
+      return timer(400).pipe(
+        switchMap(() => this.getEscortCns(cns)),
+        map((escort) => {
+          if (escort) {
+            if (onFound) onFound(escort);
 
-      return this.http
-        .get<boolean | { cnsExists: boolean }>(`${this.validatorUrl}/cns-escort-exists/${patientCare.id}/${cns}/${current}`)
-        .pipe(
-          map(res => {
-            // Trata se o PHP retornar booleano puro (true/false) OU um objeto ({ cnsExists: true })
-            const exists = typeof res === 'boolean' ? res : res?.cnsExists;
-            return exists ? { cnsExists: true } : null;
-          }),
-          catchError(() => of(null)),
-          first()
-        );
-    };
-  }
+            if (patientCare?.id) {
+              const existsInCurrentCare = patientCare.escorts?.some(
+                (e) => String(e.cns).replace(/\D/g, '') === cns
+              );
+              return existsInCurrentCare ? { cnsExists: true } : null;
+            }
 
-  documentPatientExistsValidator(currentDocument: string | null | undefined): AsyncValidatorFn {
-    return (control: AbstractControl): Observable<ValidationErrors | null> => {
-      // 1. Limpa pontuações/máscara do CPF/documento do input e do documento atual
-      const document = control.value ? String(control.value).replace(/\D/g, '') : '';
-      const current = currentDocument ? String(currentDocument).replace(/\D/g, '') : '';
-
-      if (!document || (current && document === current)) {
-        return of(null);
-      }
-
-      return this.http
-        .get<boolean | { documentExists: boolean }>(`${this.validatorUrl}/document-patient-exists/${document}/${current}`)
-        .pipe(
-          map(res => {
-            // Trata se a API retornar booleano puro (true/false) OU objeto ({ documentExists: true })
-            const exists = typeof res === 'boolean' ? res : res?.documentExists;
-            return exists ? { documentExists: true } : null;
-          }),
-          catchError(() => of(null)),
-          first()
-        );
+            return { cnsExists: true };
+          }
+          return null;
+        }),
+        catchError(() => of(null))
+      );
     };
   }
 
   documentEscortExistsValidator(
-    patientCare: PatientCare | null | undefined, 
-    currentDocument: string | null | undefined
+    patientCare: PatientCare | null | undefined,
+    currentDocument?: string | null,
+    onFound?: (escort: PatientEscort) => void
   ): AsyncValidatorFn {
     return (control: AbstractControl): Observable<ValidationErrors | null> => {
-      // Limpa pontuações da máscara do CPF
       const document = control.value ? String(control.value).replace(/\D/g, '') : '';
       const current = currentDocument ? String(currentDocument).replace(/\D/g, '') : '';
 
-      if (!document || (current && document === current)) {
+      if (
+        (document.length !== 11 && document.length !== 14) ||
+        (current && document === current) ||
+        !control.dirty
+      ) {
         return of(null);
       }
 
-      // Compara com o CPF do próprio paciente (também higienizado)
-      const patientDocument = patientCare?.patient?.document 
-        ? String(patientCare.patient.document).replace(/\D/g, '') 
+      const patientDocument = patientCare?.patient?.document
+        ? String(patientCare.patient.document).replace(/\D/g, '')
         : '';
-        
+
       if (patientDocument && patientDocument === document) {
         return of({ documentPatientExists: true });
       }
 
-      if (!patientCare?.id) {
-        return of(null);
-      }
+      return timer(400).pipe(
+        switchMap(() => this.getEscortDocument(document)),
+        map((escort) => {
+          if (escort) {
+            if (onFound) onFound(escort);
 
-      return this.http
-        .get<boolean | { documentExists: boolean }>(`${this.validatorUrl}/document-escort-exists/${patientCare.id}/${document}/${current}`)
-        .pipe(
-          map(res => {
-            const exists = typeof res === 'boolean' ? res : res?.documentExists;
-            return exists ? { documentExists: true } : null;
-          }),
-          catchError(() => of(null)),
-          first()
-        );
+            if (patientCare?.id) {
+              const existsInCurrentCare = patientCare.escorts?.some(
+                (e) => String(e.document).replace(/\D/g, '') === document
+              );
+              return existsInCurrentCare ? { documentExists: true } : null;
+            }
+
+            return { documentExists: true };
+          }
+          return null;
+        }),
+        catchError(() => of(null))
+      );
     };
   }
 
-  // --- TRATAMENTO E COMPOSIÇÃO DE MULTIPART/FORM-DATA ---
+  // ==========================================
+  // 7. MÉTODOS AUXILIARES PRIVADOS
+  // ==========================================
 
   private mountFormData(data: Record<string, unknown>): FormData {
     const formData = new FormData();
 
     if (!data) return formData;
 
-    Object.entries(data).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(data)) {
       if (value === null || value === undefined) {
-        return;
+        continue;
       }
 
       if (value instanceof File || value instanceof Blob) {
@@ -288,7 +319,7 @@ export class PatientService {
       } else {
         formData.append(key, String(value));
       }
-    });
+    }
 
     return formData;
   }

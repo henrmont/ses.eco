@@ -10,7 +10,7 @@
           <mat-label>Nome</mat-label>
           <input matInput type="text" formControlName="name">
           
-          @for (item of errorMessages['name']; track item.type) {
+          @for (item of errorMessages['name']; track $index) {
             <mat-error [hidden]="!attachmentForm.get('name')?.hasError(item.type)">
               {{ item.message }}
             </mat-error>
@@ -26,8 +26,8 @@
             class="btn-archive" 
             type="button" 
             mat-icon-button 
-            [disabled]="!(data?.reportAttachment?.archive_id || data?.attachment?.archive_id)" 
-            (click)="download(data?.reportAttachment?.archive_id || data?.attachment?.archive_id, attachmentForm.get('name')?.value)"
+            [disabled]="!(data?.report_attachment?.archive_id)" 
+            (click)="download(data?.report_attachment?.archive_id, attachmentForm.get('name')?.value)"
             matTooltip="Baixar arquivo atual"
           >
             <mat-icon>download</mat-icon>

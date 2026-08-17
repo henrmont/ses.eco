@@ -1,14 +1,13 @@
 @use 'variables' as *;
 
 :host {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
+  @include dialog-base;
 }
 
 mat-dialog-content {
+  @include dialog-content;
   span {
-    color: $color-danger; // Destaca visualmente a mensagem de ação irreversível
+    color: $color-danger;
     font-size: $font-size-sm;
   }
 }

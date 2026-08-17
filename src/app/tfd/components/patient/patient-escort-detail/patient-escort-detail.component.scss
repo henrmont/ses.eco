@@ -1,19 +1,12 @@
 @use 'variables' as *;
 
 :host {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  overflow: hidden; 
+  @include dialog-base;
 }
 
 mat-dialog-content {
-  overflow-y: auto !important; 
-  padding-top: $spacing-sm !important;
-}
-
-mat-dialog-actions {
-  gap: $spacing-lg; 
+  @include dialog-content;
+  padding-top: $spacing-modal-pt;
 }
 
 .details-container {

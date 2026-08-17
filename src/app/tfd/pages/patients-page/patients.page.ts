@@ -1,41 +1,47 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, DestroyRef, Injector, OnDestroy, OnInit, effect, inject, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs';
-import { CommonModule } from '@angular/common';
+import { NgxMaskPipe } from 'ngx-mask';
 
-// Angular Material
+// Angular Material & CDK
+import { Overlay } from '@angular/cdk/overlay';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatSort, MatSortModule } from '@angular/material/sort';
-import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
-import { Overlay } from '@angular/cdk/overlay';
-import { NgxMaskPipe } from 'ngx-mask';
 
-// Core & Shared
+// Core & Models
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
 import { PatientCare } from '../../models/patient-care.model';
 import { Permission } from '../../models/permission.model';
 import { PatientService } from '../../services/patient.service';
 
-// Components (Dialogs)
+// Dialog Components
 import { PatientArchiveComponent } from '../../components/patient/patient-archive/patient-archive.component';
-import { PatientMoveFromOthersComponent } from '../../components/patient/patient-move-from-others/patient-move-from-others.component';
-import { PatientEscortsComponent } from '../../components/patient/patient-escorts/patient-escorts.component';
-import { PatientReportsComponent } from '../../components/patient/patient-reports/patient-reports.component';
 import { PatientDetailComponent } from '../../components/patient/patient-detail/patient-detail.component';
+import { PatientEscortsComponent } from '../../components/patient/patient-escorts/patient-escorts.component';
+import { PatientFinishBackComponent } from '../../components/patient/patient-finish-back/patient-finish-back.component';
+import { PatientMoveFromOthersComponent } from '../../components/patient/patient-move-from-others/patient-move-from-others.component';
+import { PatientReportsComponent } from '../../components/patient/patient-reports/patient-reports.component';
 import { PatientUpdateComponent } from '../../components/patient/patient-update/patient-update.component';
 import { PatientValidateComponent } from '../../components/patient/patient-validate/patient-validate.component';
-import { UndoMessageComponent } from '../../components/shared/undo-message-component/undo-message-component';
-import { PatientFinishBackComponent } from '../../components/patient/patient-finish-back/patient-finish-back.component';
+import { Patient } from '../../models/patient.model';
 
+// Define o tipo aceito para as propriedades do Modal
+type PatientDialogData = 
+  | { patient: Patient | undefined }
+  | { patient_care: PatientCare };
+
+// Constantes Locais
 const TFD_PATIENTS_CHANNEL = new BroadcastChannel('tfd-patients-channel');
 
 @Component({
@@ -43,111 +49,149 @@ const TFD_PATIENTS_CHANNEL = new BroadcastChannel('tfd-patients-channel');
   standalone: true,
   imports: [
     CommonModule,
-    MatFormFieldModule, 
-    MatInputModule, 
-    MatTableModule, 
-    MatButtonModule, 
-    MatIconModule, 
-    MatTooltipModule, 
-    MatBadgeModule, 
-    MatTabsModule,
-    MatSortModule,
+    MatBadgeModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
     MatPaginatorModule,
+    MatSortModule,
+    MatTableModule,
+    MatTabsModule,
+    MatTooltipModule,
     NgxMaskPipe
   ],
   templateUrl: './patients.page.html',
   styleUrl: './patients.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class PatientsPage implements OnInit {
-  // Injeções de Dependência Dinâmicas
+export class PatientsPage implements OnInit, OnDestroy {
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
   private readonly patientService = inject(PatientService);
   private readonly dialog = inject(MatDialog);
   private readonly overlay = inject(Overlay);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
-  private loadingDialog!: MatDialogRef<LoadingComponent>;
-  private readonly currentUser = this.route.parent?.parent?.snapshot.data['user'];
-
-  // 1. Capturas reativas do Sort do Template HTML
+  // ==========================================
+  // ViewChildren / Elementos da View
+  // ==========================================
   private readonly ownerSort = viewChild<MatSort>('ownerSort');
   private readonly othersSort = viewChild<MatSort>('othersSort');
-
-  // 2. Capturas reativas do Paginator do Template HTML
   private readonly ownerPaginator = viewChild<MatPaginator>('ownerPaginator');
   private readonly othersPaginator = viewChild<MatPaginator>('othersPaginator');
 
-  // Definições de Estrutura de Colunas expostas ao Template
+  // ==========================================
+  // Propriedades e Estado Reativo
+  // ==========================================
+  private loadingDialog!: MatDialogRef<LoadingComponent>;
+  private readonly currentUser = this.route.parent?.parent?.snapshot.data['user'];
+
   protected readonly displayedOwnerColumns: string[] = ['name', 'cns', 'document', 'status', 'actions'];
   protected readonly displayedOthersColumns: string[] = ['name', 'cns', 'responsible', 'status', 'actions'];
 
-  // Signals internos para armazenamento do estado bruto
-  private readonly rawOwnerList = signal<PatientCare[]>([]);
-  private readonly rawOthersList = signal<PatientCare[]>([]);
+  protected readonly ownerDataSource = new MatTableDataSource<PatientCare>([]);
+  protected readonly othersDataSource = new MatTableDataSource<PatientCare>([]);
 
-  // Computed signals reativos ligando dados, ordenação e paginação (Padrão de Referência de Sucesso)
-  protected readonly ownerDataSource = computed(() => {
-    const dataSource = new MatTableDataSource(this.rawOwnerList());
-    const sortRef = this.ownerSort();
-    const paginatorRef = this.ownerPaginator();
-
-    if (sortRef) dataSource.sort = sortRef;
-    if (paginatorRef) dataSource.paginator = paginatorRef;
-
-    return dataSource;
-  });
-
-  protected readonly othersDataSource = computed(() => {
-    const dataSource = new MatTableDataSource(this.rawOthersList());
-    const sortRef = this.othersSort();
-    const paginatorRef = this.othersPaginator();
-
-    if (sortRef) dataSource.sort = sortRef;
-    if (paginatorRef) dataSource.paginator = paginatorRef;
-
-    return dataSource;
-  });
-
+  // ==========================================
+  // Ciclo de Vida (Hooks)
+  // ==========================================
   ngOnInit(): void {
+    this.setupTableBindings();
     this.fetchPatients(true);
-
-    TFD_PATIENTS_CHANNEL.onmessage = (message) => {
-      if (message.data === 'update') {
-        this.fetchPatients(false);
-      }
-    };
-
-    // Gerenciamento seguro de destruição de canais usando DestroyRef
-    this.destroyRef.onDestroy(() => {
-      TFD_PATIENTS_CHANNEL.close();
-    });
+    this.listenToBroadcastChannel();
   }
 
-  // Métodos de Filtragem com reset preventivo de paginação
+  ngOnDestroy(): void {
+    TFD_PATIENTS_CHANNEL.close();
+  }
+
+  // ==========================================
+  // Métodos Acessíveis pelo Template (Protected)
+  // ==========================================
   protected applyOwnerFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    const dataSource = this.ownerDataSource();
-    dataSource.filter = filterValue.trim().toLowerCase();
-    
-    if (dataSource.paginator) {
-      dataSource.paginator.firstPage();
+    this.ownerDataSource.filter = filterValue.trim().toLowerCase();
+
+    if (this.ownerDataSource.paginator) {
+      this.ownerDataSource.paginator.firstPage();
     }
   }
 
   protected applyOthersFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    const dataSource = this.othersDataSource();
-    dataSource.filter = filterValue.trim().toLowerCase();
-    
-    if (dataSource.paginator) {
-      dataSource.paginator.firstPage();
+    this.othersDataSource.filter = filterValue.trim().toLowerCase();
+
+    if (this.othersDataSource.paginator) {
+      this.othersDataSource.paginator.firstPage();
     }
   }
 
-  /**
-   * Obtém a listagem atualizada de pacientes e alimenta os signals brutos.
-   */
+  protected checkPermissions(permissionName: string): boolean {
+    if (!this.currentUser?.roles) return true;
+
+    const hasPermission = this.currentUser.roles.some((role: any) =>
+      role.permissions?.some((perm: Permission) => perm.name === permissionName)
+    );
+
+    return !hasPermission;
+  }
+
+  // Ações disparadas pelos botões da tabela
+  protected patientDetail(patientCare: PatientCare): void {
+    this.openDialog(PatientDetailComponent, { patient: patientCare.patient }, '1200px', '700px', false);
+  }
+
+  protected patientUpdate(patientCare: PatientCare): void {
+    this.openDialog(PatientUpdateComponent, { patient: patientCare.patient }, '1200px', '700px');
+  }
+
+  protected patientEscorts(patientCare: PatientCare): void {
+    this.openDialog(PatientEscortsComponent, { patient_care: patientCare }, '1200px', 'auto', false);
+  }
+
+  protected patientReports(patientCare: PatientCare): void {
+    this.openDialog(PatientReportsComponent, { patient_care: patientCare }, '1200px', 'auto', false);
+  }
+
+  protected patientArchive(patientCare: PatientCare): void {
+    this.openDialog(PatientArchiveComponent, { patient_care: patientCare }, '400px');
+  }
+
+  protected patientMoveFromOthers(patientCare: PatientCare): void {
+    this.openDialog(PatientMoveFromOthersComponent, { patient_care: patientCare }, '400px');
+  }
+
+  protected patientValidate(patientCare: PatientCare): void {
+    this.openDialog(PatientValidateComponent, { patient_care: patientCare }, '400px');
+  }
+
+  protected patientFinishBack(patientCare: PatientCare): void {
+    this.openDialog(PatientFinishBackComponent, { patient_care: patientCare }, '400px');
+  }
+
+  // ==========================================
+  // Métodos Privados / Auxiliares
+  // ==========================================
+  private setupTableBindings(): void {
+    effect(() => {
+      const ownerSort = this.ownerSort();
+      const ownerPaginator = this.ownerPaginator();
+
+      if (ownerSort) this.ownerDataSource.sort = ownerSort;
+      if (ownerPaginator) this.ownerDataSource.paginator = ownerPaginator;
+
+      const othersSort = this.othersSort();
+      const othersPaginator = this.othersPaginator();
+
+      if (othersSort) this.othersDataSource.sort = othersSort;
+      if (othersPaginator) this.othersDataSource.paginator = othersPaginator;
+    }, { injector: this.injector });
+  }
+
   private fetchPatients(showLoading = false): void {
     if (showLoading) this.openLoading();
 
@@ -162,38 +206,51 @@ export class PatientsPage implements OnInit {
       )
       .subscribe({
         next: (response: any) => {
-          const rawData = response ?? [];
+          const rawData: PatientCare[] = response || [];
 
-          // Filtra e mapeia os pacientes Titulares
-          const owners: PatientCare[] = rawData
-            .filter((item: PatientCare) => item.owner)
-            .map((item: PatientCare) => ({
-              ...item,
-              name: item.patient?.name,
-              cns: item.patient?.cns,
-              document: item.patient?.document,
-              document_type: item.patient?.document_type,
-            }));
+          const owners = rawData
+            .filter((item) => item.owner)
+            .map((item) => this.mapOwnerPatientRow(item));
 
-          // Filtra e mapeia os pacientes de outros Profissionais
-          const others: PatientCare[] = rawData
-            .filter((item: PatientCare) => !item.owner)
-            .map((item: PatientCare) => ({
-              ...item,
-              name: item.patient?.name,
-              cns: item.patient?.cns,
-              professional: item.user?.professional?.name,
-            }));
+          const others = rawData
+            .filter((item) => !item.owner)
+            .map((item) => this.mapOthersPatientRow(item));
 
-          // Atualiza os signals brutos de forma segura
-          this.rawOwnerList.set(owners);
-          this.rawOthersList.set(others);
+          this.ownerDataSource.data = owners;
+          this.othersDataSource.data = others;
         },
         error: () => {
-          this.rawOwnerList.set([]);
-          this.rawOthersList.set([]);
+          this.ownerDataSource.data = [];
+          this.othersDataSource.data = [];
         }
       });
+  }
+
+  private listenToBroadcastChannel(): void {
+    TFD_PATIENTS_CHANNEL.onmessage = (message: MessageEvent<string>) => {
+      if (message.data === 'update') {
+        this.fetchPatients(false);
+      }
+    };
+  }
+
+  private mapOwnerPatientRow(item: PatientCare) {
+    return {
+      ...item,
+      name: item.patient?.name,
+      cns: item.patient?.cns,
+      document: item.patient?.document,
+      document_type: item.patient?.document_type
+    };
+  }
+
+  private mapOthersPatientRow(item: PatientCare) {
+    return {
+      ...item,
+      name: item.patient?.name,
+      cns: item.patient?.cns,
+      professional: item.user?.professional?.name
+    };
   }
 
   private openLoading(): void {
@@ -204,28 +261,11 @@ export class PatientsPage implements OnInit {
     });
   }
 
-  /**
-   * Avalia as regras de acesso cedidas no Route Resolver.
-   * Retorna 'true' (desabilita) se o usuário NÃO possuir a permissão informada.
-   */
-  protected checkPermissions(permissionName: string): boolean {
-    if (!this.currentUser?.roles) return true;
-
-    const hasPermission = this.currentUser.roles.some((role: any) => 
-      role.permissions?.some((perm: Permission) => perm.name === permissionName)
-    );
-
-    return !hasPermission;
-  }
-
-  /**
-   * Centralizador genérico para abertura de modais com recarga automatizada de dados.
-   */
-  private openDialog(
-    component: any, 
-    data: any, 
-    width = '1200px', 
-    height = 'auto', 
+  private openDialog<T>(
+    component: new (...args: any[]) => T,
+    data: PatientDialogData,
+    width = '1200px',
+    height = 'auto',
     requiresRefresh = true
   ): void {
     this.dialog.open(component, {
@@ -235,9 +275,10 @@ export class PatientsPage implements OnInit {
       autoFocus: false,
       scrollStrategy: this.overlay.scrollStrategies.noop(),
       data
-    }).afterClosed()
+    })
+      .afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(result => {
+      .subscribe((result) => {
         if (result && requiresRefresh) {
           this.handlePatientChange();
         }
@@ -247,39 +288,5 @@ export class PatientsPage implements OnInit {
   private handlePatientChange(): void {
     this.fetchPatients(false);
     TFD_PATIENTS_CHANNEL.postMessage('update');
-  }
-
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
-  
-  protected showPatient(patientCare: PatientCare): void {
-    this.openDialog(PatientDetailComponent, { patient: patientCare.patient }, '1200px', '700px', false);
-  }
-
-  protected updatePatient(patientCare: PatientCare): void {
-    this.openDialog(PatientUpdateComponent, { patient: patientCare.patient }, '1200px', '700px');
-  }
-
-  protected patientEscorts(patientCare: PatientCare): void {
-    this.openDialog(PatientEscortsComponent, { patientCare }, '1200px', 'auto', false);
-  }
-
-  protected patientReports(patientCare: PatientCare): void {
-    this.openDialog(PatientReportsComponent, { patientCare }, '1200px', 'auto', false);
-  }
-
-  protected archivePatient(patientCare: PatientCare): void {
-    this.openDialog(PatientArchiveComponent, { patientCare }, '400px');
-  }
-
-  protected movePatientFromOthers(patientCare: PatientCare): void {
-    this.openDialog(PatientMoveFromOthersComponent, { patientCare }, '400px');
-  }
-
-  protected validatePatient(patientCare: PatientCare): void {
-    this.openDialog(PatientValidateComponent, { patientCare }, '400px');
-  }
-
-  protected finishBackPatient(patientCare: PatientCare): void {
-    this.openDialog(PatientFinishBackComponent, { patientCare }, '400px');
   }
 }

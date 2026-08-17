@@ -4,12 +4,12 @@
   display: flex;
   justify-content: center;
   width: 100%;
-  min-height: calc(100vh - 100px);
+  min-height: calc(100vh - $layout-header-height);
 }
 
 section {
   margin-top: $spacing-xxl; 
-  width: 85%;
+  width: $page-content-width;
   display: flex;
   flex-direction: column;
   gap: $spacing-xl; 
@@ -18,7 +18,7 @@ section {
     margin-right: $spacing-sm;
   }
 
-  // Div container interna de cada aba
+  // Container interno da tabela
   div.table {
     display: flex;
     flex-direction: column;
@@ -28,18 +28,19 @@ section {
     box-sizing: border-box;
   }
 
-  // Container de busca centralizado
+  // Container de busca
   div.search {
-    @include flex-center(0);
+    display: flex; 
+    justify-content: center; 
     width: 100%;
 
     mat-form-field {
       width: 100%;
-      max-width: 500px; 
+      max-width: $search-input-max-width; 
     }
   }
 
-  // Estilização da Tabela
+  // Estilização da Tabela Angular Material
   table.mat-mdc-table {
     margin: 0 auto $spacing-sm auto;
     background: $color-surface;
@@ -48,19 +49,17 @@ section {
     box-shadow: $shadow-card; 
     border-collapse: separate;
 
-    th.mat-mdc-header-cell, 
-    td.mat-mdc-cell {
+    th, td {
       padding: $spacing-md $spacing-lg; 
       vertical-align: middle;
     }
 
-    th.mat-mdc-header-cell {
+    th {
       font-weight: $font-weight-semibold;
       background-color: $color-table-header-bg;
       color: $color-table-header-text;
     }
 
-    // Alinhamento das colunas centralizadas
     .center {
       text-align: center;
       div {
@@ -68,27 +67,38 @@ section {
       }
     }
 
-    // Definições de cores de status
+    // Alinhamento à direita para cabeçalho e células
+    .right {
+      text-align: right;
+    }
+
+    // Estados Semânticos
     .valid { color: $color-success; }
     .invalid { color: $color-danger; }
-    .warning { color: $color-warning; }
+    .bookmark, .warning { color: $color-warning; }
 
-    // --- Configuração de Distribuição das Colunas (Pacientes) ---
-    th.status-column-header {
-      width: 10%;
+    // --- Larguras das Colunas: Aba 1 (Minha caixa / Titulares) ---
+    th.mat-column-name        { width: 35%; }
+    th.mat-column-cns         { width: 20%; }
+    th.mat-column-document    { width: 15%; }
+    th.mat-column-status      { width: 10%; }
+    th.mat-column-actions     { width: 20%; }
+
+    // --- Larguras das Colunas: Aba 2 (Outras caixas) ---
+    &.others-table {
+      th.mat-column-name        { width: 35%; }
+      th.mat-column-cns         { width: 20%; }
+      th.mat-column-responsible { width: 25%; }
+      th.mat-column-status      { width: 10%; }
+      th.mat-column-actions     { width: 10%; }
     }
 
-    // Acomoda harmoniosamente os 5 botões de ação sem sobreposição
-    th.actions-column-header-owner {
-      width: 20%; 
-    }
-
-    th.actions-column-header-others {
-      width: 10%;
-    }
-
+    // Alinha os botões com a lateral direita
     td.actions-cell {
-      @include flex-center($spacing-xs);
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: $spacing-xs;
     }
   }
 }

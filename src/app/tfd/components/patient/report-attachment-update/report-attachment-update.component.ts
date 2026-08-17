@@ -1,20 +1,22 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { saveAs } from 'file-saver';
 
-import { PatientService } from '../../../services/patient.service';
+// Material Modules
+import { MatButtonModule } from '@angular/material/button';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
 import { MessageService } from '../../../../core/services/message-service';
 import { StorageService } from '../../../../core/services/storage-service';
+import { PatientService } from '../../../services/patient.service';
 
 @Component({
   selector: 'app-report-attachment-update',
@@ -36,6 +38,9 @@ import { StorageService } from '../../../../core/services/storage-service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ReportAttachmentUpdateComponent implements OnInit {
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
   protected readonly data = inject(MAT_DIALOG_DATA, { optional: true });
   private readonly fb = inject(FormBuilder);
   private readonly patientService = inject(PatientService);
@@ -45,38 +50,61 @@ export class ReportAttachmentUpdateComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected attachmentForm!: FormGroup;
-
-  protected readonly isSubmitting = signal<boolean>(false);
-  protected readonly hasFile = signal<boolean>(false);
-  
-  private readonly attachmentData = this.data?.reportAttachment || this.data?.attachment;
-
-  protected readonly fileLabel = signal<string>(
-    this.attachmentData?.archive_id 
-      ? 'Arquivo já cadastrado (Clique para alterar)' 
-      : 'Nenhum arquivo selecionado'
-  );
-
-  private selectedFile: File | null = null;
-
-  protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
+  // ==========================================
+  // Mensagens de Erro por Controle
+  // ==========================================
+  protected readonly errorMessages: Record<string, Array<{ type: string; message: string }>> = {
     name: [
       { type: 'required', message: 'O nome do anexo é obrigatório.' }
     ]
   };
 
+  // ==========================================
+  // Propriedades e Dados Internos
+  // ==========================================
+  private readonly attachmentData = this.data?.report_attachment;
+  private selectedFile: File | null = null;
+
+  // ==========================================
+  // Gerenciamento de Anexos/Arquivos
+  // ==========================================
+  protected readonly fileLabel = signal<string>(
+    this.data?.report_attachment?.archive_id 
+      ? 'Arquivo já cadastrado (Clique para alterar)' 
+      : 'Nenhum arquivo selecionado'
+  );
+
+  // ==========================================
+  // Estados Reativos via Signals
+  // ==========================================
+  protected readonly isSubmitting = signal<boolean>(false);
+  protected readonly hasFile = signal<boolean>(false);
+
+  // ==========================================
+  // FormGroups e Controles Expostos
+  // ==========================================
+  protected attachmentForm!: FormGroup;
+
+  // ==========================================
+  // Ciclo de Vida (Hooks)
+  // ==========================================
   ngOnInit(): void {
     this.initForm();
   }
 
+  // ==========================================
+  // Inicialização de Formulários
+  // ==========================================
   private initForm(): void {
-    const currentName = this.attachmentData?.name || null;
+    const currentName = this.data?.report_attachment?.name || null;
     this.attachmentForm = this.fb.group({
-      name: [currentName, [Validators.required]],
+      name: [currentName, [Validators.required]]
     });
   }
 
+  // ==========================================
+  // Métodos de Interação
+  // ==========================================
   protected onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
 
@@ -98,22 +126,15 @@ export class ReportAttachmentUpdateComponent implements OnInit {
   }
 
   protected download(archiveId: number | null | undefined, name: string): void {
-    if (!archiveId) {
-      this.messageService.showMessage('Arquivo não encontrado para download.');
-      return;
-    }
+    if (!archiveId) return;
 
     this.storageService.download(archiveId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (response) => {
+        next: response => {
           if (response?.archive) {
-            saveAs(response.archive, name || 'anexo_laudo');
+            saveAs(response.archive, name);
           }
-        },
-        error: (err) => {
-          const fallbackError = err?.error?.message || 'Erro ao realizar download do arquivo.';
-          this.messageService.showMessage(fallbackError);
         }
       });
   }
@@ -122,8 +143,11 @@ export class ReportAttachmentUpdateComponent implements OnInit {
     return this.attachmentForm.pristine && !this.hasFile();
   }
 
+  // ==========================================
+  // Submissão
+  // ==========================================
   protected onSubmit(): void {
-    const attachmentId = this.attachmentData?.id;
+    const attachmentId = this.data?.report_attachment?.id;
 
     if (!attachmentId) {
       this.messageService.showMessage('Identificador do anexo não encontrado.');
@@ -138,12 +162,12 @@ export class ReportAttachmentUpdateComponent implements OnInit {
     this.isSubmitting.set(true);
     this.cdr.markForCheck();
 
-    const attachmentPayload = {
+    const payload = {
       ...this.attachmentForm.getRawValue(),
       file: this.selectedFile
     };
 
-    this.patientService.updateReportAttachment(attachmentId, attachmentPayload)
+    this.patientService.updateReportAttachment(attachmentId, payload)
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);

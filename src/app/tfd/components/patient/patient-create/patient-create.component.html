@@ -12,13 +12,13 @@
                         <mat-form-field appearance="outline">
                             <mat-label>CNS</mat-label>
                             <input matInput type="text" mask="000 0000 0000 0000" formControlName="cns">
-                            @for (item of errorMessages['cns']; track item.type) {
+                            @for (item of errorMessages['cns']; track $index) {
                                 <mat-error [hidden]="!identificationForm.get('cns')?.hasError(item.type)">{{ item.message }}</mat-error>
                             }
                         </mat-form-field>
                         <div class="file-upload-cell">
                             <input type="file" hidden (change)="onFileSelected($event, 'cns')" #fileCNS>
-                            <button mat-raised-button type="button" (click)="fileCNS.click()" [matTooltip]="fileLabels.cns()">
+                            <button mat-raised-button type="button" (click)="fileCNS.click()" [matTooltip]="files.cns.label()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar CNS
                             </button>
@@ -32,7 +32,7 @@
                                 <mat-option value="CPF">CPF</mat-option>
                                 <mat-option value="Certidão de nascimento">Certidão de nascimento</mat-option>
                             </mat-select>
-                            @for (item of errorMessages['document_type']; track item.type) {
+                            @for (item of errorMessages['document_type']; track $index) {
                                 <mat-error [hidden]="!identificationForm.get('document_type')?.hasError(item.type)">{{ item.message }}</mat-error>
                             }
                         </mat-form-field>
@@ -40,14 +40,14 @@
                         <mat-form-field appearance="outline">
                             <mat-label>Documento</mat-label>
                             <input matInput type="text" [mask]="identificationForm.get('document_type')?.value === 'CPF' ? '000.000.000-00' : '000000 00 00 0000 0 00000 000 0000000 00'" formControlName="document">
-                            @for (item of errorMessages['document']; track item.type) {
+                            @for (item of errorMessages['document']; track $index) {
                                 <mat-error [hidden]="!identificationForm.get('document')?.hasError(item.type)">{{ item.message }}</mat-error>
                             }
                         </mat-form-field>
                         
                         <div class="file-upload-cell">
                             <input type="file" hidden (change)="onFileSelected($event, 'document')" #fileDocument>
-                            <button mat-raised-button type="button" (click)="fileDocument.click()" [matTooltip]="fileLabels.document()">
+                            <button mat-raised-button type="button" (click)="fileDocument.click()" [matTooltip]="files.document.label()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar documento
                             </button>
@@ -58,7 +58,7 @@
                         <mat-form-field appearance="outline">
                             <mat-label>Sigadoc</mat-label>
                             <input matInput type="text" placeholder="SES-PRO-0000/00000" formControlName="sigadoc">
-                            @for (item of errorMessages['sigadoc']; track item.type) {
+                            @for (item of errorMessages['sigadoc']; track $index) {
                                 <mat-error [hidden]="!identificationForm.get('sigadoc')?.hasError(item.type)">{{ item.message }}</mat-error>
                             }
                         </mat-form-field>
@@ -76,7 +76,7 @@
                         <mat-form-field appearance="outline">
                             <mat-label>Nome</mat-label>
                             <input matInput type="text" formControlName="name">
-                            @for (item of errorMessages['name']; track item.type) {
+                            @for (item of errorMessages['name']; track $index) {
                                 <mat-error [hidden]="!personalForm.get('name')?.hasError(item.type)">{{ item.message }}</mat-error>
                             }
                         </mat-form-field>
@@ -91,7 +91,7 @@
                                 (dateChange)="setBirthDate($event)">
                             <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
                             <mat-datepicker #picker></mat-datepicker>
-                            @for (item of errorMessages['birth_date']; track item.type) {
+                            @for (item of errorMessages['birth_date']; track $index) {
                                 <mat-error [hidden]="!personalForm.get('birth_date')?.hasError(item.type)">
                                     {{ item.message }}
                                 </mat-error>
@@ -101,7 +101,7 @@
                         <mat-form-field appearance="outline">
                             <mat-label>Estado civil</mat-label>
                             <mat-select formControlName="marital_status">
-                                @for (item of maritalStatuses; track item) {
+                                @for (item of options.maritalStatuses; track $index) {
                                     <mat-option [value]="item">{{ item }}</mat-option>
                                 }
                             </mat-select>
@@ -112,11 +112,11 @@
                         <mat-form-field appearance="outline">
                             <mat-label>Raça</mat-label>
                             <mat-select formControlName="race">
-                                @for (item of races; track item) {
+                                @for (item of options.races; track $index) {
                                     <mat-option [value]="item">{{ item }}</mat-option>
                                 }
                             </mat-select>
-                            @for (item of errorMessages['race']; track item.type) {
+                            @for (item of errorMessages['race']; track $index) {
                                 <mat-error [hidden]="!personalForm.get('race')?.hasError(item.type)">{{ item.message }}</mat-error>
                             }
                         </mat-form-field>
@@ -124,7 +124,7 @@
                         <mat-form-field appearance="outline">
                             <mat-label>Etnia</mat-label>
                             <mat-select formControlName="ethnicity">
-                                @for (item of ethnicities; track item) {
+                                @for (item of options.ethnicities; track $index) {
                                     <mat-option [value]="item">{{ item }}</mat-option>
                                 }
                             </mat-select>
@@ -137,11 +137,11 @@
                                 <mat-spinner matSuffix [diameter]="20" class="spinner-suffix"></mat-spinner>
                             }
                             <mat-autocomplete #naturalness="matAutocomplete" (optionSelected)="onNaturalnessSelected($event.option.value)">
-                                @for (option of filteredNaturalnessOptions | async; track option) {
+                                @for (option of filteredNaturalnessOptions | async; track $index) {
                                     <mat-option [value]="option">{{ option }}</mat-option>
                                 }
                             </mat-autocomplete>
-                            @for (item of errorMessages['naturalness']; track item.type) {
+                            @for (item of errorMessages['naturalness']; track $index) {
                                 <mat-error [hidden]="!naturalnessControl.hasError(item.type)">{{ item.message }}</mat-error>
                             }
                         </mat-form-field>
@@ -149,11 +149,11 @@
                         <mat-form-field appearance="outline">
                             <mat-label>Gênero</mat-label>
                             <mat-select formControlName="gender">
-                                @for (item of genders; track item) {
+                                @for (item of options.genders; track $index) {
                                     <mat-option [value]="item">{{ item }}</mat-option>
                                 }
                             </mat-select>
-                            @for (item of errorMessages['gender']; track item.type) {
+                            @for (item of errorMessages['gender']; track $index) {
                                 <mat-error [hidden]="!personalForm.get('gender')?.hasError(item.type)">{{ item.message }}</mat-error>
                             }
                         </mat-form-field>
@@ -164,7 +164,7 @@
                             <mat-label>Profissão</mat-label>
                             <input type="text" matInput formControlName="profession" [matAutocomplete]="profession">
                             <mat-autocomplete autoActiveFirstOption #profession="matAutocomplete">
-                                @for (option of filteredProfessionsOptions | async; track option) {
+                                @for (option of filteredProfessionsOptions | async; track $index) {
                                     <mat-option [value]="option">{{ option }}</mat-option>
                                 }
                             </mat-autocomplete>
@@ -206,14 +206,14 @@
                         <mat-form-field appearance="outline">
                             <mat-label>Deficiência</mat-label>
                             <mat-select formControlName="deficiency">
-                                @for (item of deficiencies; track item) {
+                                @for (item of options.deficiencies; track $index) {
                                     <mat-option [value]="item">{{ item }}</mat-option>
                                 }
                             </mat-select>
                         </mat-form-field>
                         <div class="file-upload-cell">
                             <input type="file" hidden (change)="onFileSelected($event, 'deficiency')" #fileDeficiency>
-                            <button mat-raised-button type="button" (click)="fileDeficiency.click()" [matTooltip]="fileLabels.deficiency()">
+                            <button mat-raised-button type="button" (click)="fileDeficiency.click()" [matTooltip]="files.deficiency.label()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar laudo
                             </button>
@@ -232,13 +232,13 @@
                         <mat-form-field appearance="outline">
                             <mat-label>CEP</mat-label>
                             <input matInput type="text" mask="00000-000" formControlName="cep">
-                            @for (item of errorMessages['cep']; track item.type) {
+                            @for (item of errorMessages['cep']; track $index) {
                                 <mat-error [hidden]="!addressForm.get('cep')?.hasError(item.type)">{{ item.message }}</mat-error>
                             }
                         </mat-form-field>
                         <div class="file-upload-cell">
                             <input type="file" hidden (change)="onFileSelected($event, 'address')" #fileAddress>
-                            <button mat-raised-button type="button" (click)="fileAddress.click()" [matTooltip]="fileLabels.address()">
+                            <button mat-raised-button type="button" (click)="fileAddress.click()" [matTooltip]="files.address.label()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar comprovante de endereço
                             </button>
@@ -248,7 +248,7 @@
                     <mat-form-field appearance="outline">
                         <mat-label>Endereço</mat-label>
                         <input matInput type="text" formControlName="address">
-                        @for (item of errorMessages['address']; track item.type) {
+                        @for (item of errorMessages['address']; track $index) {
                             <mat-error [hidden]="!addressForm.get('address')?.hasError(item.type)">{{ item.message }}</mat-error>
                         }
                     </mat-form-field>
@@ -262,7 +262,7 @@
                         <mat-form-field appearance="outline">
                             <mat-label>Número</mat-label>
                             <input matInput type="text" formControlName="number">
-                            @for (item of errorMessages['number']; track item.type) {
+                            @for (item of errorMessages['number']; track $index) {
                                 <mat-error [hidden]="!addressForm.get('number')?.hasError(item.type)">{{ item.message }}</mat-error>
                             }
                         </mat-form-field>
@@ -270,7 +270,7 @@
                         <mat-form-field appearance="outline">
                             <mat-label>Bairro</mat-label>
                             <input matInput type="text" formControlName="neighborhood">
-                            @for (item of errorMessages['neighborhood']; track item.type) {
+                            @for (item of errorMessages['neighborhood']; track $index) {
                                 <mat-error [hidden]="!addressForm.get('neighborhood')?.hasError(item.type)">{{ item.message }}</mat-error>
                             }
                         </mat-form-field>
@@ -286,7 +286,7 @@
                             <mat-label>UF</mat-label>
                             <input type="text" matInput formControlName="state" [matAutocomplete]="state">
                             <mat-autocomplete autoActiveFirstOption #state="matAutocomplete">
-                                @for (option of filteredUfsOptions | async; track option) {
+                                @for (option of filteredUfsOptions | async; track $index) {
                                     <mat-option [value]="option">{{ option }}</mat-option>
                                 }
                             </mat-autocomplete>
@@ -315,7 +315,7 @@
                         </mat-form-field>
                         <div class="file-upload-cell">
                             <input type="file" hidden (change)="onFileSelected($event, 'protocol')" #fileProtocol>
-                            <button mat-raised-button type="button" (click)="fileProtocol.click()" [matTooltip]="fileLabels.protocol()">
+                            <button mat-raised-button type="button" (click)="fileProtocol.click()" [matTooltip]="files.protocol.label()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar protocolo municipal
                             </button>
@@ -340,7 +340,7 @@
             @if (isSubmitting()) {
                 <mat-spinner [diameter]="20"></mat-spinner>
             }
-            Criar
+            Criar paciente
         </div>
     </button>
 </mat-dialog-actions>

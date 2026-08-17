@@ -1,16 +1,20 @@
-import { ChangeDetectionStrategy, Component, inject, ChangeDetectorRef, DestroyRef, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
+
+// Material Modules
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { finalize } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { PatientService } from '../../../services/patient.service';
+// Services
 import { MessageService } from '../../../../core/services/message-service';
+import { PatientService } from '../../../services/patient.service';
 
 @Component({
   selector: 'app-patient-report-delete',
+  standalone: true,
   imports: [
     CommonModule, 
     MatDialogModule, 
@@ -22,7 +26,9 @@ import { MessageService } from '../../../../core/services/message-service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientReportDeleteComponent {
-  // Injeções de Dependência Dinâmicas
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
   protected readonly data = inject(MAT_DIALOG_DATA, { optional: true });
   private readonly patientService = inject(PatientService);
   private readonly messageService = inject(MessageService);
@@ -30,29 +36,35 @@ export class PatientReportDeleteComponent {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Estados gerenciados reativamente via Signals
+  // ==========================================
+  // Estados Reativos (Signals)
+  // ==========================================
   protected readonly isSubmitting = signal<boolean>(false);
 
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
-
+  // ==========================================
+  // Métodos Públicos / Eventos
+  // ==========================================
+  /**
+   * Executa a exclusão do laudo selecionado.
+   */
   protected onSubmit(): void {
-    const reportId = this.data?.report?.id;
+    const patientReportId = this.data?.patient_report?.id;
 
-    if (!reportId) {
+    if (!patientReportId) {
       this.messageService.showMessage('Identificador do laudo não encontrado.');
       return;
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck(); // ⚡ Força a atualização do DOM para pintar o spinner imediatamente no OnPush
+    this.cdr.markForCheck();
 
-    this.patientService.deletePatientReport(reportId)
+    this.patientService.deletePatientReport(patientReportId)
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);
-          this.cdr.markForCheck(); // ⚡ Garante o desligamento do loading visual na tela
+          this.cdr.markForCheck();
         }),
-        takeUntilDestroyed(this.destroyRef) // 🛡️ Proteção reativa contra memory leaks se fecharem o modal rápido
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
         next: (response: any) => {
@@ -62,7 +74,7 @@ export class PatientReportDeleteComponent {
         error: (err) => {
           const fallbackError = 'Ocorreu um erro ao tentar remover o laudo.';
           this.messageService.showMessage(err?.error?.message || fallbackError);
-        },
+        }
       });
   }
 }

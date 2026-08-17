@@ -9,14 +9,14 @@
                 <mat-form-field appearance="outline">
                     <mat-label>Protocolo</mat-label>
                     <input matInput type="text" formControlName="protocol">
-                    @for (item of errorMessages['protocol']; track item.type) {
+                    @for (item of errorMessages['protocol']; track $index) {
                         <mat-error [hidden]="!reportForm.get('protocol')?.hasError(item.type)">
                             {{ item.message }}
                         </mat-error>
                     }
                 </mat-form-field>
 
-                <div class="toggle-cell">
+                <div class="toggle">
                     <mat-slide-toggle formControlName="lawsuit">Ação judicial</mat-slide-toggle>
                 </div>
             </div>
@@ -28,19 +28,19 @@
                     <input 
                         type="text" 
                         matInput 
-                        [formControl]="specialtyControl" 
+                        formControlName="specialty_search" 
                         [matAutocomplete]="specialtyAuto">
 
                     <mat-autocomplete #specialtyAuto="matAutocomplete" [displayWith]="displaySpecialty">
-                        @for (option of filteredSpecialtyOptions | async; track option.key) {
+                        @for (option of filteredSpecialtyOptions | async; track $index) {
                             <mat-option [value]="option" (onSelectionChange)="setSpecialty(option)">
                                 {{ option.label }}
                             </mat-option>
                         }
                     </mat-autocomplete>
 
-                    @for (item of errorMessages['specialty']; track item.type) {
-                        <mat-error [hidden]="!specialtyControl.hasError(item.type)">
+                    @for (item of errorMessages['specialty_search']; track $index) {
+                        <mat-error [hidden]="!reportForm.get('specialty_search')?.hasError(item.type)">
                             {{ item.message }}
                         </mat-error>
                     }
@@ -54,7 +54,7 @@
                     <input 
                         type="text" 
                         matInput 
-                        [formControl]="cidControl" 
+                        formControlName="cid_search" 
                         [matAutocomplete]="cidAuto" 
                         [readonly]="cidReadOnly()">
                     
@@ -63,15 +63,15 @@
                     }
 
                     <mat-autocomplete #cidAuto="matAutocomplete" [displayWith]="displayCid">
-                        @for (option of filteredCidOptions | async; track option.id) {
+                        @for (option of filteredCidOptions | async; track $index) {
                             <mat-option [value]="option" (onSelectionChange)="setCid(option)">
                                 {{ option.code }} - {{ option.name }}
                             </mat-option>
                         }
                     </mat-autocomplete>
 
-                    @for (item of errorMessages['cid_id']; track item.type) {
-                        <mat-error [hidden]="!cidControl.hasError(item.type)">
+                    @for (item of errorMessages['cid_search']; track $index) {
+                        <mat-error [hidden]="!reportForm.get('cid_search')?.hasError(item.type)">
                             {{ item.message }}
                         </mat-error>
                     }
@@ -83,7 +83,7 @@
                 <mat-form-field appearance="outline">
                     <mat-label>Diagnóstico</mat-label>
                     <textarea matInput rows="6" formControlName="diagnosis"></textarea>
-                    @for (item of errorMessages['diagnosis']; track item.type) {
+                    @for (item of errorMessages['diagnosis']; track $index) {
                         <mat-error [hidden]="!reportForm.get('diagnosis')?.hasError(item.type)">
                             {{ item.message }}
                         </mat-error>
@@ -101,7 +101,7 @@
         mat-flat-button 
         color="primary" 
         type="button" 
-        [disabled]="reportForm.invalid || cidControl.invalid || specialtyControl.invalid || reportForm.pending || isSubmitting()" 
+        [disabled]="reportForm.invalid || reportForm.pending || isSubmitting()" 
         (click)="onSubmit()"
     >
         <div class="waiting">

@@ -1,18 +1,21 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { finalize } from 'rxjs';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { finalize } from 'rxjs';
 
-import { PatientService } from '../../../services/patient.service';
+// Angular Material
+import { MatButtonModule } from '@angular/material/button';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
+// Core & Services
 import { MessageService } from '../../../../core/services/message-service';
+import { PatientService } from '../../../services/patient.service';
 
 @Component({
   selector: 'app-report-attachment-create',
@@ -34,7 +37,10 @@ import { MessageService } from '../../../../core/services/message-service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ReportAttachmentCreateComponent implements OnInit {
-  protected readonly data = inject(MAT_DIALOG_DATA, { optional: true });
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
+  protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly patientService = inject(PatientService);
   private readonly messageService = inject(MessageService);
@@ -42,61 +48,73 @@ export class ReportAttachmentCreateComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
+  // ==========================================
+  // Formulários e Estados Reativos
+  // ==========================================
   protected attachmentForm!: FormGroup;
 
   protected readonly isSubmitting = signal<boolean>(false);
   protected readonly hasFile = signal<boolean>(false);
   protected readonly fileLabel = signal<string>('Nenhum arquivo selecionado');
-  
+
   private selectedFile: File | null = null;
 
-  protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
+  // ==========================================
+  // Dicionários e Mensagens de Erro
+  // ==========================================
+  protected readonly errorMessages: Record<string, Array<{ type: string; message: string }>> = {
     name: [
       { type: 'required', message: 'O nome do anexo é obrigatório.' }
     ]
   };
 
+  // ==========================================
+  // Ciclo de Vida (Hooks)
+  // ==========================================
   ngOnInit(): void {
     this.initForm();
   }
 
-  private initForm(): void {
-    this.attachmentForm = this.fb.group({
-      name: [null, [Validators.required]],
-    });
-  }
-
+  // ==========================================
+  // Métodos Acessíveis pelo Template (Protected)
+  // ==========================================
+  /**
+   * Manipula a seleção do arquivo via input do tipo file.
+   */
   protected onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    
+
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
       this.selectedFile = file;
       this.fileLabel.set(file.name);
       this.hasFile.set(true);
-      
+
       const currentName = this.attachmentForm.get('name')?.value;
       if (!currentName) {
         const sanitizedName = file.name.split('.').slice(0, -1).join('.');
         this.attachmentForm.get('name')?.setValue(sanitizedName);
         this.attachmentForm.get('name')?.markAsDirty();
       }
-      
+
       this.cdr.markForCheck();
     }
   }
 
+  /**
+   * Envia o formulário e realiza a criação do anexo do laudo.
+   */
   protected onSubmit(): void {
-    const reportId = this.data?.report?.id || this.data?.report_id;
+    const patientReportId = this.data?.patient_report?.id;
 
-    if (!reportId) {
+    if (!patientReportId) {
       this.messageService.showMessage('Identificador do laudo não encontrado.');
       return;
     }
 
     if (this.attachmentForm.invalid || !this.selectedFile) {
       this.attachmentForm.markAllAsTouched();
-      
+
       if (!this.selectedFile) {
         this.messageService.showMessage('A seleção de um arquivo anexo é obrigatória.');
       }
@@ -106,12 +124,12 @@ export class ReportAttachmentCreateComponent implements OnInit {
     this.isSubmitting.set(true);
     this.cdr.markForCheck();
 
-    const attachmentPayload = {
+    const payload = {
       ...this.attachmentForm.getRawValue(),
       file: this.selectedFile
     };
 
-    this.patientService.createReportAttachment(reportId, attachmentPayload)
+    this.patientService.createReportAttachment(patientReportId, payload)
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);
@@ -129,5 +147,14 @@ export class ReportAttachmentCreateComponent implements OnInit {
           this.messageService.showMessage(fallbackError);
         }
       });
+  }
+
+  // ==========================================
+  // Métodos Privados / Auxiliares
+  // ==========================================
+  private initForm(): void {
+    this.attachmentForm = this.fb.group({
+      name: [null, [Validators.required]]
+    });
   }
 }

@@ -1,20 +1,12 @@
 @use 'variables' as *;
 
 :host {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
-}
-
-mat-form-field {
-  width: 100%;
+  @include dialog-base;
 }
 
 mat-dialog-content {
+  @include dialog-content;
   padding-top: $spacing-modal-pt;
-  overflow-y: auto;
-  max-height: $modal-content-max-height;
 }
 
 .stepper {

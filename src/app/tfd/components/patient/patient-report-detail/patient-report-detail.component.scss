@@ -1,19 +1,12 @@
 @use 'variables' as *;
 
 :host {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  overflow: hidden; 
+  @include dialog-base;
 }
 
 mat-dialog-content {
-  overflow-y: auto !important; 
-  padding-top: $spacing-sm !important;
-}
-
-mat-dialog-actions {
-  gap: $spacing-lg; 
+  @include dialog-content;
+  padding-top: $spacing-modal-pt;
 }
 
 .details-container {
@@ -59,19 +52,10 @@ mat-card {
     gap: $spacing-sm;
     height: 100%; 
   }
+}
 
-  .highlight {
-    font-weight: $font-weight-medium;
-    color: $color-primary; // Destaque visual sutil para dados importantes
-  }
-
-  // --- Mapeamento Semântico das Colunas do Grid ---
-
-  &.cols-1-col {
-    grid-template-columns: 1fr;
-  }
-
-  &.cols-1-1 {
-    grid-template-columns: 1fr 1fr;
-  }
+// --- Definições Semânticas das Colunas da Grid ---
+.line {
+  &.cols-1-col   { grid-template-columns: 1fr; }
+  &.cols-1-1     { grid-template-columns: 1fr 1fr; }
 }

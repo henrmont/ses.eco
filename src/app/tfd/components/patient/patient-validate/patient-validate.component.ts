@@ -1,21 +1,21 @@
-import { ChangeDetectionStrategy, Component, inject, ChangeDetectorRef, DestroyRef, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 
-import { PatientService } from '../../../services/patient.service';
 import { MessageService } from '../../../../core/services/message-service';
+import { PatientService } from '../../../services/patient.service';
 
 @Component({
   selector: 'app-patient-validate',
   standalone: true,
   imports: [
-    CommonModule,
-    MatDialogModule,
-    MatButtonModule,
+    CommonModule, 
+    MatDialogModule, 
+    MatButtonModule, 
     MatProgressSpinnerModule
   ],
   templateUrl: './patient-validate.component.html',
@@ -23,28 +23,33 @@ import { MessageService } from '../../../../core/services/message-service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientValidateComponent {
-  // Injeções de Dependência Dinâmicas
-  protected readonly data = inject(MAT_DIALOG_DATA, { optional: true });
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
+  protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly patientService = inject(PatientService);
   private readonly messageService = inject(MessageService);
   private readonly dialogRef = inject(MatDialogRef<PatientValidateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Estados gerenciados reativamente via Signals
+  // ==========================================
+  // Estados Reativos via Signals
+  // ==========================================
   protected readonly isSubmitting = signal<boolean>(false);
 
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
-
+  // ==========================================
+  // Submissão / Ações
+  // ==========================================
   protected onSubmit(): void {
-    const patientCareId = this.data?.patientCare?.id;
+    const patientCareId = this.data?.patient_care?.id;
     if (!patientCareId) {
       this.messageService.showMessage('Erro: Identificador do atendimento não encontrado.');
       return;
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck(); // ⚡ Força a atualização do DOM para pintar o spinner imediatamente no OnPush
+    this.cdr.markForCheck();
 
     const isValid = this.data?.patientCare?.is_valid;
     const acaoSucesso = isValid ? 'invalidado' : 'validado';
@@ -54,9 +59,9 @@ export class PatientValidateComponent {
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);
-          this.cdr.markForCheck(); // ⚡ Garante o desligamento do loading visual na tela
+          this.cdr.markForCheck();
         }),
-        takeUntilDestroyed(this.destroyRef) // 🛡️ Proteção reativa contra memory leaks se fecharem o modal rápido
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
         next: (response: any) => {
@@ -64,8 +69,8 @@ export class PatientValidateComponent {
           this.dialogRef.close(true);
         },
         error: (err) => {
-          const errorMessage = err?.error?.message || `Ocorreu um erro ao tentar ${acaoErro} o atendimento.`;
-          this.messageService.showMessage(errorMessage);
+          const fallbackError = err?.error?.message || `Ocorreu um erro ao tentar ${acaoErro} o atendimento.`;
+          this.messageService.showMessage(fallbackError);
         }
       });
   }

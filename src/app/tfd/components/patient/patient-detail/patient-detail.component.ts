@@ -1,12 +1,12 @@
 import { Component, DestroyRef, inject } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { NgxMaskPipe } from 'ngx-mask';
-import { saveAs } from 'file-saver';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { saveAs } from 'file-saver';
 import { StorageService } from '../../../../core/services/storage-service';
 
 @Component({
@@ -14,7 +14,6 @@ import { StorageService } from '../../../../core/services/storage-service';
   standalone: true,
   imports: [
     CommonModule, 
-    DatePipe, 
     MatDialogModule, 
     MatButtonModule, 
     MatCardModule, 
@@ -22,13 +21,19 @@ import { StorageService } from '../../../../core/services/storage-service';
     NgxMaskPipe
   ],
   templateUrl: './patient-detail.component.html',
-  styleUrl: './patient-detail.component.scss',
+  styleUrl: './patient-detail.component.scss'
 })
 export class PatientDetailComponent {
-  protected readonly data = inject(MAT_DIALOG_DATA, { optional: true });
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
+  protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly destroyRef = inject(DestroyRef);
   private readonly storageService = inject(StorageService);
 
+  // ==========================================
+  // Métodos de Ação
+  // ==========================================
   protected download(archiveId: number | null | undefined, name: string): void {
     if (!archiveId) return;
 

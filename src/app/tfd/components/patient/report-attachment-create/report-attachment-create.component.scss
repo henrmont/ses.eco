@@ -1,22 +1,18 @@
 @use 'variables' as *;
 
 :host {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
+  @include dialog-base;
+}
+
+mat-dialog-content {
+  @include dialog-content;
+  padding-top: $spacing-modal-pt;
 }
 
 mat-form-field {
   width: 100%;
 }
 
-mat-dialog-content {
-  padding-top: $spacing-modal-pt;
-  overflow-y: auto;
-}
-
-// Container do formulário estruturado
 .stepper {
   margin-top: $spacing-form-gap; 
   display: flex; 
@@ -32,34 +28,19 @@ mat-dialog-content {
   row-gap: $spacing-form-gap; 
   align-items: start;
   min-height: $material-field-outline-height;
-
-  &.cols-1-1   { --grid-cols: 1fr 1fr; }
-  &.cols-1-col { --grid-cols: 1fr; }
 }
 
-// Container específico para gatilho e feedback visual de upload
+// --- Definições Semânticas das Colunas Utilizadas ---
+.line {
+  &.cols-1-col { --grid-cols: 1fr; }
+  &.cols-1-1   { --grid-cols: 1fr 1fr; }
+}
+
+// Container do Seletor de Arquivo Anexo
 .upload-container {
   display: flex;
   align-items: center;
   gap: $spacing-lg;
   width: 100%;
   min-height: $material-field-outline-height;
-
-  // Adaptação para o botão Extended FAB não distorcer o layout flex
-  button[mat-fab][extended] {
-    height: $line-height-min-item;
-    border-radius: $radius-md;
-    flex-shrink: 0;
-  }
-
-  // Nome do arquivo selecionado com ellipsis para não quebrar telas pequenas
-  .file-name-indicator {
-    font-size: $font-size-md;
-    font-weight: $font-weight-medium;
-    color: $color-text-variant;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 250px;
-  }
 }

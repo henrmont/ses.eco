@@ -1,65 +1,78 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal, ChangeDetectorRef, DestroyRef } from '@angular/core';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { STEPPER_GLOBAL_OPTIONS } from '@angular/cdk/stepper';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Observable, debounceTime, distinctUntilChanged, filter, finalize, map, startWith } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+
+// Material Modules
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatIconModule } from '@angular/material/icon';
+import { MAT_DATE_LOCALE, MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerInputEvent, MatDatepickerModule } from '@angular/material/datepicker';
-import { MatStepperModule } from '@angular/material/stepper';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatStepperModule } from '@angular/material/stepper';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatAutocompleteModule } from '@angular/material/autocomplete';
-import { CommonModule } from '@angular/common';
 import { NgxMaskDirective } from 'ngx-mask';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { map, Observable, startWith, finalize, debounceTime, distinctUntilChanged } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MAT_DATE_LOCALE, MatNativeDateModule } from '@angular/material/core';
 
 import * as _moment from 'moment';
 const moment = (_moment as any).default || _moment;
 
-import { ViacepService } from '../../../../core/services/viacep-service';
-import { PatientService } from '../../../services/patient.service';
+import { ApiResponse } from '../../../../core/models/api-response.model';
 import { MessageService } from '../../../../core/services/message-service';
+import { ViacepService } from '../../../../core/services/viacep-service';
 import { CustomValidators } from '../../../../core/validators/custom.validator';
 import { Gender } from '../../../enums/gender';
 import { Ufs } from '../../../enums/ufs';
+import { PatientService } from '../../../services/patient.service';
+
+type EscortFileType = 'cns' | 'document' | 'address';
+
+interface AttachedFileState {
+  file: File | null;
+  label: ReturnType<typeof signal<string>>;
+}
 
 @Component({
   selector: 'app-patient-escort-create',
   standalone: true,
   imports: [
-    CommonModule, 
-    FormsModule, 
-    ReactiveFormsModule, 
-    MatAutocompleteModule, 
-    MatDialogModule, 
-    MatButtonModule, 
-    MatFormFieldModule, 
-    MatInputModule, 
-    MatIconModule, 
-    MatDatepickerModule, 
-    MatNativeDateModule, 
-    MatStepperModule, 
-    MatSelectModule, 
-    MatSlideToggleModule, 
-    MatTooltipModule, 
-    NgxMaskDirective, 
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatAutocompleteModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatIconModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatStepperModule,
+    MatSelectModule,
+    MatSlideToggleModule,
+    MatTooltipModule,
+    NgxMaskDirective,
     MatProgressSpinnerModule
   ],
   templateUrl: './patient-escort-create.component.html',
   styleUrl: './patient-escort-create.component.scss',
   providers: [
     { provide: STEPPER_GLOBAL_OPTIONS, useValue: { showError: true } },
-    { provide: MAT_DATE_LOCALE, useValue: 'pt-BR' } 
+    { provide: MAT_DATE_LOCALE, useValue: 'pt-BR' }
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientEscortCreateComponent implements OnInit {
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
   protected readonly data = inject(MAT_DIALOG_DATA, { optional: true });
   private readonly fb = inject(FormBuilder);
   private readonly viacepService = inject(ViacepService);
@@ -69,30 +82,18 @@ export class PatientEscortCreateComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly isSubmitting = signal<boolean>(false);
-  protected readonly isSameAddressSignal = signal<boolean>(false);
-
-  protected personalForm!: FormGroup;
-  protected addressForm!: FormGroup;
-
-  protected readonly genders: string[] = Object.values(Gender);
-  private readonly ufs: string[] = Object.keys(Ufs);
-
-  protected filteredUfsOptions!: Observable<string[]>;
-
-  private readonly attachedFiles: { [key: string]: File | null } = {
-    cns: null,
-    document: null,
-    address: null
+  // ==========================================
+  // Opções dos Enums Centralizadas no Controle
+  // ==========================================
+  protected readonly options = {
+    genders: Object.values(Gender),
+    ufs: Object.keys(Ufs)
   };
 
-  protected readonly labelsFiles = {
-    cns: signal<string>('Nenhum arquivo selecionado'),
-    document: signal<string>('Nenhum arquivo selecionado'),
-    address: signal<string>('Nenhum arquivo selecionado')
-  };
-
-  protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
+  // ==========================================
+  // Mensagens de Erro por Controle
+  // ==========================================
+  protected readonly errorMessages: Record<string, Array<{ type: string; message: string }>> = {
     cns: [
       { type: 'required', message: 'O número do CNS é obrigatório.' },
       { type: 'cnsInvalid', message: 'Número de CNS inválido.' },
@@ -105,60 +106,119 @@ export class PatientEscortCreateComponent implements OnInit {
       { type: 'documentPatientExists', message: 'CPF já está vinculado ao paciente.' },
       { type: 'documentExists', message: 'CPF já está vinculado a um acompanhante.' }
     ],
-    name: [{ type: 'required', message: 'O nome do acompanhante é obrigatório.' }],
-    gender: [{ type: 'required', message: 'Selecione o gênero.' }],
+    name: [
+      { type: 'required', message: 'O nome do acompanhante é obrigatório.' }
+    ],
+    gender: [
+      { type: 'required', message: 'Selecione o gênero.' }
+    ],
     birth_date: [
       { type: 'required', message: 'A data de nascimento é obrigatória.' },
       { type: 'invalidDate', message: 'Digite uma data válida.' },
-      { type: 'futureDate', message: 'A data de nascimento no futuro.' }
+      { type: 'futureDate', message: 'A data de nascimento está no futuro.' }
     ],
-    is_same_address: [{ type: 'required', message: 'Informe se reside no mesmo endereço.' }],
-    cep: [{ type: 'required', message: 'O CEP é obrigatório.' }],
-    address: [{ type: 'required', message: 'O endereço é obrigatório.' }],
-    number: [{ type: 'required', message: 'O número residencial é obrigatório.' }],
-    neighborhood: [{ type: 'required', message: 'O bairro é obrigatório.' }]
+    is_same_address: [
+      { type: 'required', message: 'Informe se reside no mesmo endereço.' }
+    ],
+    cep: [
+      { type: 'required', message: 'O CEP é obrigatório.' },
+      { type: 'pattern', message: 'Formato de CEP inválido (Ex: 00000-000).' }
+    ],
+    address: [
+      { type: 'required', message: 'O endereço é obrigatório.' }
+    ],
+    number: [
+      { type: 'required', message: 'O número residencial é obrigatório.' }
+    ],
+    neighborhood: [
+      { type: 'required', message: 'O bairro é obrigatório.' }
+    ]
   };
 
+  // ==========================================
+  // Gerenciamento de Anexos/Arquivos
+  // ==========================================
+  protected readonly files: Record<EscortFileType, AttachedFileState> = {
+    cns: { file: null, label: signal('Nenhum arquivo selecionado') },
+    document: { file: null, label: signal('Nenhum arquivo selecionado') },
+    address: { file: null, label: signal('Nenhum arquivo selecionado') }
+  };
+
+  // ==========================================
+  // Estados Reativos via Signals
+  // ==========================================
+  protected readonly isSubmitting = signal<boolean>(false);
+  protected readonly isSameAddressSignal = signal<boolean>(false);
+
+  // ==========================================
+  // FormGroups e Controles Expostos
+  // ==========================================
+  protected personalForm!: FormGroup;
+  protected addressForm!: FormGroup;
+
+  // ==========================================
+  // Autocomplete e Observables
+  // ==========================================
+  protected filteredUfsOptions!: Observable<string[]>;
+
+  // ==========================================
+  // Ciclo de Vida (Hooks)
+  // ==========================================
   ngOnInit(): void {
     this.initForms();
     this.registerAddressDependency();
-    this.registerReactiveLookups();
-    this.setFilteredUfs();
+    this.registerCepListener();
+    this.setupAutocompleteFilters();
   }
 
+  // ==========================================
+  // Inicialização de Formulários
+  // ==========================================
   private initForms(): void {
-    const patientCare = this.data?.patientCare;
+    const patientCare = this.data?.patient_care;
+    const handleFound = (escort: any) => this.populateFromResponse(escort);
 
     this.personalForm = this.fb.group({
-      cns: [null, [Validators.required, CustomValidators.cnsValidator()], [this.patientService.cnsEscortExistsValidator(patientCare, null)]],
+      cns: [
+        null,
+        [Validators.required, CustomValidators.cnsValidator()],
+        [this.patientService.cnsEscortExistsValidator(patientCare, null, handleFound)]
+      ],
       file_cns_id: [null],
-      document: [null, [Validators.required, CustomValidators.cpfValidator()], [this.patientService.documentEscortExistsValidator(patientCare, null)]],
+      document: [
+        null,
+        [Validators.required, CustomValidators.cpfValidator()],
+        [this.patientService.documentEscortExistsValidator(patientCare, null, handleFound)]
+      ],
       file_document_id: [null],
       name: [null, [Validators.required]],
       relation: [null],
       birth_date: [null, [Validators.required, CustomValidators.dateValidator(), CustomValidators.birthDateValidator()]],
       gender: [null, [Validators.required]],
-      is_same_address: [false, [Validators.required]],
+      is_same_address: [false, [Validators.required]]
     });
 
     this.addressForm = this.fb.group({
-      cep: [null, [Validators.required]],
+      cep: [null, [Validators.required, Validators.pattern(/^\d{5}-?\d{3}$/)]],
       address: [null, [Validators.required]],
       file_address_id: [null],
       number: [null, [Validators.required]],
       complement: [null],
       neighborhood: [null, [Validators.required]],
       city: [null],
-      state: [null],
+      state: [null]
     });
   }
 
+  // ==========================================
+  // Listeners Reativos
+  // ==========================================
   private registerAddressDependency(): void {
     this.personalForm.get('is_same_address')?.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((isSame: boolean) => {
         this.isSameAddressSignal.set(isSame);
-        
+
         if (isSame) {
           this.addressForm.disable();
           this.applyPatientAddress();
@@ -170,75 +230,93 @@ export class PatientEscortCreateComponent implements OnInit {
       });
   }
 
-  private registerReactiveLookups(): void {
-    // Busca reativa por CNS
-    this.personalForm.get('cns')?.valueChanges
-      .pipe(
-        debounceTime(400),
-        distinctUntilChanged(),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe((cnsValue: string | null) => {
-        const rawCns = cnsValue ? cnsValue.replace(/\D/g, '') : '';
-        if (rawCns.length === 15) {
-          this.patientService.getEscortCns(rawCns)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-              next: (response) => this.populateFromResponse(response)
-            });
-        }
-      });
-
-    // Busca reativa por CPF / Documento
-    this.personalForm.get('document')?.valueChanges
-      .pipe(
-        debounceTime(400),
-        distinctUntilChanged(),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe((docValue: string | null) => {
-        const rawDoc = docValue ? docValue.replace(/\D/g, '') : '';
-        if (rawDoc.length === 11) {
-          this.patientService.getEscortDocument(rawDoc)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-              next: (response) => this.populateFromResponse(response)
-            });
-        }
-      });
-
-    // Busca reativa por CEP
+  private registerCepListener(): void {
+    // Busca reativa por CEP (8 dígitos)
     this.addressForm.get('cep')?.valueChanges
       .pipe(
+        map(val => (val ? String(val).replace(/\D/g, '') : '')),
+        filter(val => val.length === 8),
         debounceTime(400),
         distinctUntilChanged(),
         takeUntilDestroyed(this.destroyRef)
       )
-      .subscribe((cepValue: string | null) => {
-        const rawCep = cepValue ? cepValue.replace(/\D/g, '') : '';
-        if (rawCep.length === 8) {
-          this.viacepService.getAddress(rawCep)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-              next: (response) => {
-                if (response) {
-                  this.addressForm.patchValue({
-                    address: response.logradouro,
-                    neighborhood: response.bairro,
-                    city: response.localidade,
-                    state: response.uf,
-                  });
-                  this.addressForm.markAsDirty();
-                  this.cdr.markForCheck();
-                }
+      .subscribe(cleanCep => {
+        this.viacepService.getAddress(cleanCep)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: response => {
+              if (response) {
+                this.addressForm.patchValue({
+                  address: response.logradouro,
+                  neighborhood: response.bairro,
+                  city: response.localidade,
+                  state: response.uf
+                });
+                this.addressForm.markAsDirty();
+                this.cdr.markForCheck();
               }
-            });
-        }
+            }
+          });
       });
   }
 
+  // ==========================================
+  // Métodos de Interação
+  // ==========================================
+  protected setBirthDate(event: MatDatepickerInputEvent<any>): void {
+    if (event.value) {
+      const momentDate = moment(event.value);
+      this.personalForm.get('birth_date')?.setValue(momentDate, { emitEvent: true });
+      this.personalForm.markAsDirty();
+      this.cdr.markForCheck();
+    }
+  }
+
+  protected onlyNumbersAndSlashes(event: KeyboardEvent): boolean {
+    const charCode = event.key;
+    const allowedCharacters = /^[0-9\/]$/;
+
+    if (!allowedCharacters.test(charCode)) {
+      event.preventDefault();
+      return false;
+    }
+    return true;
+  }
+
+  protected onFileSelected(event: Event, type: EscortFileType): void {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+
+    if (file) {
+      this.files[type].file = file;
+      this.files[type].label.set(file.name);
+      this.cdr.markForCheck();
+    }
+  }
+
+  // ==========================================
+  // Autocomplete e Filtros Auxiliares
+  // ==========================================
+  private setupAutocompleteFilters(): void {
+    const stateCtrl = this.addressForm.get('state');
+    if (stateCtrl) {
+      this.filteredUfsOptions = stateCtrl.valueChanges.pipe(
+        startWith(''),
+        map(value => this.filterOptions(this.options.ufs, value || ''))
+      );
+    }
+  }
+
+  private filterOptions(options: string[], value: string): string[] {
+    const filterValue = value.toLowerCase();
+    return options.filter(option => option.toLowerCase().includes(filterValue));
+  }
+
+  // ==========================================
+  // Preenchimento Automático
+  // ==========================================
   private applyPatientAddress(): void {
-    const patientAddress = this.data?.patientCare?.patient;
+    const patientAddress = this.data?.patient_care?.patient;
     if (!patientAddress) return;
 
     this.addressForm.patchValue({
@@ -249,92 +327,76 @@ export class PatientEscortCreateComponent implements OnInit {
       neighborhood: patientAddress.neighborhood,
       city: patientAddress.city,
       state: patientAddress.state,
-      file_address_id: patientAddress.file_address_id,
+      file_address_id: patientAddress.file_address_id
     }, { emitEvent: false });
   }
 
   private populateFromResponse(response: any): void {
     if (!response) return;
 
+    const cnsCtrl = this.personalForm.get('cns');
+    const docCtrl = this.personalForm.get('document');
+
+    if (!cnsCtrl?.dirty && response.cns) {
+      cnsCtrl?.setValue(response.cns, { emitEvent: false });
+    }
+
+    if (!docCtrl?.dirty && response.document) {
+      docCtrl?.setValue(response.document, { emitEvent: false });
+    }
+
+    // Preenche o formulário pessoal
     this.personalForm.patchValue({
-      cns: response.cns,
       name: response.name,
       file_cns_id: response.file_cns_id,
-      document: response.document,
       file_document_id: response.file_document_id,
       gender: response.gender,
       relation: response.relation,
-      is_same_address: response.is_same_address,
-    });
+      is_same_address: !!response.is_same_address
+    }, { emitEvent: false });
 
-    this.addressForm.patchValue({
-      cep: response.cep,
-      address: response.address,
-      file_address_id: response.file_address_id,
-      number: response.number,
-      complement: response.complement,
-      neighborhood: response.neighborhood,
-      city: response.city,
-      state: response.state,
-    });
+    // TRATAMENTO DO ENDEREÇO SEGUNDO O IS_SAME_ADDRESS
+    const isSame = !!response.is_same_address;
+    this.isSameAddressSignal.set(isSame);
 
+    if (isSame) {
+      // Se reside no mesmo endereço, aplica o endereço do paciente e desabilita o formulário de endereço
+      this.addressForm.disable();
+      this.applyPatientAddress();
+    } else {
+      // Se reside em endereço diferente, habilita o formulário e aplica o endereço vindo do acompanhante
+      this.addressForm.enable();
+      this.addressForm.patchValue({
+        cep: response.cep,
+        address: response.address,
+        file_address_id: response.file_address_id,
+        number: response.number,
+        complement: response.complement,
+        neighborhood: response.neighborhood,
+        city: response.city,
+        state: response.state
+      }, { emitEvent: false });
+    }
+
+    // Tratamento da data de nascimento
     const birthDateControl = this.personalForm.get('birth_date');
     if (birthDateControl && response.birth_date) {
-      const cleanDateStr = response.birth_date.split(' ')[0].split('T')[0];
+      const cleanDateStr = String(response.birth_date).split(' ')[0].split('T')[0];
       const parsedBirthDate = moment(cleanDateStr, 'YYYY-MM-DD');
-      
-      birthDateControl.setValue(parsedBirthDate, { emitEvent: true });
+
+      birthDateControl.setValue(parsedBirthDate, { emitEvent: false });
       birthDateControl.markAsDirty();
     }
 
     this.personalForm.markAsDirty();
-    this.cdr.markForCheck(); 
+    this.cdr.markForCheck();
   }
 
-  protected setBirthDate(event: MatDatepickerInputEvent<Date>): void {
-    if (event.value) {
-      this.personalForm.get('birth_date')?.setValue(event.value);
-      this.personalForm.get('birth_date')?.markAsDirty();
-    }
-  }
-
-  protected onlyNumbersAndSlashes(event: KeyboardEvent): boolean {
-    const charCode = event.key;
-    const allowedCharacters = /^[0-9\/]$/;
-    
-    if (!allowedCharacters.test(charCode)) {
-      event.preventDefault();
-      return false;
-    }
-    return true;
-  }
-
-  protected onFileSelected(event: any, type: 'cns' | 'document' | 'address'): void {
-    const file = event.target.files?.[0];
-    if (file) {
-      this.labelsFiles[type].set(file.name);
-      this.attachedFiles[type] = file;
-      this.cdr.markForCheck();
-    }
-  }
-
-  private setFilteredUfs(): void {
-    const stateCtrl = this.addressForm.get('state');
-    if (stateCtrl) {
-      this.filteredUfsOptions = stateCtrl.valueChanges.pipe(
-        startWith(''),
-        map(value => this._filter(this.ufs, value || ''))
-      );
-    }
-  }
-
-  private _filter(options: string[], value: string): string[] {
-    const filterValue = value.toLowerCase();
-    return options.filter(option => option.toLowerCase().includes(filterValue));
-  }
-
+  // ==========================================
+  // Submissão
+  // ==========================================
   protected onSubmit(): void {
-    const patientCaretId = this.data?.patientCare?.id;
+    const patientCaretId = this.data?.patient_care?.id;
     if (!patientCaretId) {
       this.messageService.showMessage('Identificador do atendimento do paciente inválido.');
       return;
@@ -349,15 +411,21 @@ export class PatientEscortCreateComponent implements OnInit {
     this.isSubmitting.set(true);
     this.cdr.markForCheck();
 
-    const patientEscortData = {
-      ...this.personalForm.getRawValue(),
+    const rawPersonal = this.personalForm.getRawValue();
+    const formattedBirthDate = rawPersonal.birth_date
+      ? moment(rawPersonal.birth_date).format('YYYY-MM-DD')
+      : null;
+
+    const patientEscortPayload = {
+      ...rawPersonal,
+      birth_date: formattedBirthDate,
       ...this.addressForm.getRawValue(),
-      file_cns: this.attachedFiles['cns'],
-      file_document: this.attachedFiles['document'],
-      file_address: this.attachedFiles['address'],
+      file_cns: this.files.cns.file,
+      file_document: this.files.document.file,
+      file_address: this.files.address.file
     };
 
-    this.patientService.createPatientEscort(patientCaretId, patientEscortData)
+    this.patientService.createPatientEscort(patientCaretId, patientEscortPayload)
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);
@@ -366,13 +434,13 @@ export class PatientEscortCreateComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
-        next: (response: any) => {
+        next: (response: ApiResponse) => {
           this.messageService.showMessage(response?.message || 'Acompanhante cadastrado com sucesso!');
           this.dialogRef.close(true);
         },
-        error: (err) => {
-          const fallbackError = err?.error?.message || 'Erro ao salvar acompanhante.';
-          this.messageService.showMessage(fallbackError);
+        error: err => {
+          const fallbackError = 'Erro ao salvar acompanhante.';
+          this.messageService.showMessage(err?.error?.message || fallbackError);
         }
       });
   }
