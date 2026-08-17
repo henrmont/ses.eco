@@ -1,61 +1,62 @@
 <h2 mat-dialog-title>Tramitar solicitação</h2>
 
-<form [formGroup]="patientRequestForm" (ngSubmit)="onSubmit()">
-  <mat-dialog-content>
-    <div class="stepper">
-      
-      <div class="line cols-1-col">
-        <mat-form-field appearance="outline">
-          <mat-label>Médico</mat-label>
-          <input 
-            type="text" 
-            matInput 
-            [formControl]="medicalProfessionalControl" 
-            [matAutocomplete]="medicalProfessional" 
-            [readonly]="medicalProfessionalReadOnly()"
-          >
-          
-          @if (medicalProfessionalLoading()) {
-            <mat-spinner matSuffix [diameter]="25" style="margin-right: 10px;"></mat-spinner>
-          }
+<mat-dialog-content>
+    <form [formGroup]="patientRequestForm">
+        <div class="stepper">
+            
+            <!-- Profissional Médico -->
+            <div class="line cols-1-col">
+                <mat-form-field appearance="outline">
+                    <mat-label>Médico</mat-label>
+                    <input 
+                        type="text" 
+                        matInput 
+                        formControlName="medical_professional_control" 
+                        [matAutocomplete]="medicalProfessionalAuto" 
+                        [readonly]="medicalProfessionalReadOnly()">
+                    
+                    @if (medicalProfessionalLoading()) {
+                        <mat-spinner matSuffix [diameter]="20" class="field-spinner"></mat-spinner>
+                    }
 
-          <mat-autocomplete #medicalProfessional="matAutocomplete" [displayWith]="displayMedicalProfessional">
-            @for (option of filteredMedicalProfessionalOptions | async; track option.id) {
-              <mat-option [value]="option" (onSelectionChange)="onMedicalProfessionalSelected(option)">
-                <mat-chip style="margin-right: 20px;">{{ option?.patient_medical_requests_count ?? 0 }}</mat-chip>
-                <span>{{ option?.name }}</span>
-              </mat-option>
-            }
-          </mat-autocomplete>
+                    <mat-autocomplete #medicalProfessionalAuto="matAutocomplete" [displayWith]="displayMedicalProfessional">
+                        @for (option of filteredMedicalProfessionalOptions | async; track $index) {
+                            <mat-option [value]="option" (onSelectionChange)="setMedicalProfessional(option)">
+                                <mat-chip style="margin-right: 20px;">{{ option?.patient_medical_requests_count ?? 0 }}</mat-chip>
+                                <span>{{ option?.name }}</span>
+                            </mat-option>
+                        }
+                    </mat-autocomplete>
 
-          @for (item of errorMessages['medical_professional_control']; track item.type) {
-            <mat-error [hidden]="!medicalProfessionalControl.hasError('required')">
-              {{ item.message }}
-            </mat-error>
-          }
-        </mat-form-field>
-      </div>
+                    @for (item of errorMessages['medical_professional_control']; track $index) {
+                        <mat-error [hidden]="!patientRequestForm.get('medical_professional_control')?.hasError(item.type)">
+                            {{ item.message }}
+                        </mat-error>
+                    }
+                </mat-form-field>
+            </div>
 
-    </div>
-  </mat-dialog-content>
+        </div>
+    </form>
+</mat-dialog-content>
 
-  <mat-dialog-actions align="end">
+<mat-dialog-actions align="end">
     <button mat-button type="button" [disabled]="isSubmitting()" [mat-dialog-close]="false">
-      Cancelar
+        Cancelar
     </button>
     
     <button 
-      mat-flat-button
-      color="primary"
-      type="submit" 
-      [disabled]="patientRequestForm.invalid || medicalProfessionalControl.invalid || patientRequestForm.pending || isSubmitting() || medicalProfessionalLoading()"
+        mat-flat-button 
+        color="primary" 
+        type="button" 
+        [disabled]="patientRequestForm.invalid || patientRequestForm.pending || isSubmitting() || medicalProfessionalLoading()"
+        (click)="onSubmit()"
     >
-      <div class="waiting">
-        @if (isSubmitting()) {
-          <mat-spinner [diameter]="20"></mat-spinner>
-        }
-        <span>{{ isSubmitting() ? 'Tramitando...' : 'Tramitar' }}</span>
-      </div>
+        <div class="waiting">
+            @if (isSubmitting()) {
+                <mat-spinner [diameter]="20"></mat-spinner>
+            }
+            <span>{{ isSubmitting() ? 'Tramitando...' : 'Tramitar' }}</span>
+        </div>
     </button>
-  </mat-dialog-actions>
-</form>
+</mat-dialog-actions>

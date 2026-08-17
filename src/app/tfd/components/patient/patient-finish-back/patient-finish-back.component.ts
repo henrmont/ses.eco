@@ -45,7 +45,7 @@ export class PatientFinishBackComponent {
   // Submissão
   // ==========================================
   protected onSubmit(): void {
-    const patientCareId = this.data?.patient_aare?.id;
+    const patientCareId = this.data?.patient_care?.id;
 
     if (!patientCareId) {
       this.messageService.showMessage('Identificador do paciente não encontrado.');

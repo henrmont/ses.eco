@@ -250,7 +250,7 @@ export class PaymentsPage implements OnInit {
   protected downloadMergedPdf(patientRequest: PatientRequest): void {
     this.openLoading();
 
-    this.paymentService.downloadMergedPdf(patientRequest.id)
+    this.paymentService.downloadMergedPdf(patientRequest.id!)
       .pipe(
         finalize(() => {
           if (this.loadingDialog) {

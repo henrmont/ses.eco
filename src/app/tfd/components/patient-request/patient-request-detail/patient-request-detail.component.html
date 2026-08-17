@@ -11,8 +11,8 @@
         <div class="line cols-1-col">
           <div class="action-cell">
             <strong>Paciente:</strong> 
-            <span class="highlight">{{ patient?.name ?? 'Não informado' }}</span>
-            <button mat-icon-button type="button" matTooltip="Detalhes do paciente" (click)="showPatient(patient)">
+            <span class="highlight">{{ data.patient_request?.report?.patient_care?.patient?.name ?? 'Não informado' }}</span>
+            <button mat-icon-button type="button" matTooltip="Detalhes do paciente" (click)="patientDetail(data.patient_request?.report?.patient_care)">
               <mat-icon>visibility</mat-icon>
             </button>
           </div>
@@ -22,8 +22,8 @@
           <div class="action-cell">
             <strong>CID:</strong> 
             <span>
-              @if (data?.patientRequest?.report?.cid) {
-                {{ data.patientRequest.report.cid.code }} - {{ data.patientRequest.report.cid.name }}
+              @if (data?.patient_request?.report?.cid) {
+                {{ data.patient_request.report.cid.code }} - {{ data.patient_request.report.cid.name }}
               } @else {
                 Não informado
               }
@@ -32,8 +32,8 @@
               mat-icon-button 
               type="button"
               matTooltip="Detalhes do laudo" 
-              [disabled]="!data?.patientRequest?.report" 
-              (click)="showPatientReport(data?.patientRequest?.report)"
+              [disabled]="!data?.patient_request?.report" 
+              (click)="patientReportDetail(data?.patient_request?.report)"
             >
               <mat-icon>visibility</mat-icon>
             </button>
@@ -42,23 +42,23 @@
         
         <div class="line cols-1-1">
           <div>
-            <strong>Tipo de Solicitação:</strong> {{ data?.patientRequest?.type ?? 'Não informado' }}
+            <strong>Tipo de Solicitação:</strong> {{ data?.patient_request?.type ?? 'Não informado' }}
           </div>
           <div>
             <strong>Data da Próxima Consulta:</strong> 
-            {{ data?.patientRequest?.consultation_date ? (data.patientRequest.consultation_date | date:'dd/MM/yyyy') : 'Não aplicável' }}
+            {{ data?.patient_request?.consultation_date ? (data.patient_request.consultation_date | date:'dd/MM/yyyy') : 'Não aplicável' }}
           </div>
         </div>
         
         <div class="line cols-1-col">
           <div>
-            <strong>Unidade Hospitalar:</strong> {{ data?.patientRequest?.hospital_unity?.name ?? 'Não informado' }}
+            <strong>Unidade Hospitalar:</strong> {{ data?.patient_request?.hospital_unity?.name ?? 'Não informado' }}
           </div>
         </div>
         
         <div class="line cols-1-col">
           <div>
-            <strong>Observação:</strong> {{ data?.patientRequest?.observation ?? 'Nenhuma observação informada.' }}
+            <strong>Observação:</strong> {{ data?.patient_request?.observation ?? 'Nenhuma observação informada.' }}
           </div>
         </div>
       </mat-card-content>
@@ -71,7 +71,7 @@
       <mat-card-content>
         <div class="line cols-1-1">
           <div>
-            <strong>Cadastro:</strong> {{ data?.patientRequest?.owner_professional?.name ?? 'Não informado' }}
+            <strong>Cadastro:</strong> {{ data?.patient_request?.owner_professional?.name ?? 'Não informado' }}
           </div>
           <div></div>
         </div>
@@ -79,18 +79,18 @@
         <div class="line cols-1-1">
           <div class="action-cell">
             <strong>Médico:</strong> 
-            <span>{{ data?.patientRequest?.medical_professional?.name ?? 'Nenhum profissional selecionado' }}</span>
-            @if (data?.patientRequest?.medical_approved_opinion) {
-              <button mat-icon-button type="button" matTooltip="Detalhes do parecer médico" (click)="showOpinion(data.patientRequest.medical_approved_opinion)">
+            <span>{{ data?.patient_request?.medical_professional?.name ?? 'Nenhum profissional selecionado' }}</span>
+            @if (data?.patient_request?.medical_approved_opinion) {
+              <button mat-icon-button type="button" matTooltip="Detalhes do parecer médico" (click)="showOpinion(data.patient_request.medical_approved_opinion)">
                 <mat-icon>visibility</mat-icon>
               </button>
             }
           </div>
           <div class="action-cell">
             <strong>Assistente Social:</strong> 
-            <span>{{ data?.patientRequest?.social_professional?.name ?? 'Nenhum profissional selecionado' }}</span>
-            @if (data?.patientRequest?.social_approved_opinion) {
-              <button mat-icon-button type="button" matTooltip="Detalhes do parecer social" (click)="showOpinion(data.patientRequest.social_approved_opinion)">
+            <span>{{ data?.patient_request?.social_professional?.name ?? 'Nenhum profissional selecionado' }}</span>
+            @if (data?.patient_request?.social_approved_opinion) {
+              <button mat-icon-button type="button" matTooltip="Detalhes do parecer social" (click)="showOpinion(data.patient_request.social_approved_opinion)">
                 <mat-icon>visibility</mat-icon>
               </button>
             }
@@ -100,18 +100,18 @@
         <div class="line cols-1-1">
           <div>
             <strong>Passagem:</strong> 
-            {{ data?.patientRequest?.type === 'Entrada' ? 'Não aplicável' : (data?.patientRequest?.travel_professional?.name ?? 'Nenhum profissional selecionado') }}
+            {{ data?.patient_request?.type === 'Entrada' ? 'Não aplicável' : (data?.patient_request?.travel_professional?.name ?? 'Nenhum profissional selecionado') }}
           </div>
           <div>
             <strong>Ajuda de Custo:</strong> 
-            {{ data?.patientRequest?.type === 'Entrada' ? 'Não aplicável' : (data?.patientRequest?.cost_assistance_professional?.name ?? 'Nenhum profissional selecionado') }}
+            {{ data?.patient_request?.type === 'Entrada' ? 'Não aplicável' : (data?.patient_request?.cost_assistance_professional?.name ?? 'Nenhum profissional selecionado') }}
           </div>
         </div>
         
         <div class="line cols-1-1">
           <div>
             <strong>Prestação de Contas:</strong> 
-            {{ data?.patientRequest?.type === 'Entrada' ? 'Não aplicável' : (data?.patientRequest?.accountability_professional?.name ?? 'Nenhum profissional selecionado') }}
+            {{ data?.patient_request?.type === 'Entrada' ? 'Não aplicável' : (data?.patient_request?.accountability_professional?.name ?? 'Nenhum profissional selecionado') }}
           </div>
         </div>
       </mat-card-content>
@@ -122,7 +122,7 @@
         <mat-card-subtitle>ARQUIVOS ANEXOS</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
-        @for (item of data?.patientRequest?.attachments; track item.archive_id ?? item.name) {
+        @for (item of data?.patient_request?.attachments; track item.archive_id ?? item.name) {
           <div class="line cols-1-col">
             <div class="action-cell">
               <strong>Nome do Arquivo:</strong> 
@@ -151,7 +151,7 @@
         <mat-card-subtitle>VIAGENS</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
-        @for (item of data?.patientRequest?.travels; track item.id) {
+        @for (item of data?.patient_request?.travels; track item.id) {
           <div class="line cols-travel-grid">
             <div class="action-cell">
               <strong>Trecho:</strong> 
@@ -183,7 +183,7 @@
         <mat-card-subtitle>AJUDA DE CUSTO</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
-        @for (item of data?.patientRequest?.cost_assistances; track item.id) {
+        @for (item of data?.patient_request?.cost_assistances; track item.id) {
           <div class="line cols-1-1-1">
             <div class="action-cell">
               <strong>Identificação:</strong> 
@@ -212,7 +212,7 @@
         <mat-card-subtitle>PRESTAÇÃO DE CONTAS</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
-        @for (item of data?.patientRequest?.accountabilities; track item.id) {
+        @for (item of data?.patient_request?.accountabilities; track item.id) {
           <div class="line cols-1-1">
             <div class="action-cell">
               <strong>Identificação:</strong> 

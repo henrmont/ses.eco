@@ -67,11 +67,6 @@ section {
       }
     }
 
-    // Alinhamento à direita para cabeçalho e células
-    .right {
-      text-align: right;
-    }
-
     // Estados Semânticos
     .valid { color: $color-success; }
     .invalid { color: $color-danger; }

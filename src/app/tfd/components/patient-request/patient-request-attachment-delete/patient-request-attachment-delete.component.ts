@@ -1,18 +1,20 @@
-import { ChangeDetectionStrategy, Component, inject, ChangeDetectorRef, DestroyRef, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { finalize } from 'rxjs';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 
-import { PatientRequestService } from '../../../services/patient-request.service';
+// Material Modules
+import { MatButtonModule } from '@angular/material/button';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+
+// Core & Services
 import { MessageService } from '../../../../core/services/message-service';
+import { PatientRequestService } from '../../../services/patient-request.service';
 
 @Component({
   selector: 'app-patient-request-attachment-delete',
+  standalone: true,
   imports: [
-    CommonModule, 
     MatDialogModule, 
     MatButtonModule, 
     MatProgressSpinnerModule
@@ -22,7 +24,9 @@ import { MessageService } from '../../../../core/services/message-service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientRequestAttachmentDeleteComponent {
-  // Injeções de Dependência Dinâmicas
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly patientRequestService = inject(PatientRequestService);
   private readonly messageService = inject(MessageService);
@@ -30,14 +34,14 @@ export class PatientRequestAttachmentDeleteComponent {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Estados gerenciados reativamente via Signals
+  // ==========================================
+  // Estados Reativos via Signals
+  // ==========================================
   protected readonly isSubmitting = signal<boolean>(false);
 
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
-
-  /**
-   * Dispara a requisição para remover o anexo da solicitação do paciente
-   */
+  // ==========================================
+  // Submissão
+  // ==========================================
   protected onSubmit(): void {
     const attachmentId = this.data?.patient_request_attachment?.id;
 
@@ -47,25 +51,25 @@ export class PatientRequestAttachmentDeleteComponent {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck(); // ⚡ Força a atualização do DOM para pintar o spinner imediatamente no OnPush
+    this.cdr.markForCheck();
 
     this.patientRequestService.deletePatientRequestAttachment(attachmentId)
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);
-          this.cdr.markForCheck(); // ⚡ Garante o desligamento do loading visual na tela
+          this.cdr.markForCheck();
         }),
-        takeUntilDestroyed(this.destroyRef) // 🛡️ Proteção reativa contra memory leaks
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
         next: (response) => {
           this.messageService.showMessage(response?.message || 'Anexo removido com sucesso!');
-          this.dialogRef.close(true); // Retorna true para atualizar a listagem pai
+          this.dialogRef.close(true);
         },
         error: (err) => {
-          const fallbackError = 'Ocorreu um erro ao tentar remover o anexo.';
-          this.messageService.showMessage(err?.error?.message || fallbackError);
-        },
+          const fallbackError = err?.error?.message || 'Ocorreu um erro ao tentar remover o anexo.';
+          this.messageService.showMessage(fallbackError);
+        }
       });
   }
 }

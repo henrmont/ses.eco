@@ -62,7 +62,6 @@ export class ReportAttachmentUpdateComponent implements OnInit {
   // ==========================================
   // Propriedades e Dados Internos
   // ==========================================
-  private readonly attachmentData = this.data?.report_attachment;
   private selectedFile: File | null = null;
 
   // ==========================================

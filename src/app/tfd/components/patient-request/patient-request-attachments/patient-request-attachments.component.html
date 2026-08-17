@@ -9,7 +9,7 @@
       </div>
     } @else {
       <div class="table-responsive">
-        <table mat-table [dataSource]="dataSource()">
+        <table mat-table [dataSource]="dataSource">
             
           <ng-container matColumnDef="name">
             <th mat-header-cell *matHeaderCellDef>Nome</th>
@@ -33,7 +33,7 @@
                   mat-icon-button 
                   type="button" 
                   matTooltip="Atualizar arquivo" 
-                  (click)="updatePatientRequestAttachment(element)"
+                  (click)="patientRequestAttachmentUpdate(element)"
                 >
                   <mat-icon class="icon-edit">drive_file_rename_outline</mat-icon>
                 </button>
@@ -42,7 +42,7 @@
                   mat-icon-button 
                   type="button" 
                   matTooltip="Deletar arquivo" 
-                  (click)="deletePatientRequestAttachment(element)"
+                  (click)="patientRequestAttachmentDelete(element)"
                 >
                   <mat-icon color="warn">delete</mat-icon>
                 </button>
@@ -68,12 +68,12 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button mat-button type="button" [mat-dialog-close]="false">Cancelar</button>
+  <button mat-button type="button" [mat-dialog-close]="false">Fechar</button>
   <button 
     mat-flat-button 
     color="primary" 
     type="button" 
-    (click)="createPatientRequestAttachment()"
+    (click)="patientRequestAttachmentCreate()"
   >
     <mat-icon>add</mat-icon>
     Novo arquivo

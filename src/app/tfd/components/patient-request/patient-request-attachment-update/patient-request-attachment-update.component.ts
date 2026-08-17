@@ -1,23 +1,26 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal, ChangeDetectorRef, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { saveAs } from 'file-saver';
 
-import { PatientRequestService } from '../../../services/patient-request.service';
+// Material Modules
+import { MatButtonModule } from '@angular/material/button';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
 import { MessageService } from '../../../../core/services/message-service';
 import { StorageService } from '../../../../core/services/storage-service';
+import { PatientRequestService } from '../../../services/patient-request.service';
 
 @Component({
   selector: 'app-patient-request-attachment-update',
+  standalone: true,
   imports: [
     CommonModule,
     FormsModule,
@@ -35,8 +38,10 @@ import { StorageService } from '../../../../core/services/storage-service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientRequestAttachmentUpdateComponent implements OnInit {
-  // Injeções de Dependência Dinâmicas
-  protected readonly data = inject(MAT_DIALOG_DATA);
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
+  protected readonly data = inject(MAT_DIALOG_DATA, { optional: true });
   private readonly fb = inject(FormBuilder);
   private readonly patientRequestService = inject(PatientRequestService);
   private readonly messageService = inject(MessageService);
@@ -45,51 +50,60 @@ export class PatientRequestAttachmentUpdateComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Estrutura do Formulário exposta ao template
-  protected attachmentForm!: FormGroup;
+  // ==========================================
+  // Mensagens de Erro por Controle
+  // ==========================================
+  protected readonly errorMessages: Record<string, Array<{ type: string; message: string }>> = {
+    name: [
+      { type: 'required', message: 'O nome do anexo é obrigatório.' }
+    ]
+  };
 
-  // Estados Reativos baseados em Signals
-  protected readonly isSubmitting = signal<boolean>(false);
-  protected readonly hasFile = signal<boolean>(false);
-  
-  // Rótulo dinâmico baseado na existência de arquivo original prévio (Alinhado com a referência)
+  // ==========================================
+  // Propriedades e Dados Internos
+  // ==========================================
+  private selectedFile: File | null = null;
+
+  // ==========================================
+  // Gerenciamento de Anexos/Arquivos
+  // ==========================================
   protected readonly fileLabel = signal<string>(
     this.data?.patient_request_attachment?.archive_id 
       ? 'Arquivo já cadastrado (Clique para alterar)' 
       : 'Nenhum arquivo selecionado'
   );
 
-  // Referência em memória para substituição opcional do binário
-  private selectedFile: File | null = null;
+  // ==========================================
+  // Estados Reativos via Signals
+  // ==========================================
+  protected readonly isSubmitting = signal<boolean>(false);
+  protected readonly hasFile = signal<boolean>(false);
 
-  // 🎯 Mapeamento local das mensagens de erro padronizado para a UI
-  protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
-    name: [
-      { type: 'required', message: 'O nome do anexo é obrigatório.' }
-    ]
-  };
+  // ==========================================
+  // FormGroups e Controles Expostos
+  // ==========================================
+  protected attachmentForm!: FormGroup;
 
+  // ==========================================
+  // Ciclo de Vida (Hooks)
+  // ==========================================
   ngOnInit(): void {
     this.initForm();
   }
 
-  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO E SUPORTE ---
-
-  /**
-   * Inicializa o formulário com o estado persistido do anexo
-   */
+  // ==========================================
+  // Inicialização de Formulários
+  // ==========================================
   private initForm(): void {
     const currentName = this.data?.patient_request_attachment?.name || null;
     this.attachmentForm = this.fb.group({
-      name: [currentName, [Validators.required]],
+      name: [currentName, [Validators.required]]
     });
   }
 
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
-
-  /**
-   * Captura a alteração do arquivo binário (Opcional na edição)
-   */
+  // ==========================================
+  // Métodos de Interação
+  // ==========================================
   protected onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
 
@@ -99,7 +113,6 @@ export class PatientRequestAttachmentUpdateComponent implements OnInit {
       this.fileLabel.set(file.name);
       this.hasFile.set(true);
 
-      // UX Inteligente: Se o usuário limpou o input de texto, sugere o nome do novo arquivo sem extensão
       const currentName = this.attachmentForm.get('name')?.value;
       if (!currentName) {
         const sanitizedName = file.name.split('.').slice(0, -1).join('.');
@@ -111,14 +124,13 @@ export class PatientRequestAttachmentUpdateComponent implements OnInit {
     }
   }
 
-  /**
-   * Realiza o download seguro do binário existente na nuvem
-   */
-  protected download(archiveId: number, name: string): void {
+  protected download(archiveId: number | null | undefined, name: string): void {
+    if (!archiveId) return;
+
     this.storageService.download(archiveId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (response) => {
+        next: response => {
           if (response?.archive) {
             saveAs(response.archive, name);
           }
@@ -126,21 +138,18 @@ export class PatientRequestAttachmentUpdateComponent implements OnInit {
       });
   }
 
-  /**
-   * Controla se o formulário não recebeu alteração nenhuma (Evita requisições desnecessárias)
-   */
   protected isFormsPristine(): boolean {
     return this.attachmentForm.pristine && !this.hasFile();
   }
 
-  /**
-   * Submete a atualização cadastral (Nome do anexo e/ou novo arquivo binário)
-   */
+  // ==========================================
+  // Submissão
+  // ==========================================
   protected onSubmit(): void {
     const attachmentId = this.data?.patient_request_attachment?.id;
 
     if (!attachmentId) {
-      this.messageService.showMessage('Identificador do anexo inválido.');
+      this.messageService.showMessage('Identificador do anexo não encontrado.');
       return;
     }
 
@@ -150,14 +159,14 @@ export class PatientRequestAttachmentUpdateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck(); // Sincroniza imediatamente o estado de submissão no DOM
+    this.cdr.markForCheck();
 
-    const attachmentPayload = {
+    const payload = {
       ...this.attachmentForm.getRawValue(),
-      file: this.selectedFile // Se mantido null, o backend atualiza apenas o nome textual
+      file: this.selectedFile
     };
 
-    this.patientRequestService.updatePatientRequestAttachment(attachmentId, attachmentPayload)
+    this.patientRequestService.updatePatientRequestAttachment(attachmentId, payload)
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);
@@ -166,13 +175,13 @@ export class PatientRequestAttachmentUpdateComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
-        next: (response) => {
+        next: (response: any) => {
           this.messageService.showMessage(response?.message || 'Anexo atualizado com sucesso!');
           this.dialogRef.close(true);
         },
         error: (err) => {
-          const fallbackError = 'Erro ao processar a atualização do anexo.';
-          this.messageService.showMessage(err?.error?.message || fallbackError);
+          const fallbackError = err?.error?.message || 'Erro ao processar a atualização do anexo.';
+          this.messageService.showMessage(fallbackError);
         }
       });
   }

@@ -1,15 +1,12 @@
 @use 'variables' as *;
 
 :host {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
+  @include dialog-base;
 }
 
 mat-dialog-content {
+  @include dialog-content;
   padding-top: $spacing-modal-pt;
-  overflow-y: auto;
 }
 
 // Container do formulário em formato stepper/flow
@@ -51,4 +48,8 @@ mat-dialog-content {
   &.cols-1-col { 
     --grid-cols: 1fr; 
   }
+}
+
+.locked-icon {
+  opacity: $opacity-disabled;
 }

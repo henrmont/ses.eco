@@ -39,7 +39,7 @@ export class PatientReportDetailComponent {
   // Getters & Propriedades Computadas
   // ==========================================
   protected get specialtyLabel(): string {
-    const rawSpecialty = this.data?.report?.specialty;
+    const rawSpecialty = this.data?.patient_report?.specialty;
     return Specialty[rawSpecialty as keyof typeof Specialty] ?? rawSpecialty ?? 'Não informado';
   }
 

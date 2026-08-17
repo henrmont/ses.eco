@@ -1,40 +1,41 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, DestroyRef, Injector, OnDestroy, OnInit, effect, inject, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs';
-import { CommonModule } from '@angular/common';
+import { NgxMaskPipe } from 'ngx-mask';
 
-// Angular Material
+// Angular Material & CDK
+import { Overlay } from '@angular/cdk/overlay';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatSort, MatSortModule } from '@angular/material/sort';
-import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator'; // ➕ Importação do Paginator
-import { NgxMaskPipe } from 'ngx-mask';
 
-// Core & Shared
+// Core & Models
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
 import { PatientRequest } from '../../models/patient-request.model';
 import { Permission } from '../../models/permission.model';
 import { PatientRequestService } from '../../services/patient-request.service';
 
-// Components (Dialogs)
-import { Overlay } from '@angular/cdk/overlay';
-import { PatientRequestHaltedComponent } from '../../components/patient-request/patient-request-halted/patient-request-halted.component';
-import { PatientRequestUpdateComponent } from '../../components/patient-request/patient-request-update/patient-request-update.component';
-import { PatientRequestDeleteComponent } from '../../components/patient-request/patient-request-delete/patient-request-delete.component';
-import { PatientRequestProcessToMedicalComponent } from '../../components/patient-request/patient-request-process-to-medical/patient-request-process-to-medical.component';
-import { PatientRequestMoveFromProcessesComponent } from '../../components/patient-request/patient-request-move-from-processes/patient-request-move-from-processes.component';
-import { PatientRequestMoveFromOthersComponent } from '../../components/patient-request/patient-request-move-from-others/patient-request-move-from-others.component';
-import { PatientRequestDetailComponent } from '../../components/patient-request/patient-request-detail/patient-request-detail.component';
+// Dialog Components
 import { PatientRequestAttachmentsComponent } from '../../components/patient-request/patient-request-attachments/patient-request-attachments.component';
+import { PatientRequestDeleteComponent } from '../../components/patient-request/patient-request-delete/patient-request-delete.component';
+import { PatientRequestDetailComponent } from '../../components/patient-request/patient-request-detail/patient-request-detail.component';
 import { PatientRequestFinishBackComponent } from '../../components/patient-request/patient-request-finish-back/patient-request-finish-back.component';
+import { PatientRequestHaltedComponent } from '../../components/patient-request/patient-request-halted/patient-request-halted.component';
+import { PatientRequestMoveFromOthersComponent } from '../../components/patient-request/patient-request-move-from-others/patient-request-move-from-others.component';
+import { PatientRequestMoveFromProcessesComponent } from '../../components/patient-request/patient-request-move-from-processes/patient-request-move-from-processes.component';
+import { PatientRequestProcessToMedicalComponent } from '../../components/patient-request/patient-request-process-to-medical/patient-request-process-to-medical.component';
+import { PatientRequestUpdateComponent } from '../../components/patient-request/patient-request-update/patient-request-update.component';
 
+// Constantes Locais
 const TFD_PATIENT_REQUESTS_CHANNEL = new BroadcastChannel('tfd-patient-requests-channel');
 
 @Component({
@@ -42,15 +43,15 @@ const TFD_PATIENT_REQUESTS_CHANNEL = new BroadcastChannel('tfd-patient-requests-
   standalone: true,
   imports: [
     CommonModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatTableModule,
     MatButtonModule,
+    MatFormFieldModule,
     MatIconModule,
-    MatTooltipModule,
-    MatTabsModule,
+    MatInputModule,
+    MatPaginatorModule,
     MatSortModule,
-    MatPaginatorModule, // ➕ Adicionado aos imports
+    MatTableModule,
+    MatTabsModule,
+    MatTooltipModule,
     NgxMaskPipe
   ],
   templateUrl: './patient-requests.page.html',
@@ -58,117 +59,161 @@ const TFD_PATIENT_REQUESTS_CHANNEL = new BroadcastChannel('tfd-patient-requests-
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientRequestsPage implements OnInit, OnDestroy {
-  // Injeções de Dependência Dinâmicas
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
   private readonly patientRequestService = inject(PatientRequestService);
   private readonly dialog = inject(MatDialog);
   private readonly overlay = inject(Overlay);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
-  private loadingDialog!: MatDialogRef<LoadingComponent>;
-  private readonly currentUser = this.route.parent?.parent?.snapshot.data['user'];
-
-  // 1. Capturas nomeadas e isoladas de cada matSort no template HTML
+  // ==========================================
+  // ViewChildren / Elementos da View
+  // ==========================================
   private readonly ownerSort = viewChild<MatSort>('ownerSort');
   private readonly processSort = viewChild<MatSort>('processSort');
   private readonly othersSort = viewChild<MatSort>('othersSort');
 
-  // ➕ 2. Capturas nomeadas e isoladas dos paginadores do template HTML
   private readonly ownerPaginator = viewChild<MatPaginator>('ownerPaginator');
   private readonly processPaginator = viewChild<MatPaginator>('processPaginator');
   private readonly othersPaginator = viewChild<MatPaginator>('othersPaginator');
 
-  // Definições de Estrutura de Colunas expostas ao Template
+  // ==========================================
+  // Propriedades e Estado Reativo
+  // ==========================================
+  private loadingDialog!: MatDialogRef<LoadingComponent>;
+  private readonly currentUser = this.route.parent?.parent?.snapshot.data['user'];
+
   protected readonly displayedOwnerColumns: string[] = ['bookmark', 'name', 'cns', 'type', 'consultation_date', 'status', 'actions'];
   protected readonly displayedProcessColumns: string[] = ['name', 'cns', 'type', 'consultation_date', 'responsible', 'actions'];
   protected readonly displayedOthersColumns: string[] = ['name', 'cns', 'type', 'consultation_date', 'responsible', 'actions'];
 
-  // Signals internos para gerenciamento do estado bruto
-  private readonly rawOwnerList = signal<any[]>([]);
-  private readonly rawProcessList = signal<any[]>([]);
-  private readonly rawOthersList = signal<any[]>([]);
+  protected readonly ownerDataSource = new MatTableDataSource<any>([]);
+  protected readonly processDataSource = new MatTableDataSource<any>([]);
+  protected readonly othersDataSource = new MatTableDataSource<any>([]);
 
-  // Computed signals criando os DataSources e acoplando o Sort/Paginator de forma reativa
-  protected readonly ownerDataSource = computed(() => {
-    const dataSource = new MatTableDataSource(this.rawOwnerList());
-    const sortRef = this.ownerSort();
-    const paginatorRef = this.ownerPaginator();
-
-    if (sortRef) dataSource.sort = sortRef;
-    if (paginatorRef) dataSource.paginator = paginatorRef; // ➕ Acoplamento
-
-    return dataSource;
-  });
-
-  protected readonly processDataSource = computed(() => {
-    const dataSource = new MatTableDataSource(this.rawProcessList());
-    const sortRef = this.processSort();
-    const paginatorRef = this.processPaginator();
-
-    if (sortRef) dataSource.sort = sortRef;
-    if (paginatorRef) dataSource.paginator = paginatorRef; // ➕ Acoplamento
-
-    return dataSource;
-  });
-
-  protected readonly othersDataSource = computed(() => {
-    const dataSource = new MatTableDataSource(this.rawOthersList());
-    const sortRef = this.othersSort();
-    const paginatorRef = this.othersPaginator();
-
-    if (sortRef) dataSource.sort = sortRef;
-    if (paginatorRef) dataSource.paginator = paginatorRef; // ➕ Acoplamento
-
-    return dataSource;
-  });
-
+  // ==========================================
+  // Ciclo de Vida (Hooks)
+  // ==========================================
   ngOnInit(): void {
-    this.getPatientRequests(true);
-
-    TFD_PATIENT_REQUESTS_CHANNEL.onmessage = (message) => {
-      if (message.data === 'update') {
-        this.getPatientRequests(false);
-      }
-    };
+    this.setupTableBindings();
+    this.fetchPatientRequests(true);
+    this.listenToBroadcastChannel();
   }
 
   ngOnDestroy(): void {
     TFD_PATIENT_REQUESTS_CHANNEL.close();
   }
 
-  // Métodos de Filtragem expostos para as tabelas
+  // ==========================================
+  // Métodos Acessíveis pelo Template (Protected)
+  // ==========================================
   protected applyOwnerFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    const dataSource = this.ownerDataSource();
-    dataSource.filter = filterValue.trim().toLowerCase();
-    if (dataSource.paginator) {
-      dataSource.paginator.firstPage(); // Reseta para a primeira página após o filtro
+    this.ownerDataSource.filter = filterValue.trim().toLowerCase();
+
+    if (this.ownerDataSource.paginator) {
+      this.ownerDataSource.paginator.firstPage();
     }
   }
 
   protected applyProcessFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    const dataSource = this.processDataSource();
-    dataSource.filter = filterValue.trim().toLowerCase();
-    if (dataSource.paginator) {
-      dataSource.paginator.firstPage(); // Reseta para a primeira página após o filtro
+    this.processDataSource.filter = filterValue.trim().toLowerCase();
+
+    if (this.processDataSource.paginator) {
+      this.processDataSource.paginator.firstPage();
     }
   }
 
   protected applyOthersFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    const dataSource = this.othersDataSource();
-    dataSource.filter = filterValue.trim().toLowerCase();
-    if (dataSource.paginator) {
-      dataSource.paginator.firstPage(); // Reseta para a primeira página após o filtro
+    this.othersDataSource.filter = filterValue.trim().toLowerCase();
+
+    if (this.othersDataSource.paginator) {
+      this.othersDataSource.paginator.firstPage();
     }
   }
 
-  /**
-   * Obtém a listagem atualizada de solicitações e executa a separação reativa
-   * entre Titulares (Owners), Em Processamento (Processes) e Outros (Others).
-   */
-  private getPatientRequests(showLoading = false): void {
+  protected checkPermissions(permissionName: string): boolean {
+    if (!this.currentUser?.roles) return true;
+
+    const hasPermission = this.currentUser.roles.some((role: any) =>
+      role.permissions?.some((perm: Permission) => perm.name === permissionName)
+    );
+
+    return !hasPermission;
+  }
+
+  protected checkStatus(patientRequest: PatientRequest): boolean {
+    return !!(patientRequest.medical_status && patientRequest.social_status);
+  }
+
+  // Ações disparadas pelos botões da tabela
+  protected patientRequestHalted(patientRequest: PatientRequest): void {
+    this.openDialog(PatientRequestHaltedComponent, { patient_request: patientRequest }, '400px');
+  }
+
+  protected patientRequestUpdate(patientRequest: PatientRequest): void {
+    this.openDialog(PatientRequestUpdateComponent, { patient_request: patientRequest }, '800px');
+  }
+
+  protected patientRequestDelete(patientRequest: PatientRequest): void {
+    this.openDialog(PatientRequestDeleteComponent, { patient_request: patientRequest }, '400px');
+  }
+
+  protected patientRequestProcessToMedical(patientRequest: PatientRequest): void {
+    this.openDialog(PatientRequestProcessToMedicalComponent, { patient_request: patientRequest }, '400px');
+  }
+
+  protected patientRequestMoveFromProcesses(patientRequest: PatientRequest): void {
+    this.openDialog(PatientRequestMoveFromProcessesComponent, { patient_request: patientRequest }, '400px');
+  }
+
+  protected patientRequestMoveFromOthers(patientRequest: PatientRequest): void {
+    this.openDialog(PatientRequestMoveFromOthersComponent, { patient_request: patientRequest }, '400px');
+  }
+
+  protected patientRequestDetail(patientRequest: PatientRequest): void {
+    this.openDialog(PatientRequestDetailComponent, { patient_request: patientRequest }, '1000px', 'auto', false);
+  }
+
+  protected patientRequestAttachments(patientRequest: PatientRequest): void {
+    this.openDialog(PatientRequestAttachmentsComponent, { patient_request: patientRequest }, '600px', 'auto', false);
+  }
+
+  protected patientRequestFinishBack(patientRequest: PatientRequest): void {
+    this.openDialog(PatientRequestFinishBackComponent, { patient_request: patientRequest }, '400px');
+  }
+
+  // ==========================================
+  // Métodos Privados / Auxiliares
+  // ==========================================
+  private setupTableBindings(): void {
+    effect(() => {
+      const ownerSort = this.ownerSort();
+      const ownerPaginator = this.ownerPaginator();
+
+      if (ownerSort) this.ownerDataSource.sort = ownerSort;
+      if (ownerPaginator) this.ownerDataSource.paginator = ownerPaginator;
+
+      const processSort = this.processSort();
+      const processPaginator = this.processPaginator();
+
+      if (processSort) this.processDataSource.sort = processSort;
+      if (processPaginator) this.processDataSource.paginator = processPaginator;
+
+      const othersSort = this.othersSort();
+      const othersPaginator = this.othersPaginator();
+
+      if (othersSort) this.othersDataSource.sort = othersSort;
+      if (othersPaginator) this.othersDataSource.paginator = othersPaginator;
+    }, { injector: this.injector });
+  }
+
+  private fetchPatientRequests(showLoading = false): void {
     if (showLoading) this.openLoading();
 
     this.patientRequestService.getPatientRequests()
@@ -181,55 +226,50 @@ export class PatientRequestsPage implements OnInit, OnDestroy {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
-        next: (response) => {
-          const rawData = response || [];
+        next: (response: any) => {
+          const rawData: any[] = response || [];
 
-          // Filtra e mapeia as solicitações Titulares (Owner)
           const owners = rawData
-            .filter((item: any) => (!item.medical_professional || item.back_to_owner) && item.owner)
-            .map((item: any) => ({
-              ...item,
-              name: item.report?.patient_care?.patient?.name,
-              cns: item.report?.patient_care?.patient?.cns,
-              type: item.type,
-              consultation_date: item.consultation_date,
-              status: item.status,
-            }));
+            .filter((item) => (!item.medical_professional || item.back_to_owner) && item.owner)
+            .map((item) => this.mapPatientRequestRow(item));
 
-          // Filtra e mapeia as solicitações vinculadas a Outros Profissionais (Others)
-          const others = rawData
-            .filter((item: any) => !item.owner)
-            .map((item: any) => ({
-              ...item,
-              name: item.report?.patient_care?.patient?.name,
-              cns: item.report?.patient_care?.patient?.cns,
-              type: item.type,
-              consultation_date: item.consultation_date,
-              status: item.status,
-            }));
-
-          // Filtra e mapeia as solicitações Em Processamento (Process)
           const processes = rawData
-            .filter((item: any) => item.medical_professional && item.owner && !item.back_to_owner)
-            .map((item: any) => ({
-              ...item,
-              name: item.report?.patient_care?.patient?.name,
-              cns: item.report?.patient_care?.patient?.cns,
-              type: item.type,
-              consultation_date: item.consultation_date,
-              status: item.status,
-            }));
+            .filter((item) => item.medical_professional && item.owner && !item.back_to_owner)
+            .map((item) => this.mapPatientRequestRow(item));
 
-          this.rawOwnerList.set(owners);
-          this.rawOthersList.set(others);
-          this.rawProcessList.set(processes);
+          const others = rawData
+            .filter((item) => !item.owner)
+            .map((item) => this.mapPatientRequestRow(item));
+
+          this.ownerDataSource.data = owners;
+          this.processDataSource.data = processes;
+          this.othersDataSource.data = others;
         },
         error: () => {
-          this.rawOwnerList.set([]);
-          this.rawOthersList.set([]);
-          this.rawProcessList.set([]);
+          this.ownerDataSource.data = [];
+          this.processDataSource.data = [];
+          this.othersDataSource.data = [];
         }
       });
+  }
+
+  private listenToBroadcastChannel(): void {
+    TFD_PATIENT_REQUESTS_CHANNEL.onmessage = (message: MessageEvent<string>) => {
+      if (message.data === 'update') {
+        this.fetchPatientRequests(false);
+      }
+    };
+  }
+
+  private mapPatientRequestRow(item: any) {
+    return {
+      ...item,
+      name: item.report?.patient_care?.patient?.name,
+      cns: item.report?.patient_care?.patient?.cns,
+      type: item.type,
+      consultation_date: item.consultation_date,
+      status: item.status,
+    };
   }
 
   private openLoading(): void {
@@ -240,28 +280,13 @@ export class PatientRequestsPage implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Avalia as regras de acesso cedidas no Route Resolver.
-   * Retorna 'true' (desabilita) se o usuário NÃO possuir a permissão informada.
-   */
-  protected checkPermissions(permissionName: string): boolean {
-    if (!this.currentUser?.roles) return true;
-
-    const hasPermission = this.currentUser.roles.some((role: any) => 
-      role.permissions?.some((perm: Permission) => perm.name === permissionName)
-    );
-
-    return !hasPermission;
-  }
-
-  protected checkStatus(patientRequest: PatientRequest): boolean {
-    return !!(patientRequest.medical_status && patientRequest.social_status);
-  }
-
-  /**
-   * Centralizador genérico para abertura de modais com recarga automatizada de dados.
-   */
-  private openDialog(component: any, data: any, width = '1200px', height = 'auto', requiresRefresh = true): void {
+  private openDialog<T>(
+    component: new (...args: any[]) => T,
+    data: { patient_request: PatientRequest },
+    width = '1200px',
+    height = 'auto',
+    requiresRefresh = true
+  ): void {
     this.dialog.open(component, {
       width,
       height,
@@ -269,55 +294,18 @@ export class PatientRequestsPage implements OnInit, OnDestroy {
       autoFocus: false,
       scrollStrategy: this.overlay.scrollStrategies.noop(),
       data
-    }).afterClosed()
+    })
+      .afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(result => {
+      .subscribe((result) => {
         if (result && requiresRefresh) {
-          this.handleRequestsChange();
+          this.handlePatientRequestChange();
         }
       });
   }
 
-  private handleRequestsChange(): void {
-    this.getPatientRequests(false);
+  private handlePatientRequestChange(): void {
+    this.fetchPatientRequests(false);
     TFD_PATIENT_REQUESTS_CHANNEL.postMessage('update');
-  }
-
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
-
-  protected haltedPatientRequest(patientRequest: PatientRequest): void {
-    this.openDialog(PatientRequestHaltedComponent, { patientRequest }, '400px');
-  }
-
-  protected updatePatientRequest(patientRequest: PatientRequest): void {
-    this.openDialog(PatientRequestUpdateComponent, { patientRequest }, '800px');
-  }
-
-  protected deletePatientRequest(patientRequest: PatientRequest): void {
-    this.openDialog(PatientRequestDeleteComponent, { patientRequest }, '400px');
-  }
-
-  protected processPatientRequest(patientRequest: PatientRequest): void {
-    this.openDialog(PatientRequestProcessToMedicalComponent, { patientRequest }, '400px');
-  }
-
-  protected movePatientRequestFromProcesses(patientRequest: PatientRequest): void {
-    this.openDialog(PatientRequestMoveFromProcessesComponent, { patientRequest }, '400px');
-  }
-
-  protected movePatientRequestFromOthers(patientRequest: PatientRequest): void {
-    this.openDialog(PatientRequestMoveFromOthersComponent, { patientRequest }, '400px');
-  }
-
-  protected showPatientRequest(patientRequest: PatientRequest): void {
-    this.openDialog(PatientRequestDetailComponent, { patientRequest }, '1000px', 'auto', false);
-  }
-
-  protected patientRequestAttachments(patientRequest: PatientRequest): void {
-    this.openDialog(PatientRequestAttachmentsComponent, { patientRequest }, '600px', 'auto', false);
-  }
-
-  protected finishBackPatientRequest(patientRequest: PatientRequest): void {
-    this.openDialog(PatientRequestFinishBackComponent, { patientRequest }, '400px');
   }
 }

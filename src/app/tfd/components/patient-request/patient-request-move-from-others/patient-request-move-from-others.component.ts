@@ -1,16 +1,20 @@
-import { ChangeDetectionStrategy, Component, inject, ChangeDetectorRef, DestroyRef, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, ChangeDetectorRef, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatButtonModule } from '@angular/material/button';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { finalize } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs/operators';
 
+// Material Modules
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+
+// Services & Models
 import { PatientRequestService } from '../../../services/patient-request.service';
 import { MessageService } from '../../../../core/services/message-service';
 
 @Component({
   selector: 'app-patient-request-move-from-others',
+  standalone: true,
   imports: [
     CommonModule, 
     MatDialogModule, 
@@ -22,21 +26,26 @@ import { MessageService } from '../../../../core/services/message-service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientRequestMoveFromOthersComponent {
-  // Injeções de Dependência Dinâmicas
-  protected readonly data = inject(MAT_DIALOG_DATA, { optional: true });
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
+  protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly patientRequestService = inject(PatientRequestService);
   private readonly messageService = inject(MessageService);
   private readonly dialogRef = inject(MatDialogRef<PatientRequestMoveFromOthersComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Estados gerenciados reativamente via Signals
+  // ==========================================
+  // Estados Reativos via Signals
+  // ==========================================
   protected readonly isSubmitting = signal<boolean>(false);
 
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
-
+  // ==========================================
+  // Métodos de Ação
+  // ==========================================
   protected onSubmit(): void {
-    const patientRequestId = this.data?.patientRequest?.id;
+    const patientRequestId = this.data?.patient_request?.id;
 
     if (!patientRequestId) {
       this.messageService.showMessage('Identificador da solicitação não encontrado.');
@@ -44,15 +53,15 @@ export class PatientRequestMoveFromOthersComponent {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck(); // ⚡ Força a atualização do DOM para pintar o spinner imediatamente no OnPush
+    this.cdr.markForCheck();
 
     this.patientRequestService.movePatientRequestFromOthers(patientRequestId)
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);
-          this.cdr.markForCheck(); // ⚡ Garante o desligamento do loading visual na tela
+          this.cdr.markForCheck();
         }),
-        takeUntilDestroyed(this.destroyRef) // 🛡️ Proteção contra memory leaks se fecharem o modal rápido
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
         next: (response) => {
@@ -62,7 +71,7 @@ export class PatientRequestMoveFromOthersComponent {
         error: (err) => {
           const fallbackError = 'Ocorreu um erro ao tentar movimentar a solicitação.';
           this.messageService.showMessage(err?.error?.message || fallbackError);
-        },
+        }
       });
   }
 }

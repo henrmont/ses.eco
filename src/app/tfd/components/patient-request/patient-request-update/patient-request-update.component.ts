@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, ChangeDetectorRef, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { STEPPER_GLOBAL_OPTIONS } from '@angular/cdk/stepper';
 import { forkJoin, Observable } from 'rxjs';
 import { map, startWith, finalize } from 'rxjs/operators';
@@ -11,7 +11,7 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDatepickerInputEvent, MatDatepickerModule } from '@angular/material/datepicker';
 import { MAT_DATE_LOCALE, MatNativeDateModule } from '@angular/material/core';
@@ -25,8 +25,17 @@ const moment = (_moment as any).default || _moment;
 // Services, Enums & Validators
 import { PatientRequestService } from '../../../services/patient-request.service';
 import { MessageService } from '../../../../core/services/message-service';
-import { PatientRequestType } from '../../../enums/patient-request-type';
 import { CustomValidators } from '../../../../core/validators/custom.validator';
+
+interface OptionItem {
+  id?: number;
+  name?: string;
+  code?: string;
+  lawsuit?: boolean;
+  has_entrance_or_lawsuit?: boolean;
+  has_entrance_or_lawsuit_finished?: boolean;
+  [key: string]: any;
+}
 
 @Component({
   selector: 'app-patient-request-update',
@@ -55,7 +64,9 @@ import { CustomValidators } from '../../../../core/validators/custom.validator';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientRequestUpdateComponent implements OnInit {
+  // ==========================================
   // Injeção de Dependências
+  // ==========================================
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly patientRequestService = inject(PatientRequestService);
@@ -64,14 +75,14 @@ export class PatientRequestUpdateComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Formulários e Controles
+  // ==========================================
+  // Formulário Principal
+  // ==========================================
   protected patientRequestForm!: FormGroup;
-  protected readonly patientControl = new FormControl<string | any>('', [Validators.required]);
-  protected readonly cidControl = new FormControl<string | any>('', [Validators.required]);
-  protected readonly hospitalControl = new FormControl<string | any>('', [Validators.required]);
 
+  // ==========================================
   // Estados Reativos via Signals
-  protected readonly types: string[] = Object.values(PatientRequestType);
+  // ==========================================
   protected readonly isScheduling = signal<boolean>(false);
   protected readonly isSubmitting = signal<boolean>(false);
   
@@ -86,56 +97,83 @@ export class PatientRequestUpdateComponent implements OnInit {
 
   protected readonly currentReportFlags = signal<{ lawsuit: boolean; hasEntranceOrLawsuit: boolean } | null>(null);
 
-  // Listagens e Filtros
-  private patientOptions: any[] = [];
-  private cidOptions: any[] = [];
-  private hospitalOptions: any[] = [];
+  // ==========================================
+  // Autocomplete e Observables
+  // ==========================================
+  private patientOptions: OptionItem[] = [];
+  protected filteredPatientOptions!: Observable<OptionItem[]>;
 
-  protected filteredPatientOptions!: Observable<any[]>;
-  protected filteredCidOptions!: Observable<any[]>;
-  protected filteredHospitalOptions!: Observable<any[]>;
+  private cidOptions: OptionItem[] = [];
+  protected filteredCidOptions!: Observable<OptionItem[]>;
 
-  // Dicionário de mensagens de erro
+  private hospitalOptions: OptionItem[] = [];
+  protected filteredHospitalOptions!: Observable<OptionItem[]>;
+
+  // ==========================================
+  // Dicionário de Mensagens de Erro
+  // ==========================================
   protected readonly errorMessages: Record<string, Array<{ type: string; message: string }>> = {
-    patient_control: [{ type: 'required', message: 'A seleção do paciente é obrigatória.' }],
-    cid_control: [{ type: 'required', message: 'A seleção de um CID/Laudo é obrigatória.' }],
-    hospital_control: [{ type: 'required', message: 'A unidade hospitalar é obrigatória.' }],
-    type: [{ type: 'required', message: 'Selecione o tipo de solicitação.' }],
+    patient_search: [
+      { type: 'required', message: 'A seleção do paciente é obrigatória.' }
+    ],
+    cid_search: [
+      { type: 'required', message: 'A seleção de um CID/Laudo é obrigatória.' }
+    ],
+    hospital_search: [
+      { type: 'required', message: 'A unidade hospitalar é obrigatória.' }
+    ],
+    type: [
+      { type: 'required', message: 'Selecione o tipo de solicitação.' }
+    ],
     consultation_date: [
       { type: 'required', message: 'A data do agendamento é obrigatória.' },
       { type: 'invalidDate', message: 'Digite uma data válida.' }
     ],
-    observation: [{ type: 'required', message: 'Insira uma observação para a solicitação.' }]
+    observation: [
+      { type: 'required', message: 'Insira uma observação para a solicitação.' }
+    ]
   };
 
+  // ==========================================
+  // Ciclo de Vida (Hooks)
+  // ==========================================
   ngOnInit(): void {
     this.initForm();
     this.loadInitialDialogData();
     this.registerCleaners();
   }
 
+  // ==========================================
+  // Inicialização do Formulário
+  // ==========================================
   private initForm(): void {
-    const request = this.data.patientRequest;
+    const request = this.data.patient_request;
     const initialDate = request.consultation_date ? moment(request.consultation_date) : null;
 
     this.patientRequestForm = this.fb.group({
+      patient_search: [null, [Validators.required]],
       report_id: [request.report_id, [Validators.required]],
+      cid_search: [null, [Validators.required]],
       type: [{ value: request.type, disabled: true }, [Validators.required]],
       consultation_date: [{ value: initialDate, disabled: true }],
       hospital_unity_id: [request.hospital_unity_id, [Validators.required]],
+      hospital_search: [null, [Validators.required]],
       observation: [request.observation, [Validators.required]]
     });
   }
 
+  // ==========================================
+  // Observadores e Limpadores
+  // ==========================================
   private registerCleaners(): void {
-    this.patientControl.valueChanges
+    this.patientRequestForm.get('patient_search')?.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => {
-        if (!value || typeof value === 'string') {
-          this.cidControl.setValue('');
+        if (!value || typeof value !== 'object') {
+          this.patientRequestForm.get('cid_search')?.setValue('');
           this.patientRequestForm.get('report_id')?.setValue(null);
-          this.patientRequestForm.markAsDirty();
-          this.patientRequestForm.get('type')?.disable();
+          this.patientRequestForm.get('report_id')?.markAsDirty();
+
           this.cidOptions = [];
           this.cidReadOnly.set(true);
           this.currentReportFlags.set(null);
@@ -144,25 +182,25 @@ export class PatientRequestUpdateComponent implements OnInit {
         }
       });
 
-    this.cidControl.valueChanges
+    this.patientRequestForm.get('cid_search')?.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => {
-        if (!value || typeof value === 'string') {
+        if (!value || typeof value !== 'object') {
           this.patientRequestForm.get('report_id')?.setValue(null);
-          this.patientRequestForm.markAsDirty();
-          this.patientRequestForm.get('type')?.disable();
+          this.patientRequestForm.get('report_id')?.markAsDirty();
+
           this.currentReportFlags.set(null);
           this.resetTypeSelection();
           this.cdr.markForCheck();
         }
       });
 
-    this.hospitalControl.valueChanges
+    this.patientRequestForm.get('hospital_search')?.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => {
-        if (!value || typeof value === 'string') {
+        if (!value || typeof value !== 'object') {
           this.patientRequestForm.get('hospital_unity_id')?.setValue(null);
-          this.patientRequestForm.markAsDirty();
+          this.patientRequestForm.get('hospital_unity_id')?.markAsDirty();
         }
       });
   }
@@ -170,20 +208,257 @@ export class PatientRequestUpdateComponent implements OnInit {
   private resetTypeSelection(): void {
     const typeControl = this.patientRequestForm.get('type');
     const dateControl = this.patientRequestForm.get('consultation_date');
+
     if (typeControl) {
       typeControl.setValue(null);
       typeControl.markAsUntouched();
     }
+
     if (dateControl) {
       dateControl.setValue(null);
       dateControl.disable();
       dateControl.clearValidators();
       dateControl.updateValueAndValidity();
     }
+
     this.isScheduling.set(false);
   }
 
-  protected onTypeSelectionChange(value: string): void {
+  // ==========================================
+  // Filtros dos Autocompletes
+  // ==========================================
+  private configurePatientFilter(): void {
+    const patientSearchCtrl = this.patientRequestForm.get('patient_search');
+    if (patientSearchCtrl) {
+      this.filteredPatientOptions = patientSearchCtrl.valueChanges.pipe(
+        startWith(patientSearchCtrl.value),
+        map(value => {
+          const name = typeof value === 'string' ? value : value?.name;
+          return name ? this._filterPatient(name) : this.patientOptions.slice();
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      );
+    }
+  }
+
+  private configureHospitalFilter(): void {
+    const hospitalSearchCtrl = this.patientRequestForm.get('hospital_search');
+    if (hospitalSearchCtrl) {
+      this.filteredHospitalOptions = hospitalSearchCtrl.valueChanges.pipe(
+        startWith(hospitalSearchCtrl.value),
+        map(value => {
+          const name = typeof value === 'string' ? value : value?.name;
+          return name ? this._filterHospitalUnities(name) : this.hospitalOptions.slice();
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      );
+    }
+  }
+
+  private configureCidFilter(): void {
+    const cidSearchCtrl = this.patientRequestForm.get('cid_search');
+    if (cidSearchCtrl) {
+      this.filteredCidOptions = cidSearchCtrl.valueChanges.pipe(
+        startWith(cidSearchCtrl.value),
+        map(value => {
+          const query = typeof value === 'string' ? value : (value?.code ? `${value.code} - ${value.name}` : '');
+          return query ? this._filterCid(query) : this.cidOptions.slice(0, 10);
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      );
+    }
+  }
+
+  private _filterPatient(name: string): OptionItem[] {
+    const filterValue = name.toLowerCase().trim();
+    return this.patientOptions.filter(opt => opt.name?.toLowerCase().includes(filterValue));
+  }
+
+  private _filterHospitalUnities(name: string): OptionItem[] {
+    const filterValue = name.toLowerCase().trim();
+    return this.hospitalOptions.filter(opt => opt.name?.toLowerCase().includes(filterValue));
+  }
+
+  private _filterCid(term: string): OptionItem[] {
+    const filterValue = term.toLowerCase().trim();
+    return this.cidOptions
+      .filter(opt => (opt.code && opt.code.toLowerCase().includes(filterValue)) || (opt.name && opt.name.toLowerCase().includes(filterValue)))
+      .slice(0, 10);
+  }
+
+  // ==========================================
+  // Carregamento de Dados Iniciais
+  // ==========================================
+  private loadInitialDialogData(): void {
+    this.patientLoading.set(true);
+    this.hospitalLoading.set(true);
+    this.cidLoading.set(true);
+
+    const request = this.data.patient_request;
+    const currentPatientCareId = request.report?.patient_care?.id;
+
+    forkJoin({
+      patients: this.patientRequestService.getPatients(),
+      hospitals: this.patientRequestService.getHospitalUnities(),
+      cids: currentPatientCareId ? this.patientRequestService.getReports(currentPatientCareId) : []
+    }).pipe(
+      finalize(() => {
+        this.patientLoading.set(false);
+        this.hospitalLoading.set(false);
+        this.cidLoading.set(false);
+        this.cdr.markForCheck();
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+      next: (res) => {
+        this.patientOptions = (res.patients || [])
+          .filter((item: any) => item.status && item.is_valid)
+          .map((item: any) => ({ name: item.patient?.name || '', ...item }));
+        this.configurePatientFilter();
+        
+        const initialPatient = request.report?.patient_care?.patient;
+        if (initialPatient) {
+          this.patientRequestForm.get('patient_search')?.setValue(initialPatient);
+        }
+        this.patientReadOnly.set(false);
+
+        this.hospitalOptions = res.hospitals || [];
+        this.configureHospitalFilter();
+        
+        const initialHospital = request.hospital_unity;
+        if (initialHospital) {
+          this.patientRequestForm.get('hospital_search')?.setValue(initialHospital);
+        }
+        this.hospitalReadOnly.set(false);
+
+        if (currentPatientCareId) {
+          this.cidOptions = (res.cids || []).map((item: any) => ({
+            ...item.cid,
+            ...item
+          }));
+          this.configureCidFilter();
+          
+          if (request.report?.cid) {
+            const currentCid = this.cidOptions.find(c => c.code === request.report.cid.code);
+            const reportToUse = currentCid || request.report;
+            this.patientRequestForm.get('cid_search')?.setValue(reportToUse);
+
+            const lawsuit = !!reportToUse.lawsuit;
+            const hasEntranceOrLawsuit = !!reportToUse.has_entrance_or_lawsuit;
+            this.currentReportFlags.set({ lawsuit, hasEntranceOrLawsuit });
+
+            this.setType(request.type);
+          }
+          this.cidReadOnly.set(false);
+        }
+      },
+      error: () => {
+        this.messageService.showMessage('Erro ao carregar dados cadastrais da solicitação.');
+        this.patientReadOnly.set(true);
+        this.hospitalReadOnly.set(true);
+        this.cidReadOnly.set(true);
+      }
+    });
+  }
+
+  private fetchCidsForPatient(patientCareId: number): void {
+    this.cidLoading.set(true);
+    this.cidReadOnly.set(true);
+
+    this.patientRequestService.getReports(patientCareId)
+      .pipe(
+        finalize(() => {
+          this.cidLoading.set(false);
+          this.cidReadOnly.set(false);
+          this.cdr.markForCheck();
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (response) => {
+          this.cidOptions = (response || []).map((item: any) => ({ 
+            ...item.cid, 
+            ...item
+          }));
+          this.configureCidFilter();
+        }
+      });
+  }
+
+  // ==========================================
+  // Helpers de Exibição e Seleção
+  // ==========================================
+  protected displayPatient(patient: OptionItem): string {
+    return patient?.name || '';
+  }
+
+  protected displayCid(report: OptionItem): string {
+    return report?.code && report?.name ? `${report.code} - ${report.name}` : '';
+  }
+
+  protected displayHospitalUnity(hospitalUnity: OptionItem): string {
+    return hospitalUnity?.name || '';
+  }
+
+  protected setPatient(patientCare: OptionItem): void {
+    if (patientCare?.id) {
+      this.patientRequestForm.get('cid_search')?.setValue('');
+      this.patientRequestForm.get('report_id')?.setValue(null);
+      this.patientRequestForm.get('report_id')?.markAsDirty();
+
+      this.currentReportFlags.set(null);
+      this.resetTypeSelection();
+      this.fetchCidsForPatient(patientCare.id);
+    }
+  }
+
+  protected setCid(report: OptionItem): void {
+    if (report?.id) {
+      const originalRequest = this.data.patientRequest;
+      this.patientRequestForm.get('report_id')?.setValue(report.id);
+      this.patientRequestForm.get('report_id')?.markAsDirty();
+
+      const lawsuit = !!report.lawsuit;
+      const hasEntranceOrLawsuit = !!report.has_entrance_or_lawsuit;
+      this.currentReportFlags.set({ lawsuit, hasEntranceOrLawsuit });
+
+      const typeCtrl = this.patientRequestForm.get('type');
+
+      // 🛡️ REGRA DE PROTEÇÃO NA EDIÇÃO: Só altera o tipo se o usuário estiver trocando para um CID diferente do original
+      if (report.id !== originalRequest.report_id) {
+        let autoValue: string | null = null;
+
+        if (hasEntranceOrLawsuit) {
+          autoValue = 'Agendamento';
+        } else {
+          autoValue = lawsuit ? 'Ação Judicial' : 'Entrada';
+        }
+
+        if (autoValue) {
+          typeCtrl?.setValue(autoValue);
+          typeCtrl?.markAsDirty();
+          typeCtrl?.disable();
+          this.setType(autoValue);
+        }
+      } else {
+        // Se voltou pro CID original do registro, restaura o tipo salvo no banco e mantém bloqueado
+        typeCtrl?.setValue(originalRequest.type);
+        typeCtrl?.disable();
+        this.setType(originalRequest.type);
+      }
+
+      this.cdr.markForCheck();
+    }
+  }
+
+  protected setHospitalUnity(hospital: OptionItem): void {
+    if (hospital?.id) {
+      this.patientRequestForm.get('hospital_unity_id')?.setValue(hospital.id);
+      this.patientRequestForm.get('hospital_unity_id')?.markAsDirty();
+    }
+  }
+
+  protected setType(value: string): void {
     const isSched = value === 'Agendamento' || value === 'Ação Judicial';
     this.isScheduling.set(isSched);
 
@@ -222,232 +497,17 @@ export class PatientRequestUpdateComponent implements OnInit {
     return true;
   }
 
-  private loadInitialDialogData(): void {
-    this.patientLoading.set(true);
-    this.hospitalLoading.set(true);
-    this.cidLoading.set(true);
-
-    const request = this.data.patientRequest;
-    const currentPatientCareId = request.report?.patient_care?.id;
-
-    forkJoin({
-      patients: this.patientRequestService.getPatients(),
-      hospitals: this.patientRequestService.getHospitalUnities(),
-      cids: currentPatientCareId ? this.patientRequestService.getReports(currentPatientCareId) : []
-    }).pipe(
-      finalize(() => {
-        this.patientLoading.set(false);
-        this.hospitalLoading.set(false);
-        this.cidLoading.set(false);
-        this.cdr.markForCheck();
-      }),
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe({
-      next: (res) => {
-        this.patientOptions = (res.patients || [])
-          .filter((item: any) => item.status && item.is_valid)
-          .map((item: any) => ({ name: item.patient.name, ...item }));
-        this.configurePatientFilter();
-        this.patientControl.setValue(request.report?.patient_care?.patient);
-        this.patientReadOnly.set(false);
-
-        this.hospitalOptions = res.hospitals || [];
-        this.configureHospitalFilter();
-        this.hospitalControl.setValue(request.hospital_unity);
-        this.hospitalReadOnly.set(false);
-
-        if (currentPatientCareId) {
-          this.cidOptions = (res.cids || []).map((item: any) => ({
-            ...item.cid,
-            id_report: item.id,
-            lawsuit: item.lawsuit,
-            has_entrance_or_lawsuit: item.has_entrance_or_lawsuit
-          }));
-          this.configureCidFilter();
-          
-          if (request.report?.cid) {
-            const currentCid = this.cidOptions.find(c => c.code === request.report.cid.code);
-            const reportToUse = currentCid || request.report;
-            this.cidControl.setValue(reportToUse);
-
-            const lawsuit = !!reportToUse.lawsuit;
-            const hasEntranceOrLawsuit = !!reportToUse.has_entrance_or_lawsuit;
-            this.currentReportFlags.set({ lawsuit, hasEntranceOrLawsuit });
-
-            this.onTypeSelectionChange(request.type);
-          }
-          this.cidReadOnly.set(false);
-        }
-      },
-      error: () => {
-        this.messageService.showMessage('Erro ao carregar dados cadastrais da solicitação.');
-        this.patientReadOnly.set(true);
-        this.hospitalReadOnly.set(true);
-        this.cidReadOnly.set(true);
-      }
-    });
-  }
-
-  private configurePatientFilter(): void {
-    this.filteredPatientOptions = this.patientControl.valueChanges.pipe(
-      startWith(this.patientControl.value),
-      map(value => {
-        const name = typeof value === 'string' ? value : value?.name;
-        return name ? this._filterPatient(name) : this.patientOptions.slice();
-      }),
-      takeUntilDestroyed(this.destroyRef)
-    );
-  }
-
-  private _filterPatient(name: string): any[] {
-    const filterValue = name.toLowerCase().trim();
-    return this.patientOptions.filter(opt => opt.name.toLowerCase().includes(filterValue));
-  }
-
-  private configureHospitalFilter(): void {
-    this.filteredHospitalOptions = this.hospitalControl.valueChanges.pipe(
-      startWith(this.hospitalControl.value),
-      map(value => {
-        const name = typeof value === 'string' ? value : value?.name;
-        return name ? this._filterHospitalUnities(name) : this.hospitalOptions.slice();
-      }),
-      takeUntilDestroyed(this.destroyRef)
-    );
-  }
-
-  private _filterHospitalUnities(name: string): any[] {
-    const filterValue = name.toLowerCase().trim();
-    return this.hospitalOptions.filter(opt => opt.name.toLowerCase().includes(filterValue));
-  }
-
-  private configureCidFilter(): void {
-    this.filteredCidOptions = this.cidControl.valueChanges.pipe(
-      startWith(this.cidControl.value),
-      map(value => {
-        const query = typeof value === 'string' ? value : (value?.code ? `${value.code} - ${value.name}` : '');
-        return query ? this._filterCid(query) : this.cidOptions.slice(0, 10);
-      }),
-      takeUntilDestroyed(this.destroyRef)
-    );
-  }
-
-  private _filterCid(term: string): any[] {
-    const filterValue = term.toLowerCase().trim();
-    return this.cidOptions
-      .filter(opt => (opt.code && opt.code.toLowerCase().includes(filterValue)) || (opt.name && opt.name.toLowerCase().includes(filterValue)))
-      .slice(0, 10);
-  }
-
-  private fetchCidsForPatient(patientCareId: number): void {
-    this.cidLoading.set(true);
-    this.cidReadOnly.set(true);
-
-    this.patientRequestService.getReports(patientCareId)
-      .pipe(
-        finalize(() => {
-          this.cidLoading.set(false);
-          this.cidReadOnly.set(false);
-          this.cdr.markForCheck();
-        }),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe({
-        next: (response) => {
-          this.cidOptions = (response || []).map((item: any) => ({ 
-            ...item.cid, 
-            id_report: item.id,
-            lawsuit: item.lawsuit,
-            has_entrance_or_lawsuit: item.has_entrance_or_lawsuit
-          }));
-          this.configureCidFilter();
-        }
-      });
-  }
-
-  protected displayPatient(patient: any): string {
-    return patient?.name || '';
-  }
-
-  protected displayCid(cid: any): string {
-    return cid?.code && cid?.name ? `${cid.code} - ${cid.name}` : '';
-  }
-
-  protected displayHospitalUnity(hospitalUnity: any): string {
-    return hospitalUnity?.name || '';
-  }
-
-  protected onPatientSelected(event: MatAutocompleteSelectedEvent): void {
-    const option = event.option.value;
-    if (option?.id) {
-      this.cidControl.setValue('');
-      this.patientRequestForm.get('report_id')?.setValue(null);
-      this.patientRequestForm.markAsDirty();
-      this.currentReportFlags.set(null);
-      this.resetTypeSelection();
-      this.fetchCidsForPatient(option.id);
-    }
-  }
-
-  protected onCidSelected(event: MatAutocompleteSelectedEvent): void {
-    const report = event.option.value;
-    if (report?.id_report) {
-      const originalRequest = this.data.patientRequest;
-      this.patientRequestForm.get('report_id')?.setValue(report.id_report);
-      this.patientRequestForm.markAsDirty();
-
-      const lawsuit = !!report.lawsuit;
-      const hasEntranceOrLawsuit = !!report.has_entrance_or_lawsuit;
-      this.currentReportFlags.set({ lawsuit, hasEntranceOrLawsuit });
-
-      const typeCtrl = this.patientRequestForm.get('type');
-
-      // 🛡️ REGRA DE PROTEÇÃO NA EDIÇÃO: Só altera o tipo se o usuário estiver trocando para um CID diferente do original
-      if (report.id_report !== originalRequest.report_id) {
-        let autoValue: string | null = null;
-
-        if (hasEntranceOrLawsuit) {
-          autoValue = 'Agendamento';
-        } else {
-          autoValue = lawsuit ? 'Ação Judicial' : 'Entrada';
-        }
-
-        if (autoValue) {
-          typeCtrl?.setValue(autoValue);
-          typeCtrl?.markAsDirty();
-          typeCtrl?.disable();
-          this.onTypeSelectionChange(autoValue);
-        }
-      } else {
-        // Se voltou pro CID original do registro, restaura o tipo salvo no banco e mantém bloqueado
-        typeCtrl?.setValue(originalRequest.type);
-        typeCtrl?.disable();
-        this.onTypeSelectionChange(originalRequest.type);
-      }
-
-      this.cdr.markForCheck();
-    }
-  }
-
-  protected onHospitalUnitySelected(event: MatAutocompleteSelectedEvent): void {
-    const option = event.option.value;
-    if (option?.id) {
-      this.patientRequestForm.get('hospital_unity_id')?.setValue(option.id);
-      this.patientRequestForm.markAsDirty();
-    }
-  }
-
+  // ==========================================
+  // Submissão do Formulário
+  // ==========================================
   protected onSubmit(): void {
-    const patientRequestId = this.data?.patientRequest?.id;
+    const patientRequestId = this.data?.patient_request?.id;
     if (!patientRequestId) {
       this.messageService.showMessage('Identificador da solicitação não encontrado.');
       return;
     }
 
-    this.patientControl.markAsTouched();
-    this.cidControl.markAsTouched();
-    this.hospitalControl.markAsTouched();
-
-    if (this.patientRequestForm.invalid || this.patientControl.invalid || this.cidControl.invalid || this.hospitalControl.invalid) {
+    if (this.patientRequestForm.invalid) {
       this.patientRequestForm.markAllAsTouched();
       return;
     }
@@ -455,7 +515,9 @@ export class PatientRequestUpdateComponent implements OnInit {
     this.isSubmitting.set(true);
     this.cdr.markForCheck();
 
-    this.patientRequestService.updatePatientRequest(patientRequestId, this.patientRequestForm.getRawValue())
+    const payload = this.patientRequestForm.getRawValue();
+
+    this.patientRequestService.updatePatientRequest(patientRequestId, payload)
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);

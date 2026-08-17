@@ -42,9 +42,6 @@ export class ReportAttachmentDeleteComponent {
   // ==========================================
   // Submissão
   // ==========================================
-  /**
-   * Dispara a requisição para remover o anexo do laudo
-   */
   protected onSubmit(): void {
     const attachmentId = this.data?.report_attachment?.id;
 

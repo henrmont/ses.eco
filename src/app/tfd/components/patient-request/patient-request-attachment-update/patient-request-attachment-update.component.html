@@ -1,15 +1,16 @@
 <h2 mat-dialog-title>Atualizar arquivo</h2>
 
-<form [formGroup]="attachmentForm" (ngSubmit)="onSubmit()">
-  <mat-dialog-content>
+<mat-dialog-content>
+  <form [formGroup]="attachmentForm">
     <div class="stepper">
       
+      <!-- Linha 1: Nome do Anexo -->
       <div class="line cols-1-col">
         <mat-form-field appearance="outline">
           <mat-label>Nome</mat-label>
           <input matInput type="text" formControlName="name">
           
-          @for (item of errorMessages['name']; track item.type) {
+          @for (item of errorMessages['name']; track $index) {
             <mat-error [hidden]="!attachmentForm.get('name')?.hasError(item.type)">
               {{ item.message }}
             </mat-error>
@@ -17,6 +18,7 @@
         </mat-form-field>
       </div>
 
+      <!-- Linha 2: Ações de Arquivo (Download e Substituição) -->
       <div class="line cols-1-col">
         <div class="file-actions-cell">
           
@@ -24,8 +26,8 @@
             class="btn-archive" 
             type="button" 
             mat-icon-button 
-            [disabled]="!data?.patient_request_attachment?.archive_id" 
-            (click)="download(data.patient_request_attachment.archive_id, data.patient_request_attachment.name)"
+            [disabled]="!(data?.patient_request_attachment?.archive_id || data?.patientRequestAttachment?.archive_id)" 
+            (click)="download(data?.patient_request_attachment?.archive_id || data?.patientRequestAttachment?.archive_id, attachmentForm.get('name')?.value)"
             matTooltip="Baixar arquivo atual"
           >
             <mat-icon>download</mat-icon>
@@ -33,44 +35,47 @@
 
           <input 
             type="file" 
-            hidden 
+            class="file-input"
             (change)="onFileSelected($event)" 
-            #file
+            #fileInput
+            hidden
           >
 
           <button 
             mat-raised-button
+            color="primary"
             type="button" 
-            (click)="file.click()" 
+            (click)="fileInput.click()" 
             [matTooltip]="fileLabel()"
           >
             <mat-icon>attach_file</mat-icon>
-            Anexar arquivo
+            {{ hasFile() ? 'Substituir arquivo' : 'Anexar arquivo' }}
           </button>
           
         </div>
       </div>
 
     </div>
-  </mat-dialog-content>
+  </form>
+</mat-dialog-content>
 
-  <mat-dialog-actions align="end">
-    <button mat-button type="button" [disabled]="isSubmitting()" [mat-dialog-close]="false">
-      Cancelar
-    </button>
-    
-    <button 
-      mat-flat-button 
-      color="primary" 
-      type="submit" 
-      [disabled]="attachmentForm.invalid || attachmentForm.pending || isFormsPristine() || isSubmitting()"
-    >
-      <div class="waiting">
-        @if (isSubmitting()) {
-          <mat-spinner [diameter]="20"></mat-spinner>
-        }
-        <span>{{ isSubmitting() ? 'Salvando...' : 'Salvar alterações' }}</span>
-      </div>
-    </button>
-  </mat-dialog-actions>
-</form>
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="isSubmitting()" [mat-dialog-close]="false">
+    Cancelar
+  </button>
+  
+  <button 
+    mat-flat-button 
+    color="primary" 
+    type="button" 
+    [disabled]="attachmentForm.invalid || attachmentForm.pending || isFormsPristine() || isSubmitting()"
+    (click)="onSubmit()"
+  >
+    <div class="waiting">
+      @if (isSubmitting()) {
+        <mat-spinner [diameter]="20"></mat-spinner>
+      }
+      <span>{{ isSubmitting() ? 'Salvando...' : 'Salvar alterações' }}</span>
+    </div>
+  </button>
+</mat-dialog-actions>

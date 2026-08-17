@@ -1,18 +1,15 @@
 @use 'variables' as *;
 
 :host {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
+  @include dialog-base;
 }
 
 mat-dialog-content {
+  @include dialog-content;
   padding-top: $spacing-modal-pt;
-  overflow-y: auto;
 }
 
-// Container do formulário estruturado
+// Container do formulário em formato stepper/flow
 .stepper {
   margin-top: $spacing-form-gap; 
   display: flex; 
@@ -20,7 +17,7 @@ mat-dialog-content {
   gap: $spacing-form-gap;
 }
 
-// Sistema estrutural de Grid flexível
+// Estrutura de Linhas com Grid
 .line {
   display: grid; 
   grid-template-columns: var(--grid-cols, 1fr); 
@@ -29,7 +26,7 @@ mat-dialog-content {
   align-items: start;
   min-height: $material-field-outline-height;
 
-  // Alinhamento vertical caso existam slide toggles internos
+  // Alinhamento vertical do slide toggle de ação judicial se houver
   .toggle-cell {
     display: flex;
     align-items: center;
@@ -43,7 +40,7 @@ mat-dialog-content {
     }
   }
 
-  // Definições semânticas de colunas mapeadas
+  // Mapeamento dinâmico de colunas sem inline styling
   &.cols-1-1 { 
     --grid-cols: 1fr 1fr; 
   }
@@ -51,4 +48,8 @@ mat-dialog-content {
   &.cols-1-col { 
     --grid-cols: 1fr; 
   }
+}
+
+.locked-icon {
+  opacity: $opacity-disabled;
 }

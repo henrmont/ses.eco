@@ -1,17 +1,17 @@
 <h2 mat-dialog-title>
-  {{ data?.patientRequest?.is_owner_bookmark ? 'Desmarcar sobrestado' : 'Marcar sobrestado' }}
+  {{ data?.patient_request?.is_owner_bookmark ? 'Desmarcar sobrestado' : 'Marcar sobrestado' }}
 </h2>
 
 <mat-dialog-content>
-  @if (data?.patientRequest?.is_owner_bookmark) {
+  @if (data?.patient_request?.is_owner_bookmark) {
     <p>
       Você deseja realmente desmarcar em sobrestado a solicitação do paciente 
-      <strong>{{ data?.patientRequest?.report?.patient_care?.patient?.name ?? 'Não informado' }}</strong>?
+      <strong>{{ data?.patient_request?.report?.patient_care?.patient?.name ?? 'Não informado' }}</strong>?
     </p>
   } @else {
     <p>
       Você deseja realmente marcar em sobrestado a solicitação do paciente 
-      <strong>{{ data?.patientRequest?.report?.patient_care?.patient?.name ?? 'Não informado' }}</strong>?
+      <strong>{{ data?.patient_request?.report?.patient_care?.patient?.name ?? 'Não informado' }}</strong>?
     </p>
   }
 </mat-dialog-content>
@@ -28,9 +28,9 @@
       }
       <span>
         @if (isSubmitting()) {
-          {{ data?.patientRequest?.is_owner_bookmark ? 'Desmarcando...' : 'Marcando...' }}
+          {{ data?.patient_request?.is_owner_bookmark ? 'Desmarcando...' : 'Marcando...' }}
         } @else {
-          {{ data?.patientRequest?.is_owner_bookmark ? 'Desmarcar' : 'Marcar' }}
+          {{ data?.patient_request?.is_owner_bookmark ? 'Desmarcar' : 'Marcar' }}
         }
       </span>
     </div>

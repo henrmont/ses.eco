@@ -1,62 +1,81 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Overlay } from '@angular/cdk/overlay';
+
+// Material Modules
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+
+// File Handling
 import { saveAs } from 'file-saver';
 
+// Services & Models
 import { StorageService } from '../../../../core/services/storage-service';
 import { PatientCare } from '../../../models/patient-care.model';
+import { PatientReport } from '../../../models/patient-report.model';
 import { PatientRequestOpinion } from '../../../models/patient-request-opinion.model';
 import { Travel } from '../../../models/travel';
 import { CostAssistance } from '../../../models/cost-assistance';
 import { Accountability } from '../../../models/accountability';
+import { Patient } from '../../../models/patient.model';
 
+// Sub-dialogs
 import { PatientDetailComponent } from '../../patient/patient-detail/patient-detail.component';
 import { PatientReportDetailComponent } from '../../patient/patient-report-detail/patient-report-detail.component';
 import { PatientRequestOpinionDetailComponent } from '../../patient-request-opinions/patient-request-opinion-detail/patient-request-opinion-detail.component';
 import { ShowTravelComponent } from '../../travel/show-travel-component/show-travel-component';
 import { ShowCostAssistanceComponent } from '../../cost-assistance/show-cost-assistance-component/show-cost-assistance-component';
 import { ShowAccountabilityComponent } from '../../accountability/show-accountability-component/show-accountability-component';
-import { Overlay } from '@angular/cdk/overlay';
-import { PatientReport } from '../../../models/patient-report.model';
+
+// Define o tipo aceito para as propriedades do Modal
+type PatientRequestSubDialogData =
+  { patient: Patient | undefined }
+  | { patient_care: PatientCare }
+  | { patient_report: PatientReport }
+  | { opinion: PatientRequestOpinion }
+  | { travel: Travel }
+  | { cost_assistance: CostAssistance }
+  | { accountability: Accountability };
 
 @Component({
   selector: 'app-patient-request-detail',
+  standalone: true,
   imports: [
     CommonModule, 
     MatDialogModule, 
     MatButtonModule, 
     MatCardModule, 
-    MatIconModule
+    MatIconModule,
+    MatProgressSpinnerModule
   ],
   templateUrl: './patient-request-detail.component.html',
   styleUrl: './patient-request-detail.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima para componentes de leitura
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientRequestDetailComponent {
-  // Injeções de dependência modernas via inject()
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly storageService = inject(StorageService);
   private readonly dialog = inject(MatDialog);
   private readonly overlay = inject(Overlay);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Agrega as propriedades do paciente e do atendimento em um único objeto de leitura para o template
-  protected readonly patient = {
-    ...this.data?.patientRequest?.report?.patient_care?.patient,
-    ...this.data?.patientRequest?.report?.patient_care
-  };
-
+  // ==========================================
+  // Operações de Arquivo / Download
+  // ==========================================
   protected download(archiveId: number | null | undefined, name: string): void {
     if (!archiveId) return;
 
     this.storageService.download(archiveId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (response) => {
+        next: response => {
           if (response?.archive) {
             saveAs(response.archive, name);
           }
@@ -64,11 +83,15 @@ export class PatientRequestDetailComponent {
       });
   }
 
-  /**
-   * Método centralizado para gerenciar a abertura reativa de sub-modais de detalhamento,
-   * espelhando o comportamento e as travas de fechamento da PatientRequestsPage.
-   */
-  private openSubDialog(component: any, data: any, width: string, height = 'auto'): void {
+  // ==========================================
+  // Gestão Centralizada de Dialogs
+  // ==========================================
+  private openSubDialog<T>(
+    component: new (...args: any[]) => T,
+      data: PatientRequestSubDialogData,
+      width = '1200px',
+      height = 'auto',
+  ): void {
     this.dialog.open(component, {
       width,
       height,
@@ -78,34 +101,39 @@ export class PatientRequestDetailComponent {
       data
     }).afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(); // Inscrição limpa e segura contra memory leaks
+      .subscribe();
   }
 
-  /**
-   * Gerenciadores de Ação disparados a partir do template HTML.
-   * Utilizam exatamente as mesmas dimensões mapeadas na listagem original.
-   */
-  protected showPatient(patientCare: PatientCare): void {
-    this.openSubDialog(PatientDetailComponent, { patient_care: patientCare }, '1200px', '700px');
+  // ==========================================
+  // Handlers para Abertura de Sub-Modais
+  // ==========================================
+  protected patientDetail(patientCare: PatientCare): void {
+    if (!patientCare) return;
+    this.openSubDialog(PatientDetailComponent, { patient: patientCare.patient }, '1200px', '700px');
   }
 
-  protected showPatientReport(report: PatientReport): void {
-    this.openSubDialog(PatientReportDetailComponent, { report }, '800px');
+  protected patientReportDetail(patientReport: PatientReport): void {
+    if (!patientReport) return;
+    this.openSubDialog(PatientReportDetailComponent, { patient_report: patientReport }, '800px');
   }
 
   protected showOpinion(opinion: PatientRequestOpinion): void {
+    if (!opinion) return;
     this.openSubDialog(PatientRequestOpinionDetailComponent, { opinion }, '1200px', '700px');
   }
 
   protected showTravel(travel: Travel): void {
+    if (!travel) return;
     this.openSubDialog(ShowTravelComponent, { travel }, '800px');
   }
 
   protected showCostAssistance(costAssistance: CostAssistance): void {
+    if (!costAssistance) return;
     this.openSubDialog(ShowCostAssistanceComponent, { cost_assistance: costAssistance }, '800px');
   }
 
   protected showAccountability(accountability: Accountability): void {
+    if (!accountability) return;
     this.openSubDialog(ShowAccountabilityComponent, { accountability }, '800px');
   }
 }
