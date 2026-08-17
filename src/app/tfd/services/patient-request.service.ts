@@ -45,7 +45,7 @@ export class PatientRequestService {
   // ==========================================
 
   haltedPatientRequest(patientRequestId: number): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/${patientRequestId}/halt`, {});
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/${patientRequestId}/halted`, {});
   }
 
   processPatientRequestToMedical(patientRequestId: number, data: Record<string, unknown>): Observable<ApiResponse> {

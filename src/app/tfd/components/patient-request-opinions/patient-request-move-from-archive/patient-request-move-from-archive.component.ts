@@ -1,29 +1,34 @@
-import { ChangeDetectionStrategy, Component, inject, ChangeDetectorRef, DestroyRef, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs/operators';
+
+// Material Modules
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { finalize } from 'rxjs/operators';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { PatientRequestOpinionService } from '../../../services/patient-request-opinion.service';
+// Services e Models
 import { MessageService } from '../../../../core/services/message-service';
+import { PatientRequestOpinionService } from '../../../services/patient-request-opinion.service';
 
 @Component({
   selector: 'app-patient-request-moev-from-archive',
   standalone: true,
   imports: [
-    CommonModule, 
-    MatDialogModule, 
-    MatButtonModule, 
+    CommonModule,
+    MatDialogModule,
+    MatButtonModule,
     MatProgressSpinnerModule
   ],
   templateUrl: './patient-request-move-from-archive.component.html',
   styleUrl: './patient-request-move-from-archive.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima com OnPush + Signals
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientRequestMoveFromArchiveComponent {
-  // Injeções de Dependência
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly opinionService = inject(PatientRequestOpinionService);
   private readonly messageService = inject(MessageService);
@@ -31,13 +36,16 @@ export class PatientRequestMoveFromArchiveComponent {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Estados gerenciados reativamente via Signals
+  // ==========================================
+  // Estados Reativos via Signals
+  // ==========================================
   protected readonly isSubmitting = signal<boolean>(false);
 
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
-
+  // ==========================================
+  // Submissão / Desarquivamento
+  // ==========================================
   /**
-   * Dispara a requisição para desacarquivar/movimentar a solicitação dentro do contexto de Opinion
+   * Dispara a requisição para desarquivar/movimentar a solicitação dentro do contexto de Opinion
    */
   protected onSubmit(): void {
     const requestType = this.data?.type;
@@ -49,25 +57,25 @@ export class PatientRequestMoveFromArchiveComponent {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck(); // ⚡ Força a atualização do DOM para renderizar o spinner imediatamente
+    this.cdr.markForCheck();
 
     this.opinionService.movePatientRequestFromArchive(requestType, requestId)
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);
-          this.cdr.markForCheck(); // ⚡ Garante o desligamento do spinner visual
+          this.cdr.markForCheck();
         }),
-        takeUntilDestroyed(this.destroyRef) // 🛡️ Proteção contra memory leaks
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
         next: (response: any) => {
           this.messageService.showMessage(response?.message || 'Solicitação retirada do arquivo com sucesso!');
-          this.dialogRef.close(true); // Retorna true para atualizar a lista do arquivo
+          this.dialogRef.close(true);
         },
         error: (err) => {
           const fallbackError = 'Ocorreu um erro ao tentar retirar a solicitação do arquivo.';
           this.messageService.showMessage(err?.error?.message || fallbackError);
-        },
+        }
       });
   }
 }

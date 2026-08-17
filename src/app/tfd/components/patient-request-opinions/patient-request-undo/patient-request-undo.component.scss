@@ -5,9 +5,8 @@
 }
 
 mat-dialog-content {
+  @include dialog-content;
   padding-top: $spacing-modal-pt;
-  overflow-y: auto;
-  max-height: $modal-content-max-height;
 }
 
 // Container do formulário estruturado

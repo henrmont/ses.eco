@@ -5,11 +5,11 @@
 }
 
 mat-dialog-content {
+  @include dialog-content;
   padding-top: $spacing-modal-pt;
-  overflow-y: auto;
-  max-height: $modal-content-max-height; 
 }
 
+// Container do formulário em formato stepper/flow
 .stepper {
   margin-top: $spacing-form-gap; 
   display: flex; 
@@ -17,6 +17,7 @@ mat-dialog-content {
   gap: $spacing-form-gap;
 }
 
+// Estrutura de Linhas com Grid
 .line {
   display: grid; 
   grid-template-columns: var(--grid-cols, 1fr); 
@@ -25,20 +26,28 @@ mat-dialog-content {
   align-items: start;
   min-height: $material-field-outline-height;
 
+  // Alinhamento vertical do slide toggle
   .toggle-cell {
     display: flex;
     align-items: center;
     height: $material-field-outline-height;
 
     mat-slide-toggle {
-      font-size: $font-size-md;
-      color: var(--mdc-outlined-text-field-label-text-color, $color-text-label-fallback);
+      span {
+        font-size: $font-size-md;
+        color: $color-text-variant;
+      }
     }
   }
 
-  // Definições Semânticas das Colunas da Grid
-  &.cols-1-1   { --grid-cols: 1fr 1fr; }
-  &.cols-1-col { --grid-cols: 1fr; }
+  // Mapeamento dinâmico de colunas sem inline styling
+  &.cols-1-1 { 
+    --grid-cols: 1fr 1fr; 
+  }
+  
+  &.cols-1-col { 
+    --grid-cols: 1fr; 
+  }
 }
 
 // Estilização customizada e isolada para o contêiner do NgxEditor
@@ -47,7 +56,6 @@ mat-dialog-content {
   padding-bottom: $spacing-xl; 
 
   .NgxEditor__Wrapper {
-    border: 1px solid $color-border-subtle;
     border-radius: $radius-sm;
     background-color: $color-surface;
     overflow: hidden;
@@ -76,16 +84,13 @@ mat-dialog-content {
     bottom: 0;
     left: 0;
     margin: 0;
+    font-size: 12px;
+    color: $color-danger; 
+    padding: 0 16px;
   }
 }
 
 // Alinhamento do spinner no campo de input
 .field-spinner {
   margin-right: $spacing-sm;
-}
-
-mat-dialog-actions {
-  gap: $spacing-lg;
-  background-color: inherit;
-  margin-bottom: 0;
 }

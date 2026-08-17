@@ -16,7 +16,7 @@
             }
           </mat-select>
           
-          @for (item of errorMessages['to']; track item.type) {
+          @for (item of errorMessages['to']; track $index) {
             <mat-error [hidden]="!undoForm.get('to')?.hasError(item.type)">
               {{ item.message }}
             </mat-error>
@@ -28,7 +28,7 @@
           <mat-label>Motivo</mat-label>
           <textarea matInput rows="4" formControlName="reason" [readonly]="isSubmitting()"></textarea>
           
-          @for (item of errorMessages['reason']; track item.type) {
+          @for (item of errorMessages['reason']; track $index) {
             <mat-error [hidden]="!undoForm.get('reason')?.hasError(item.type)">
               {{ item.message }}
             </mat-error>

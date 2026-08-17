@@ -9,7 +9,7 @@
           <mat-label>Nome</mat-label>
           <input matInput type="text" formControlName="name">
           
-          @for (item of errorMessages['name']; track item.type) {
+          @for (item of errorMessages['name']; track $index) {
             <mat-error [hidden]="!opinionForm.get('name')?.hasError(item.type)">
               {{ item.message }}
             </mat-error>
@@ -34,9 +34,9 @@
           ></ngx-editor>
         </div>
         
-        @for (item of errorMessages['content']; track item.type) {
+        @for (item of errorMessages['content']; track $index) {
           @if (opinionForm.get('content')?.touched && opinionForm.get('content')?.hasError(item.type)) {
-            <small class="mat-mdc-form-field-error" style="color: #f44336; font-size: 75%; padding: 0 16px;">
+            <small class="mat-mdc-form-field-error">
               {{ item.message }}
             </small>
           }
@@ -55,13 +55,13 @@
       mat-flat-button 
       color="primary" 
       type="submit" 
-      [disabled]="opinionForm.invalid || opinionForm.pending || isSubmitting()"
+      [disabled]="opinionForm.invalid || opinionForm.pristine || opinionForm.pending || isSubmitting()"
     >
       <div class="waiting">
         @if (isSubmitting()) {
           <mat-spinner [diameter]="20"></mat-spinner>
         }
-        <span>{{ isSubmitting() ? 'Atualizando...' : 'Atualizar' }}</span>
+        Salvar alterações
       </div>
     </button>
   </mat-dialog-actions>

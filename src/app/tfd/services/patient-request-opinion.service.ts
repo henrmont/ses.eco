@@ -4,109 +4,115 @@ import { Observable } from 'rxjs';
 
 // Environments & Models
 import { environment } from '../../../environments/environment.development';
+import { ApiResponse } from '../../core/models/api-response.model';
+import { PatientRequestOpinion } from '../models/patient-request-opinion.model';
 import { PatientRequest } from '../models/patient-request.model';
 import { Professional } from '../models/professional.model';
-import { PatientRequestOpinion } from '../models/patient-request-opinion.model';
-import { ApiResponse } from '../../core/models/api-response.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class PatientRequestOpinionService {
-  // 🔒 Injeções e URL base configurada como imutável
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = `${environment.apiTfdUrl}/opinion`;
+  private readonly apiUrl = `${environment.apiTfdUrl}/opinions`;
 
-  // 🧹 Headers manuais removidos. O Interceptor gerencia o Token de forma global.
+  // ==========================================
+  // 1. CONSULTAS E LISTAGENS PRINCIPAIS
+  // ==========================================
 
-  // --- CONSULTAS / GETTERS ---
-
-  getPatientRequests(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/get-patient-requests`);
+  getPatientRequests(): Observable<PatientRequest[]> {
+    return this.http.get<PatientRequest[]>(`${this.apiUrl}/patient-requests`);
   }
 
-  getArchivePatientRequests(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/get-archive-patient-requests`);
+  getArchivePatientRequests(): Observable<PatientRequest[]> {
+    return this.http.get<PatientRequest[]>(`${this.apiUrl}/patient-requests/archived`);
   }
 
   getType(): Observable<string> {
-    return this.http.get<string>(`${this.apiUrl}/get-type`);
+    return this.http.get<string>(`${this.apiUrl}/professional-type`);
   }
 
-  getSocialProfessionals(): Observable<Professional[]> {
-    return this.http.get<Professional[]>(`${this.apiUrl}/get-social-professionals`);
+  getHistoryPatientRequests(reportId: number, patientRequestId: number): Observable<PatientRequest[]> {
+    return this.http.get<PatientRequest[]>(`${this.apiUrl}/reports/${reportId}/patient-requests/${patientRequestId}/history`);
   }
 
-  getOpinions(patient_request: number): Observable<PatientRequestOpinion[]> {
-    return this.http.get<PatientRequestOpinion[]>(`${this.apiUrl}/get-opinions/${patient_request}`);
+  // ==========================================
+  // 2. OPERAÇÕES DO PARECER (CRUD)
+  // ==========================================
+
+  getOpinions(patientRequestId: number): Observable<PatientRequestOpinion[]> {
+    return this.http.get<PatientRequestOpinion[]>(`${this.apiUrl}/patient-requests/${patientRequestId}`);
   }
 
-  getHistoryPatientRequests(report: number, patient_request: number): Observable<PatientRequest[]> {
-    return this.http.get<PatientRequest[]>(`${this.apiUrl}/get-history-patient-requests/${report}/${patient_request}`);
+  createOpinion(patientRequestId: number, data: PatientRequestOpinion): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/patient-requests/${patientRequestId}`, data);
   }
 
-  getCostAssistanceProfessionals(): Observable<Professional[]> {
-    return this.http.get<Professional[]>(`${this.apiUrl}/get-cost-assistance-professionals`);
+  updateOpinion(opinionId: number, data: PatientRequestOpinion): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/${opinionId}`, data);
   }
 
-  getTravelProfessionals(): Observable<Professional[]> {
-    return this.http.get<Professional[]>(`${this.apiUrl}/get-travel-professionals`);
+  deleteOpinion(opinionId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/${opinionId}`);
   }
 
-  downloadOpinion(opinion: number): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/download/${opinion}`, { responseType: 'blob' });
+  // ==========================================
+  // 3. TRAMITAÇÕES E PROCESSAMENTOS
+  // ==========================================
+
+  processPatientRequestToSocial(patientRequestId: number, data: Partial<PatientRequest>): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/patient-requests/${patientRequestId}/process-to-social`, data);
   }
 
-  // --- OPERAÇÕES DO PARECER (MUTATIONS) ---
-
-  createOpinion(patient_request: number, data: PatientRequestOpinion): Observable<ApiResponse> {
-    return this.http.post<ApiResponse>(`${this.apiUrl}/create-opinion/${patient_request}`, data);
+  processPatientRequestToCostAssistanceAndTravel(patientRequestId: number, data: Record<string, unknown>): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/patient-requests/${patientRequestId}/process-to-cost-and-travel`, data);
   }
 
-  updateOpinion(opinion: number, data: PatientRequestOpinion): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/update-opinion/${opinion}`, data);
-  }
-
-  deleteOpinion(opinion: number): Observable<ApiResponse> {
-    return this.http.delete<ApiResponse>(`${this.apiUrl}/delete-opinion/${opinion}`);
-  }
-
-  // --- MOVIMENTAÇÕES E FLUXOS ---
-
-  processPatientRequestToSocial(patient_request: number, data: PatientRequest): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/process-patient-request-to-social/${patient_request}`, data);
-  }
-
-  processPatientRequestToCostAssistanceAndTravel(patient_request: number, data: any): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/process-patient-request-to-cost-assistance-and-travel/${patient_request}`, data);
-  }
-
-  undoPatientRequest(patient_request: number, data: PatientRequest): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/undo-patient-request/${patient_request}`, data);
-  }
-
-  haltedPatientRequest(type: string, patient_request: number): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/halted-patient-request/${type}/${patient_request}`, {});
-  }
-
-  movePatientRequestFromOthers(type: string, patient_request: number): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-request-from-others/${type}/${patient_request}`, {});
-  }
-
-  movePatientRequestFromArchive(type: string, patient_request: number): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-request-from-archive/${type}/${patient_request}`, {});
-  }
-
-  movePatientRequestFromProcesses(type: string, patient_request: number): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/move-patient-request-from-processes/${type}/${patient_request}`, {});
-  }
-
-  archivePatientRequest(patient_request: number): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/archive-patient-request/${patient_request}`, {});
+  undoPatientRequest(patientRequestId: number, data: Record<string, unknown>): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/patient-requests/${patientRequestId}/undo`, data);
   }
 
   finishBackPatientRequest(type: string, patientRequestId: number): Observable<ApiResponse> {
-    return this.http.patch<ApiResponse>(`${this.apiUrl}/finish-back-patient-request/${type}/${patientRequestId}`, {});
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/patient-requests/${patientRequestId}/finish-back/${type}`, {});
   }
-  
+
+  // ==========================================
+  // 4. AÇÕES DE ESTADO, MOVIMENTAÇÕES E ARQUIVAMENTO
+  // ==========================================
+
+  archivePatientRequest(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/patient-requests/${patientRequestId}/archive`, {});
+  }
+
+  haltedPatientRequest(type: string, patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/patient-requests/${patientRequestId}/halted/${type}`, {});
+  }
+
+  movePatientRequestFromProcesses(type: string, patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/patient-requests/${patientRequestId}/move-from-processes/${type}`, {});
+  }
+
+  movePatientRequestFromArchive(type: string, patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/patient-requests/${patientRequestId}/move-from-archive/${type}`, {});
+  }
+
+  movePatientRequestFromOthers(type: string, patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/patient-requests/${patientRequestId}/move-from-others/${type}`, {});
+  }
+
+  // ==========================================
+  // 5. CONSULTAS DE PROFISSIONAIS AUXILIARES
+  // ==========================================
+
+  getSocialProfessionals(): Observable<Professional[]> {
+    return this.http.get<Professional[]>(`${this.apiUrl}/social-professionals`);
+  }
+
+  getCostAssistanceProfessionals(): Observable<Professional[]> {
+    return this.http.get<Professional[]>(`${this.apiUrl}/cost-assistance-professionals`);
+  }
+
+  getTravelProfessionals(): Observable<Professional[]> {
+    return this.http.get<Professional[]>(`${this.apiUrl}/travel-professionals`);
+  }
 }

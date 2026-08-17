@@ -1,17 +1,20 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { finalize } from 'rxjs';
+
+// Material Modules
 import { MatButtonModule } from '@angular/material/button';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { finalize } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MatSelectModule } from '@angular/material/select';
 
-import { PatientRequestOpinionService } from '../../../services/patient-request-opinion.service';
+// Services, Models e Interfaces
 import { MessageService } from '../../../../core/services/message-service';
+import { PatientRequestOpinionService } from '../../../services/patient-request-opinion.service';
 
 @Component({
   selector: 'app-patient-request-undo',
@@ -29,11 +32,13 @@ import { MessageService } from '../../../../core/services/message-service';
   ],
   templateUrl: './patient-request-undo.component.html',
   styleUrl: './patient-request-undo.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush // ⚡ Performance máxima com OnPush + Signals
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientRequestUndoComponent implements OnInit {
-  // Injeções de Dependência Dinâmicas
-  protected readonly data = inject(MAT_DIALOG_DATA);
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
+  protected readonly data = inject(MAT_DIALOG_DATA, { optional: true });
   private readonly fb = inject(FormBuilder);
   private readonly opinionService = inject(PatientRequestOpinionService);
   private readonly messageService = inject(MessageService);
@@ -41,8 +46,10 @@ export class PatientRequestUndoComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // 🎯 Mapeamento local das mensagens de erro padronizadas para a UI
-  protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
+  // ==========================================
+  // Mensagens de Erro por Controle
+  // ==========================================
+  protected readonly errorMessages: Record<string, Array<{ type: string; message: string }>> = {
     reason: [
       { type: 'required', message: 'A justificativa do retorno é obrigatória.' }
     ],
@@ -51,18 +58,26 @@ export class PatientRequestUndoComponent implements OnInit {
     ]
   };
 
-  // Formulário exposto ao template
-  protected undoForm!: FormGroup;
-
-  // Estados gerenciados reativamente via Signals
+  // ==========================================
+  // Estados Reativos via Signals
+  // ==========================================
   protected readonly isSubmitting = signal<boolean>(false);
 
+  // ==========================================
+  // FormGroups
+  // ==========================================
+  protected undoForm!: FormGroup;
+
+  // ==========================================
+  // Ciclo de Vida (Hooks)
+  // ==========================================
   ngOnInit(): void {
     this.initForm();
   }
 
-  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO E SUPORTE ---
-
+  // ==========================================
+  // Inicialização de Formulário
+  // ==========================================
   private initForm(): void {
     this.undoForm = this.fb.group({
       reason: [null, [Validators.required]],
@@ -70,8 +85,9 @@ export class PatientRequestUndoComponent implements OnInit {
     });
   }
 
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
-
+  // ==========================================
+  // Submissão
+  // ==========================================
   protected onSubmit(): void {
     if (this.undoForm.invalid) {
       this.undoForm.markAllAsTouched();
@@ -85,22 +101,24 @@ export class PatientRequestUndoComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck(); // ⚡ Força atualização imediata da interface no OnPush
+    this.cdr.markForCheck();
 
-    this.opinionService.undoPatientRequest(requestId, this.undoForm.getRawValue())
+    const payload = this.undoForm.getRawValue();
+
+    this.opinionService.undoPatientRequest(requestId, payload)
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);
-          this.cdr.markForCheck(); // ⚡ Garante o desligamento limpo do estado visual
+          this.cdr.markForCheck();
         }),
-        takeUntilDestroyed(this.destroyRef) // 🛡️ Proteção reativa contra memory leaks se o modal for fechado
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
         next: (response: any) => {
           this.messageService.showMessage(response?.message || 'Solicitação devolvida com sucesso!');
           this.dialogRef.close(true);
         },
-        error: (err) => {
+        error: err => {
           const fallbackError = 'Erro ao tentar devolver a solicitação.';
           this.messageService.showMessage(err?.error?.message || fallbackError);
         }

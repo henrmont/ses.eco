@@ -165,7 +165,7 @@ export class PatientRequestsPage implements OnInit, OnDestroy {
   }
 
   protected patientRequestProcessToMedical(patientRequest: PatientRequest): void {
-    this.openDialog(PatientRequestProcessToMedicalComponent, { patient_request: patientRequest }, '400px');
+    this.openDialog(PatientRequestProcessToMedicalComponent, { patient_request: patientRequest }, '500px');
   }
 
   protected patientRequestMoveFromProcesses(patientRequest: PatientRequest): void {

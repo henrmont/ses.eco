@@ -74,20 +74,20 @@ section {
 
     // --- Larguras das Colunas: Aba 1 (Minhas solicitações) ---
     th.mat-column-bookmark          { width: 3%; }
-    th.mat-column-name              { width: 30%; }
+    th.mat-column-name              { width: 25%; }
     th.mat-column-cns               { width: 17%; }
     th.mat-column-type              { width: 15%; }
-    th.mat-column-consultation_date { width: 12%; }
+    th.mat-column-consultation_date { width: 17%; }
     th.mat-column-status            { width: 5%; }
     th.mat-column-actions           { width: 18%; }
 
     // --- Larguras das Colunas: Aba 2 e Aba 3 (Em processo & Outras solicitações) ---
     &.process-table,
     &.others-table {
-      th.mat-column-name              { width: 30%; }
+      th.mat-column-name              { width: 25%; }
       th.mat-column-cns               { width: 18%; }
       th.mat-column-type              { width: 15%; }
-      th.mat-column-consultation_date { width: 12%; }
+      th.mat-column-consultation_date { width: 17%; }
       th.mat-column-responsible       { width: 17%; }
       th.mat-column-actions           { width: 8%; }
     }

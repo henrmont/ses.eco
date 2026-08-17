@@ -4,7 +4,7 @@
   display: flex;
   justify-content: center;
   width: 100%;
-  min-height: calc(100vh - #{$layout-header-height});
+  min-height: calc(100vh - $layout-header-height);
 }
 
 section {
@@ -18,7 +18,7 @@ section {
     margin-right: $spacing-sm;
   }
 
-  // Div container interna da tabela
+  // Container interno da tabela
   div.table {
     display: flex;
     flex-direction: column;
@@ -40,35 +40,21 @@ section {
     }
   }
 
-  // Estilização da Tabela
+  // Estilização da Tabela Angular Material
   table.mat-mdc-table {
     margin: 0 auto $spacing-sm auto;
-    width: 100%;
     background: $color-surface;
     border-radius: $radius-md; 
     overflow: hidden;
     box-shadow: $shadow-card; 
     border-collapse: separate;
 
-    tr.mat-mdc-header-row {
-      height: $material-field-outline-height;
-    }
-
-    tr.mat-mdc-row {
-      transition: background-color $transition-fast;
-
-      &:hover {
-        background-color: $color-hover-overlay;
-      }
-    }
-
-    th.mat-mdc-header-cell, 
-    td.mat-mdc-cell {
+    th, td {
       padding: $spacing-md $spacing-lg; 
       vertical-align: middle;
     }
 
-    th.mat-mdc-header-cell {
+    th {
       font-weight: $font-weight-semibold;
       background-color: $color-table-header-bg;
       color: $color-table-header-text;
@@ -76,67 +62,40 @@ section {
 
     .center {
       text-align: center;
-      
       div {
-        display: flex; 
-        justify-content: center;
-        gap: $spacing-xs;
+        @include flex-center($spacing-xs);
       }
     }
 
-    // Estados e Cores
+    // Estados Semânticos
     .valid { color: $color-success; }
     .invalid { color: $color-danger; }
     .bookmark, .warning { color: $color-warning; }
 
-    // Customizações de Larguras das Colunas do Parecer (Opinions)
-    th.mat-column-bookmark {
-      width: 4%;
+    // --- Larguras das Colunas: Aba 1 (Minhas solicitações) ---
+    th.mat-column-bookmark          { width: 3%; }
+    th.mat-column-name              { width: 25%; }
+    th.mat-column-cns               { width: 17%; }
+    th.mat-column-type              { width: 15%; }
+    th.mat-column-consultation_date { width: 17%; }
+    th.mat-column-status            { width: 5%; }
+    th.mat-column-actions           { width: 18%; }
+
+    // --- Larguras das Colunas: Aba 2 e Aba 3 (Em processo & Outras solicitações) ---
+    &.process-table,
+    &.others-table {
+      th.mat-column-name              { width: 25%; }
+      th.mat-column-cns               { width: 18%; }
+      th.mat-column-type              { width: 15%; }
+      th.mat-column-consultation_date { width: 17%; }
+      th.mat-column-responsible       { width: 17%; }
+      th.mat-column-actions           { width: 8%; }
     }
 
-    th.mat-column-name {
-      width: 25%;
-    }
-
-    th.mat-column-cns {
-      width: 18%;
-    }
-
-    th.mat-column-type {
-      width: 12%;
-    }
-
-    th.mat-column-consultation_date {
-      width: 15%;
-    }
-
-    th.mat-column-responsible {
-      width: 20%;
-    }
-
-    th.mat-column-status {
-      width: 6%;
-    }
-
-    th.bookmark-column-header {
-      width: 4%;
-    }
-
-    th.status-column-header {
-      width: 6%;
-    }
-
-    th.actions-column-header-owner {
-      width: 20%;
-    }
-
-    th.actions-column-header-others {
-      width: 10%;
-    }
-
+    // Alinha os botões com a lateral direita
     td.actions-cell {
       display: flex;
-      justify-content: center;
+      justify-content: flex-end;
       align-items: center;
       gap: $spacing-xs;
     }

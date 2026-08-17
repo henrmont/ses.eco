@@ -1,32 +1,35 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { finalize } from 'rxjs';
+import { Editor, NgxEditorModule, Toolbar } from 'ngx-editor';
+
+// Material Modules
 import { MatButtonModule } from '@angular/material/button';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { NgxEditorModule, Editor, Toolbar } from 'ngx-editor';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { finalize } from 'rxjs';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
-import { PatientRequestOpinionService } from '../../../services/patient-request-opinion.service';
+// Services e Models
 import { MessageService } from '../../../../core/services/message-service';
+import { PatientRequestOpinionService } from '../../../services/patient-request-opinion.service';
 
 @Component({
   selector: 'app-patient-request-opinion-create',
   standalone: true,
   imports: [
-    CommonModule, 
-    FormsModule, 
-    ReactiveFormsModule, 
-    MatDialogModule, 
-    MatButtonModule, 
-    MatFormFieldModule, 
-    MatInputModule, 
-    MatSlideToggleModule, 
-    NgxEditorModule, 
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSlideToggleModule,
+    NgxEditorModule,
     MatProgressSpinnerModule
   ],
   templateUrl: './patient-request-opinion-create.component.html',
@@ -34,7 +37,9 @@ import { MessageService } from '../../../../core/services/message-service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientRequestOpinionCreateComponent implements OnInit {
-  // Injeções de Dependência Dinâmicas
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly opinionService = inject(PatientRequestOpinionService);
@@ -43,15 +48,10 @@ export class PatientRequestOpinionCreateComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Estrutura do Formulário e Editor
-  protected opinionForm!: FormGroup;
-  protected editor!: Editor;
-  
-  // Estados gerenciados reativamente via Signals
-  protected readonly isSubmitting = signal<boolean>(false);
-
-  // 🎯 Mapeamento local das mensagens de erro padronizado para a UI
-  protected readonly errorMessages: { [key: string]: Array<{ type: string; message: string }> } = {
+  // ==========================================
+  // Mensagens de Erro por Controle
+  // ==========================================
+  protected readonly errorMessages: Record<string, Array<{ type: string; message: string }>> = {
     name: [
       { type: 'required', message: 'O título ou nome do parecer é obrigatório.' }
     ],
@@ -63,6 +63,10 @@ export class PatientRequestOpinionCreateComponent implements OnInit {
     ]
   };
 
+  // ==========================================
+  // Configuração do Editor de Texto Rich Text
+  // ==========================================
+  protected editor!: Editor;
   protected readonly toolbar: Toolbar = [
     ['bold', 'italic'],
     ['underline', 'strike'],
@@ -74,21 +78,35 @@ export class PatientRequestOpinionCreateComponent implements OnInit {
     ['align_left', 'align_center', 'align_right', 'align_justify'],
     ['horizontal_rule', 'format_clear', 'indent', 'outdent'],
     ['superscript', 'subscript'],
-    ['undo', 'redo'],
+    ['undo', 'redo']
   ];
 
+  // ==========================================
+  // Estados Reativos via Signals
+  // ==========================================
+  protected readonly isSubmitting = signal<boolean>(false);
+
+  // ==========================================
+  // FormGroups
+  // ==========================================
+  protected opinionForm!: FormGroup;
+
+  // ==========================================
+  // Ciclo de Vida (Hooks)
+  // ==========================================
   ngOnInit(): void {
     this.initForm();
     this.initEditor();
   }
 
-  // --- MÉTODOS PRIVADOS DE INICIALIZAÇÃO E SUPORTE ---
-
+  // ==========================================
+  // Inicialização de Form e Editor
+  // ==========================================
   private initForm(): void {
     this.opinionForm = this.fb.group({
       name: [null, [Validators.required]],
       content: [null, [Validators.required]],
-      is_approved: [false, [Validators.required]],
+      is_approved: [false, [Validators.required]]
     });
   }
 
@@ -101,8 +119,9 @@ export class PatientRequestOpinionCreateComponent implements OnInit {
     });
   }
 
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
-
+  // ==========================================
+  // Submissão
+  // ==========================================
   protected onSubmit(): void {
     const requestId = this.data?.patient_request?.id;
 
@@ -117,7 +136,7 @@ export class PatientRequestOpinionCreateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck(); // Sincroniza imediatamente o estado visual no DOM
+    this.cdr.markForCheck();
 
     this.opinionService.createOpinion(requestId, this.opinionForm.value)
       .pipe(
@@ -135,7 +154,7 @@ export class PatientRequestOpinionCreateComponent implements OnInit {
         error: (err) => {
           const fallbackError = 'Ocorreu um erro ao processar a criação do parecer.';
           this.messageService.showMessage(err?.error?.message || fallbackError);
-        },
+        }
       });
   }
 }

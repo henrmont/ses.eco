@@ -9,7 +9,7 @@
       </div>
     } @else {
       <div class="table-responsive">
-        <table mat-table [dataSource]="dataSource()">
+        <table mat-table [dataSource]="dataSource">
             
           <!-- Coluna Nome/Título -->
           <ng-container matColumnDef="name">
@@ -44,7 +44,7 @@
                   mat-icon-button 
                   type="button" 
                   matTooltip="Detalhes do parecer" 
-                  (click)="showOpinion(element)"
+                  (click)="opinionDetail(element)"
                 >
                   <mat-icon color="primary">visibility</mat-icon>
                 </button>
@@ -53,7 +53,7 @@
                   mat-icon-button 
                   type="button" 
                   matTooltip="Atualizar parecer" 
-                  (click)="updateOpinion(element)"
+                  (click)="opinionUpdate(element)"
                   [disabled]="checkPermissions('tfd/parecer atualizar') || !element.my_opinion"
                 >
                   <mat-icon class="icon-edit">drive_file_rename_outline</mat-icon>
@@ -63,7 +63,7 @@
                   mat-icon-button 
                   type="button" 
                   matTooltip="Deletar parecer" 
-                  (click)="deleteOpinion(element)"
+                  (click)="opinionDelete(element)"
                   [disabled]="checkPermissions('tfd/parecer deletar') || !element.my_opinion"
                 >
                   <mat-icon color="warn">delete</mat-icon>
@@ -90,13 +90,13 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button mat-button type="button" [mat-dialog-close]="false">Cancelar</button>
+  <button mat-button type="button" [mat-dialog-close]="false">Fechar</button>
   <button 
     mat-flat-button 
     color="primary" 
     type="button" 
     [disabled]="checkPermissions('tfd/parecer criar') || isLoading()" 
-    (click)="createOpinion()"
+    (click)="opinionCreate()"
   >
     <mat-icon>add</mat-icon>
     Novo parecer

@@ -33,7 +33,7 @@ type PatientRequestAttachmentDialogData =
 // Constantes Locais
 const TFD_PATIENT_REQUESTS_CHANNEL = new BroadcastChannel('tfd-patient-requests-channel');
 const TFD_COST_ASSISTANCES_CHANNEL = new BroadcastChannel('tfd-cost-assistances-channel');
-const TFD_TRAVELS_CHANNEL = new BroadcastChannel('tfd-travels-channel');
+const TFD_OPINIONS_CHANNEL = new BroadcastChannel('tfd-opinions-channel');
 
 @Component({
   selector: 'app-patient-request-attachments',
@@ -81,7 +81,7 @@ export class PatientRequestAttachmentsComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     TFD_PATIENT_REQUESTS_CHANNEL.close();
     TFD_COST_ASSISTANCES_CHANNEL.close();
-    TFD_TRAVELS_CHANNEL.close();
+    TFD_OPINIONS_CHANNEL.close();
   }
 
   // ==========================================
@@ -175,7 +175,7 @@ export class PatientRequestAttachmentsComponent implements OnInit, OnDestroy {
           if (emitGlobalBroadcast) {
             TFD_PATIENT_REQUESTS_CHANNEL.postMessage('update');
             TFD_COST_ASSISTANCES_CHANNEL.postMessage('update');
-            TFD_TRAVELS_CHANNEL.postMessage('update');
+            TFD_OPINIONS_CHANNEL.postMessage('update');
           }
           this.cdr.markForCheck();
         }

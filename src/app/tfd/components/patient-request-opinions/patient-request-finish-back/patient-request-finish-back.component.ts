@@ -1,11 +1,14 @@
-import { ChangeDetectionStrategy, Component, inject, ChangeDetectorRef, DestroyRef, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs/operators';
+
+// Material Modules
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { finalize } from 'rxjs/operators';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
+// Services e Models
 import { MessageService } from '../../../../core/services/message-service';
 import { PatientRequestOpinionService } from '../../../services/patient-request-opinion.service';
 
@@ -13,9 +16,9 @@ import { PatientRequestOpinionService } from '../../../services/patient-request-
   selector: 'app-patient-request-finish-back',
   standalone: true,
   imports: [
-    CommonModule, 
-    MatDialogModule, 
-    MatButtonModule, 
+    CommonModule,
+    MatDialogModule,
+    MatButtonModule,
     MatProgressSpinnerModule
   ],
   templateUrl: './patient-request-finish-back.component.html',
@@ -23,7 +26,9 @@ import { PatientRequestOpinionService } from '../../../services/patient-request-
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientRequestFinishBackComponent {
-  // Injeções de Dependência Dinâmicas via inject()
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
   protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly opinionService = inject(PatientRequestOpinionService);
   private readonly messageService = inject(MessageService);
@@ -31,11 +36,14 @@ export class PatientRequestFinishBackComponent {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Estados gerenciados reativamente via Signals
+  // ==========================================
+  // Estados Reativos via Signals
+  // ==========================================
   protected readonly isSubmitting = signal<boolean>(false);
 
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
-
+  // ==========================================
+  // Submissão / Finalização de Retorno
+  // ==========================================
   /**
    * Finaliza o retorno da solicitação no contexto de Pareceres (Opinion)
    */
@@ -49,15 +57,15 @@ export class PatientRequestFinishBackComponent {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck(); // ⚡ Força a atualização do DOM para pintar o spinner imediatamente no OnPush
+    this.cdr.markForCheck();
 
     this.opinionService.finishBackPatientRequest(profileType, requestId)
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);
-          this.cdr.markForCheck(); // ⚡ Garante o desligamento do loading visual na tela
+          this.cdr.markForCheck();
         }),
-        takeUntilDestroyed(this.destroyRef) // 🛡️ Proteção reativa contra memory leaks se fecharem o modal rápido
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
         next: (response: any) => {
@@ -67,7 +75,7 @@ export class PatientRequestFinishBackComponent {
         error: (err) => {
           const fallbackError = 'Ocorreu um erro ao tentar finalizar o retorno da solicitação.';
           this.messageService.showMessage(err?.error?.message || fallbackError);
-        },
+        }
       });
   }
 }

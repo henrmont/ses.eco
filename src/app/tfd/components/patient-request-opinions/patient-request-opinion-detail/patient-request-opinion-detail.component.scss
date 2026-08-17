@@ -5,8 +5,8 @@
 }
 
 mat-dialog-content {
-  overflow-y: auto !important; 
-  padding-top: $spacing-sm !important;
+  @include dialog-content;
+  padding-top: $spacing-modal-pt;
 }
 
 .details-container {
@@ -21,7 +21,6 @@ mat-card {
   background: $color-card-bg;
   border-radius: $radius-md; 
   box-shadow: $shadow-soft; 
-  border: 1px solid $color-border-subtle;
 }
 
 // Mensagem amigável para blocos ou listas vazias nos cards
