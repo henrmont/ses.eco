@@ -37,12 +37,12 @@ export class PatientService {
     return this.http.get<Patient[]>(`${this.apiUrl}/archived`);
   }
 
-  createPatient(data: Partial<Patient>): Observable<ApiResponse> {
-    return this.http.post<ApiResponse>(`${this.apiUrl}`, this.mountFormData(data));
+  createPatient(data: Patient): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}`, this.mountFormData(data as unknown as Record<string, unknown>));
   }
 
-  updatePatient(patientCareId: number, data: Partial<Patient>): Observable<ApiResponse> {
-    return this.http.post<ApiResponse>(`${this.apiUrl}/${patientCareId}`, this.mountFormData(data));
+  updatePatient(patientCareId: number, data: Patient): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/${patientCareId}`, this.mountFormData(data as unknown as Record<string, unknown>));
   }
 
   archivePatient(patientCareId: number): Observable<ApiResponse> {
@@ -73,12 +73,12 @@ export class PatientService {
     return this.http.get<PatientEscort[]>(`${this.apiUrl}/${patientCareId}/escorts`);
   }
 
-  createPatientEscort(patientCareId: number, data: Partial<PatientEscort>): Observable<ApiResponse> {
-    return this.http.post<ApiResponse>(`${this.apiUrl}/${patientCareId}/escorts`, this.mountFormData(data));
+  createPatientEscort(patientCareId: number, data: PatientEscort): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/${patientCareId}/escorts`, this.mountFormData(data as unknown as Record<string, unknown>));
   }
 
-  updatePatientEscort(escortId: number, data: Partial<PatientEscort>): Observable<ApiResponse> {
-    return this.http.post<ApiResponse>(`${this.apiUrl}/escorts/${escortId}`, this.mountFormData(data));
+  updatePatientEscort(escortId: number, data: PatientEscort): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/escorts/${escortId}`, this.mountFormData(data as unknown as Record<string, unknown>));
   }
 
   deletePatientEscort(patientCareEscortId: number): Observable<ApiResponse> {
@@ -97,11 +97,11 @@ export class PatientService {
     return this.http.get<CidOption[]>(`${this.apiUrl}/${patientCareId}/cids`);
   }
 
-  createPatientReport(patientCareId: number, data: Partial<PatientReport>): Observable<ApiResponse> {
+  createPatientReport(patientCareId: number, data: PatientReport): Observable<ApiResponse> {
     return this.http.post<ApiResponse>(`${this.apiUrl}/${patientCareId}/reports`, data);
   }
 
-  updatePatientReport(reportId: number, data: Partial<PatientReport>): Observable<ApiResponse> {
+  updatePatientReport(reportId: number, data: PatientReport): Observable<ApiResponse> {
     return this.http.patch<ApiResponse>(`${this.apiUrl}/reports/${reportId}`, data);
   }
 
@@ -117,12 +117,12 @@ export class PatientService {
     return this.http.get<ReportAttachment[]>(`${this.apiUrl}/reports/${reportId}/attachments`);
   }
 
-  createReportAttachment(reportId: number, data: Partial<ReportAttachment>): Observable<ApiResponse> {
-    return this.http.post<ApiResponse>(`${this.apiUrl}/reports/${reportId}/attachments`, this.mountFormData(data));
+  createReportAttachment(reportId: number, data: ReportAttachment): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/reports/${reportId}/attachments`, this.mountFormData(data as unknown as Record<string, unknown>));
   }
 
-  updateReportAttachment(reportAttachmentId: number, data: Partial<ReportAttachment>): Observable<ApiResponse> {
-    return this.http.post<ApiResponse>(`${this.apiUrl}/attachments/${reportAttachmentId}`, this.mountFormData(data));
+  updateReportAttachment(reportAttachmentId: number, data: ReportAttachment): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/attachments/${reportAttachmentId}`, this.mountFormData(data as unknown as Record<string, unknown>));
   }
 
   deleteReportAttachment(reportAttachmentId: number): Observable<ApiResponse> {
