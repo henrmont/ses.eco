@@ -81,7 +81,7 @@
             <strong>Médico:</strong> 
             <span>{{ data?.patient_request?.medical_professional?.name ?? 'Nenhum profissional selecionado' }}</span>
             @if (data?.patient_request?.medical_approved_opinion) {
-              <button mat-icon-button type="button" matTooltip="Detalhes do parecer médico" (click)="showOpinion(data.patient_request.medical_approved_opinion)">
+              <button mat-icon-button type="button" matTooltip="Detalhes do parecer médico" (click)="patientRequestOpinionDetail(data.patient_request.medical_approved_opinion)">
                 <mat-icon>visibility</mat-icon>
               </button>
             }
@@ -90,7 +90,7 @@
             <strong>Assistente Social:</strong> 
             <span>{{ data?.patient_request?.social_professional?.name ?? 'Nenhum profissional selecionado' }}</span>
             @if (data?.patient_request?.social_approved_opinion) {
-              <button mat-icon-button type="button" matTooltip="Detalhes do parecer social" (click)="showOpinion(data.patient_request.social_approved_opinion)">
+              <button mat-icon-button type="button" matTooltip="Detalhes do parecer social" (click)="patientRequestOpinionDetail(data.patient_request.social_approved_opinion)">
                 <mat-icon>visibility</mat-icon>
               </button>
             }
@@ -156,7 +156,7 @@
             <div class="action-cell">
               <strong>Trecho:</strong> 
               <span>{{ item?.origin ?? 'N/I' }} - {{ item?.destination ?? 'N/I' }}</span>
-              <button mat-icon-button type="button" matTooltip="Visualizar viagem" (click)="showTravel(item)">
+              <button mat-icon-button type="button" matTooltip="Visualizar viagem" (click)="patientRequestTravelDetail(item)">
                 <mat-icon>visibility</mat-icon>
               </button>
             </div>

@@ -58,12 +58,12 @@ export const tfdRoutes: Routes = [
     },
     {
         path: 'passagens',
-        loadComponent: () => import('./../pages/travels-page/travels-page').then( m => m.TravelsPage),
+        loadComponent: () => import('./../pages/patient-request-travels-page/patient-request-travels.page').then( m => m.PatientRequestTravelsPage),
         data: { permission: 'tfd/passagem listar' } // Adicionado
     },
     {
         path: 'arquivo-passagens',
-        loadComponent: () => import('./../pages/archive-travel-patient-requests-page/archive-travel-patient-requests-page').then( m => m.ArchiveTravelPatientRequestsPage),
+        loadComponent: () => import('./../pages/archive-patient-request-travels-page/archive-patient-request-travels.page').then( m => m.ArchivePatientRequestTravelsPage),
         data: { permission: 'tfd/passagem listar' } // Adicionado
     },
     {

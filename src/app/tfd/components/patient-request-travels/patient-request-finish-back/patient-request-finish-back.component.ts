@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { finalize } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 
 // Material Modules
 import { MatButtonModule } from '@angular/material/button';
@@ -10,10 +10,10 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 // Services e Models
 import { MessageService } from '../../../../core/services/message-service';
-import { PatientRequestOpinionService } from '../../../services/patient-request-opinion.service';
+import { PatientRequestTravelService } from '../../../services/patient-request-travel.service';
 
 @Component({
-  selector: 'app-patient-request-halted',
+  selector: 'app-patient-request-finish-back',
   standalone: true,
   imports: [
     CommonModule,
@@ -21,18 +21,18 @@ import { PatientRequestOpinionService } from '../../../services/patient-request-
     MatButtonModule,
     MatProgressSpinnerModule
   ],
-  templateUrl: './patient-request-halted.component.html',
-  styleUrl: './patient-request-halted.component.scss',
+  templateUrl: './patient-request-finish-back.component.html',
+  styleUrl: './patient-request-finish-back.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class PatientRequestHaltedComponent {
+export class PatientRequestFinishBackComponent {
   // ==========================================
   // Injeção de Dependências
   // ==========================================
   protected readonly data = inject(MAT_DIALOG_DATA);
-  private readonly opinionService = inject(PatientRequestOpinionService);
+  private readonly travelService = inject(PatientRequestTravelService);
   private readonly messageService = inject(MessageService);
-  private readonly dialogRef = inject(MatDialogRef<PatientRequestHaltedComponent>);
+  private readonly dialogRef = inject(MatDialogRef<PatientRequestFinishBackComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -42,24 +42,23 @@ export class PatientRequestHaltedComponent {
   protected readonly isSubmitting = signal<boolean>(false);
 
   // ==========================================
-  // Submissão / Sobrestamento
+  // Submissão / Finalização de Retorno
   // ==========================================
   /**
-   * Dispara a requisição para paralisar/sobrestar a solicitação do parecerista (médico/social)
+   * Finaliza o retorno da solicitação no contexto de Viagens
    */
   protected onSubmit(): void {
     const requestId = this.data?.patient_request?.id;
-    const profileType = this.data?.type;
 
     if (!requestId) {
-      this.messageService.showMessage('Identificador da solicitação inválido.');
+      this.messageService.showMessage('Identificador da solicitação não encontrado.');
       return;
     }
 
     this.isSubmitting.set(true);
     this.cdr.markForCheck();
 
-    this.opinionService.haltedPatientRequest(profileType, requestId)
+    this.travelService.finishBackPatientRequest(requestId)
       .pipe(
         finalize(() => {
           this.isSubmitting.set(false);
@@ -68,12 +67,12 @@ export class PatientRequestHaltedComponent {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
-        next: (response) => {
-          this.messageService.showMessage(response?.message || 'Status de sobrestamento atualizado!');
+        next: (response: any) => {
+          this.messageService.showMessage(response?.message || 'Retorno da solicitação finalizado com sucesso!');
           this.dialogRef.close(true);
         },
         error: (err) => {
-          const fallbackError = 'Ocorreu um erro ao tentar atualizar o sobrestamento.';
+          const fallbackError = 'Ocorreu um erro ao tentar finalizar o retorno da solicitação.';
           this.messageService.showMessage(err?.error?.message || fallbackError);
         }
       });

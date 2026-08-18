@@ -18,7 +18,7 @@ import { StorageService } from '../../../../core/services/storage-service';
 import { PatientCare } from '../../../models/patient-care.model';
 import { PatientReport } from '../../../models/patient-report.model';
 import { PatientRequestOpinion } from '../../../models/patient-request-opinion.model';
-import { Travel } from '../../../models/travel';
+import { PatientRequestTravel } from '../../../models/patient-request-travel.model';
 import { CostAssistance } from '../../../models/cost-assistance';
 import { Accountability } from '../../../models/accountability';
 import { Patient } from '../../../models/patient.model';
@@ -27,7 +27,7 @@ import { Patient } from '../../../models/patient.model';
 import { PatientDetailComponent } from '../../patient/patient-detail/patient-detail.component';
 import { PatientReportDetailComponent } from '../../patient/patient-report-detail/patient-report-detail.component';
 import { PatientRequestOpinionDetailComponent } from '../../patient-request-opinions/patient-request-opinion-detail/patient-request-opinion-detail.component';
-import { ShowTravelComponent } from '../../travel/show-travel-component/show-travel-component';
+import { PatientRequestTravelDetailComponent } from '../../patient-request-travels/patient-request-travel-detail/patient-request-travel-detail.component';
 import { ShowCostAssistanceComponent } from '../../cost-assistance/show-cost-assistance-component/show-cost-assistance-component';
 import { ShowAccountabilityComponent } from '../../accountability/show-accountability-component/show-accountability-component';
 
@@ -37,7 +37,7 @@ type PatientRequestSubDialogData =
   | { patient_care: PatientCare }
   | { patient_report: PatientReport }
   | { opinion: PatientRequestOpinion }
-  | { travel: Travel }
+  | { travel: PatientRequestTravel }
   | { cost_assistance: CostAssistance }
   | { accountability: Accountability };
 
@@ -117,14 +117,14 @@ export class PatientRequestDetailComponent {
     this.openSubDialog(PatientReportDetailComponent, { patient_report: patientReport }, '800px');
   }
 
-  protected showOpinion(opinion: PatientRequestOpinion): void {
+  protected patientRequestOpinionDetail(opinion: PatientRequestOpinion): void {
     if (!opinion) return;
     this.openSubDialog(PatientRequestOpinionDetailComponent, { opinion }, '1200px', '700px');
   }
 
-  protected showTravel(travel: Travel): void {
+  protected patientRequestTravelDetail(travel: PatientRequestTravel): void {
     if (!travel) return;
-    this.openSubDialog(ShowTravelComponent, { travel }, '800px');
+    this.openSubDialog(PatientRequestTravelDetailComponent, { travel }, '800px');
   }
 
   protected showCostAssistance(costAssistance: CostAssistance): void {

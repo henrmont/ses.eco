@@ -20,7 +20,7 @@ import { DatasusService } from '../../services/datasus-service';
 import { CreateHospitalUnityComponent } from '../../components/hospital-unity/create-hospital-unity-component/create-hospital-unity-component';
 import { PatientCreateComponent } from '../../components/patient/patient-create/patient-create.component';
 import { PatientRequestCreateComponent } from '../../components/patient-request/patient-request-create/patient-request-create.component';
-import { ImportTravelsComponent } from '../../components/travel/import-travels-component/import-travels-component';
+import { PatientRequestTravelsImportComponent } from '../../components/patient-request-travels/patient-request-travels-import/patient-request-travels-import.component';
 import { UserCreateComponent } from '../../components/user/user-create/user-create.component';
 import { RoleCreateComponent } from '../../components/role/role-create/role-create.component';
 
@@ -207,7 +207,7 @@ export class TfdLayout {
       requiredRoles: ['paciente listar', 'paciente criar'],
       items: [
         { label: 'Pacientes', icon: 'personal_injury', permissions: ['paciente listar'], routerLink: ['pacientes'] },
-        { label: 'Novo paciente', icon: 'person_add', permissions: ['paciente criar'], action: () => this.createPatient() },
+        { label: 'Novo paciente', icon: 'person_add', permissions: ['paciente criar'], action: () => this.patientCreate() },
         { label: 'Arquivo', icon: 'inventory_2', permissions: ['paciente listar'], routerLink: ['arquivo-pacientes'] },
       ]
     },
@@ -216,7 +216,7 @@ export class TfdLayout {
       requiredRoles: ['solicitação listar', 'solicitação criar'],
       items: [
         { label: 'Solicitações', icon: 'assignment', permissions: ['solicitação listar'], routerLink: ['solicitacoes'] },
-        { label: 'Nova solicitação', icon: 'post_add', permissions: ['solicitação criar'], action: () => this.createPatientRequest() },
+        { label: 'Nova solicitação', icon: 'post_add', permissions: ['solicitação criar'], action: () => this.patientRequestCreate() },
       ]
     },
     {
@@ -232,7 +232,7 @@ export class TfdLayout {
       requiredRoles: ['passagem listar', 'passagem criar'],
       items: [
         { label: 'Viagens', icon: 'luggage', permissions: ['passagem listar'], routerLink: ['passagens'] },
-        { label: 'Importar passagens', icon: 'connecting_airports', permissions: ['passagem criar'], action: () => this.importTravels() },
+        { label: 'Importar passagens', icon: 'connecting_airports', permissions: ['passagem criar'], action: () => this.patientRequestTravelsImport() },
         { label: 'Arquivo', icon: 'inventory_2', permissions: ['passagem listar'], routerLink: ['arquivo-passagens'] },
       ]
     },
@@ -277,15 +277,15 @@ export class TfdLayout {
     this.openDialog(CreateHospitalUnityComponent, '500px', 'auto', CHANNELS.HOSPITALS);
   }
         
-  protected createPatient(): void {
+  protected patientCreate(): void {
     this.openDialog(PatientCreateComponent, '1200px', '700px', CHANNELS.PATIENTS);
   }
 
-  protected createPatientRequest(): void {
+  protected patientRequestCreate(): void {
     this.openDialog(PatientRequestCreateComponent, '800px', 'auto', CHANNELS.REQUESTS);
   }
 
-  protected importTravels(): void {
-    this.openDialog(ImportTravelsComponent, '400px', 'auto', CHANNELS.TRAVELS);
+  protected patientRequestTravelsImport(): void {
+    this.openDialog(PatientRequestTravelsImportComponent, '400px', 'auto', CHANNELS.TRAVELS);
   }
 }
