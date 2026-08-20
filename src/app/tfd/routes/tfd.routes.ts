@@ -83,12 +83,12 @@ export const tfdRoutes: Routes = [
     },
     {
         path: 'pagamentos',
-        loadComponent: () => import('./../pages/payments-page/payments-page').then( m => m.PaymentsPage),
+        loadComponent: () => import('./../pages/payments-page/payments.page').then( m => m.PaymentsPage),
         data: { permission: 'tfd/pagamento listar' } // Adicionado
     },
     {
         path: 'arquivo-pagamentos',
-        loadComponent: () => import('./../pages/archive-payment-patient-requests-page/archive-payment-patient-requests-page').then( m => m.ArchivePaymentPatientRequestsPage),
+        loadComponent: () => import('./../pages/archive-payments-page/archive-payments.page').then( m => m.ArchivePaymentsPage),
         data: { permission: 'tfd/pagamento listar' } // Adicionado
     },
 ];

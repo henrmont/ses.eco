@@ -9,7 +9,7 @@ mat-dialog-content {
   padding-top: $spacing-modal-pt;
 }
 
-// Container do formulário em formato flow
+// Container do formulário estruturado
 .stepper {
   margin-top: $spacing-form-gap; 
   display: flex; 
@@ -17,7 +17,7 @@ mat-dialog-content {
   gap: $spacing-form-gap;
 }
 
-// Estrutura de Linhas com Grid Reativo
+// Estrutura base de Linhas em Grid
 .line {
   display: grid; 
   grid-template-columns: var(--grid-cols, 1fr); 
@@ -26,7 +26,6 @@ mat-dialog-content {
   align-items: start;
   min-height: $material-field-outline-height;
 
-  // Mapeamento dinâmico de colunas
   &.cols-1-col { 
     --grid-cols: 1fr; 
   }
