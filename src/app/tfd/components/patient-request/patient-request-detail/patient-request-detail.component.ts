@@ -19,8 +19,8 @@ import { PatientCare } from '../../../models/patient-care.model';
 import { PatientReport } from '../../../models/patient-report.model';
 import { PatientRequestOpinion } from '../../../models/patient-request-opinion.model';
 import { PatientRequestTravel } from '../../../models/patient-request-travel.model';
-import { CostAssistance } from '../../../models/cost-assistance';
-import { Accountability } from '../../../models/accountability';
+import { PatientRequestCostAssistance } from '../../../models/patient-request-cost-assistance.model';
+import { PatientRequestAccountability } from '../../../models/patient-request-accountability.model';
 import { Patient } from '../../../models/patient.model';
 
 // Sub-dialogs
@@ -28,8 +28,8 @@ import { PatientDetailComponent } from '../../patient/patient-detail/patient-det
 import { PatientReportDetailComponent } from '../../patient/patient-report-detail/patient-report-detail.component';
 import { PatientRequestOpinionDetailComponent } from '../../patient-request-opinions/patient-request-opinion-detail/patient-request-opinion-detail.component';
 import { PatientRequestTravelDetailComponent } from '../../patient-request-travels/patient-request-travel-detail/patient-request-travel-detail.component';
-import { ShowCostAssistanceComponent } from '../../cost-assistance/show-cost-assistance-component/show-cost-assistance-component';
-import { ShowAccountabilityComponent } from '../../accountability/show-accountability-component/show-accountability-component';
+import { PatientRequestCostAssistanceDetailComponent } from '../../patient-request-cost-assistances/patient-request-cost-assistance-detail/patient-request-cost-assistance-detail.component';
+import { PatientRequestAccountabilityDetailComponent } from '../../patient-request-accountabilities/patient-request-accountability-detail/patient-request-accountability-detail.component';
 
 // Define o tipo aceito para as propriedades do Modal
 type PatientRequestSubDialogData =
@@ -38,8 +38,8 @@ type PatientRequestSubDialogData =
   | { patient_report: PatientReport }
   | { opinion: PatientRequestOpinion }
   | { travel: PatientRequestTravel }
-  | { cost_assistance: CostAssistance }
-  | { accountability: Accountability };
+  | { cost_assistance: PatientRequestCostAssistance }
+  | { accountability: PatientRequestAccountability };
 
 @Component({
   selector: 'app-patient-request-detail',
@@ -127,13 +127,13 @@ export class PatientRequestDetailComponent {
     this.openSubDialog(PatientRequestTravelDetailComponent, { travel }, '800px');
   }
 
-  protected showCostAssistance(costAssistance: CostAssistance): void {
+  protected showCostAssistance(costAssistance: PatientRequestCostAssistance): void {
     if (!costAssistance) return;
-    this.openSubDialog(ShowCostAssistanceComponent, { cost_assistance: costAssistance }, '800px');
+    this.openSubDialog(PatientRequestCostAssistanceDetailComponent, { cost_assistance: costAssistance }, '800px');
   }
 
-  protected showAccountability(accountability: Accountability): void {
+  protected showAccountability(accountability: PatientRequestAccountability): void {
     if (!accountability) return;
-    this.openSubDialog(ShowAccountabilityComponent, { accountability }, '800px');
+    this.openSubDialog(PatientRequestAccountabilityDetailComponent, { accountability }, '800px');
   }
 }

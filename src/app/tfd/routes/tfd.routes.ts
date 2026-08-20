@@ -68,17 +68,17 @@ export const tfdRoutes: Routes = [
     },
     {
         path: 'ajudas-de-custo',
-        loadComponent: () => import('./../pages/cost-assistances-page/cost-assistances-page').then( m => m.CostAssistancesPage),
+        loadComponent: () => import('./../pages/patient-request-cost-assistances-page/patient-request-cost-assistances.page').then( m => m.PatientRequestCostAssistancesPage),
         data: { permission: 'tfd/ajuda de custo listar' } // Adicionado
     },
     {
         path: 'prestacoes-de-conta',
-        loadComponent: () => import('./../pages/accountabilities-page/accountabilities-page').then( m => m.AccountabilitiesPage),
+        loadComponent: () => import('./../pages/patient-request-accountabilities-page/patient-request-accountabilities.page').then( m => m.PatientRequestAccountabilitiesPage),
         data: { permission: 'tfd/ajuda de custo listar' } // Adicionado
     },
     {
-        path: 'arquivo-prestacoes-de-conta',
-        loadComponent: () => import('./../pages/archive-accountability-patient-requests-page/archive-accountability-patient-requests-page').then( m => m.ArchiveAccountabilityPatientRequestsPage),
+        path: 'arquivo-ajudas-de-custo',
+        loadComponent: () => import('./../pages/archive-patient-request-cost-assistances-page/archive-patient-request-cost-assistances.page').then( m => m.ArchivePatientRequestCostAssistancesPage),
         data: { permission: 'tfd/ajuda de custo listar' } // Adicionado
     },
     {

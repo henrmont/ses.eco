@@ -242,7 +242,7 @@ export class TfdLayout {
       items: [
         { label: 'Ajuda de custo', icon: 'price_check', permissions: ['ajuda de custo listar'], routerLink: ['ajudas-de-custo'] },
         { label: 'Prestação de contas', icon: 'receipt_long', permissions: ['ajuda de custo listar'], routerLink: ['prestacoes-de-conta'] },
-        { label: 'Arquivo', icon: 'inventory_2', permissions: ['ajuda de custo listar'], routerLink: ['arquivo-prestacoes-de-conta'] }
+        { label: 'Arquivo', icon: 'inventory_2', permissions: ['ajuda de custo listar'], routerLink: ['arquivo-ajudas-de-custo'] }
       ]
     },
     {

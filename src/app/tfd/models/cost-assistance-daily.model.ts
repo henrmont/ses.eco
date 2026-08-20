@@ -1,10 +1,12 @@
 import { PatientRequestCostAssistance } from "./patient-request-cost-assistance.model";
+import { DailyCost } from "./daily-cost.model";
 
-export interface Payment {
+export interface CostAssistanceDaily {
     id: number,
     cost_assistance_id: number,
-    name: string,
-    description: string,
+    daily_cost_id: number,
+    amount: number,
+    partial?: number,
     cost_assistance: PatientRequestCostAssistance,
-    status: boolean
+    daily_cost: DailyCost
 }
