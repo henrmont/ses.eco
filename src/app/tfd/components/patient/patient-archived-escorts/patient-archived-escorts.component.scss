@@ -1,19 +1,12 @@
 @use 'variables' as *;
 
 :host {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  overflow: hidden; 
+  @include dialog-base;
 }
 
 mat-dialog-content {
-  overflow-y: auto !important; 
-  padding-top: $spacing-sm !important;
-}
-
-mat-dialog-actions {
-  gap: $spacing-lg; 
+  @include dialog-content;
+  padding-top: $spacing-modal-pt;
 }
 
 // Container do Spinner de Carregamento
@@ -31,6 +24,7 @@ mat-accordion {
   mat-expansion-panel.accordion {
     background: $color-surface;
     border-radius: $radius-md !important;
+    border: 1px solid $color-expansion-border;
     overflow: hidden;
     box-shadow: $shadow-soft !important;
 
@@ -40,35 +34,24 @@ mat-accordion {
       
       mat-panel-title {
         color: $color-text-main;
-      }
-
-      mat-panel-description {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        width: 100%;
-        color: $color-text-variant;
-        
-        span {
-          font-size: $font-size-body;
-        }
+        font-size: $font-size-body;
       }
     }
   }
 }
 
-// Container interno dos Cards de detalhe do acompanhante
+// Container interno dos Cards de detalhe
 .details-container {
   padding: $spacing-lg 0 0;
   display: flex;
   flex-direction: column;
   gap: $spacing-xxl; 
+}
 
-  mat-card {
-    background: $color-card-bg;
-    border-radius: $radius-md; 
-    box-shadow: $shadow-soft; 
-  }
+mat-card {
+  background: $color-card-bg;
+  border-radius: $radius-md; 
+  box-shadow: $shadow-soft; 
 }
 
 // Grid de dados
@@ -78,6 +61,7 @@ mat-accordion {
   padding: 0 $spacing-md; 
   align-items: center; 
   color: $color-text-main;
+  font-size: $font-size-body;
   min-height: $line-height-min-item; 
 
   strong {
@@ -101,19 +85,9 @@ mat-accordion {
   }
 }
 
-// --- Definições Semânticas das Colunas da Grid ---
+// --- Colunas da Grid Utilizadas no Template ---
 .line {
-  &.cols-1-col   { grid-template-columns: 1fr; }
-  &.cols-1-1     { grid-template-columns: 1fr 1fr; }
-  &.cols-1-2     { grid-template-columns: 1fr 2fr; }
-  &.cols-2-2-1   { grid-template-columns: 2fr 2fr 1fr; }
-}
-
-// Classes utilitárias de status semânticos
-.valid {
-  color: $color-success !important;
-}
-
-.invalid {
-  color: $color-danger !important;
+  &.cols-1-1   { grid-template-columns: 1fr 1fr; }
+  &.cols-1-2   { grid-template-columns: 1fr 2fr; }
+  &.cols-2-2-1 { grid-template-columns: 2fr 2fr 1fr; }
 }

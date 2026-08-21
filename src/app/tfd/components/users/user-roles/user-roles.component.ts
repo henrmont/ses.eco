@@ -66,6 +66,9 @@ export class UserRolesComponent implements OnInit {
   // Métodos Acessíveis pelo Template (Protected)
   // ==========================================
   protected toggleRole(item: Role): void {
+    // Evita modificações caso o formulário esteja submetendo ou desativado
+    if (this.isSubmitting() || this.userRolesForm.disabled) return;
+
     const rolesControl = this.userRolesForm.get('roles');
     if (!rolesControl) return;
 

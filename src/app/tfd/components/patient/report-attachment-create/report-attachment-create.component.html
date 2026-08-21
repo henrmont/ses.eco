@@ -24,7 +24,8 @@
                     <input 
                         type="file" 
                         class="file-input" 
-                        (change)="onFileSelected($event)" 
+                        (change)="onFileSelected($event)"
+                        [disabled]="isSubmitting()" 
                         #fileInput 
                         hidden>
                     
@@ -33,6 +34,7 @@
                         color="primary"
                         type="button" 
                         (click)="fileInput.click()" 
+                        [disabled]="isSubmitting()"
                         [matTooltip]="fileLabel()"
                     >
                         <mat-icon>attach_file</mat-icon>
@@ -46,7 +48,7 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-    <button mat-button type="button" [mat-dialog-close]="false">Fechar</button>
+    <button mat-button type="button" [mat-dialog-close]="false" [disabled]="isSubmitting()">Fechar</button>
     <button 
         mat-flat-button 
         color="primary" 

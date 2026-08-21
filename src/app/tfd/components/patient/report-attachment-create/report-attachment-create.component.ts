@@ -1,6 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  DestroyRef,
+  Injector,
+  OnInit,
+  inject,
+  signal
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
@@ -47,6 +56,7 @@ export class ReportAttachmentCreateComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<ReportAttachmentCreateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Formulários e Estados Reativos
@@ -73,6 +83,7 @@ export class ReportAttachmentCreateComponent implements OnInit {
   // ==========================================
   ngOnInit(): void {
     this.initForm();
+    this.setupFormSubmittingHandler();
   }
 
   // ==========================================
@@ -122,7 +133,6 @@ export class ReportAttachmentCreateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
     const payload = {
       ...this.attachmentForm.getRawValue(),
@@ -131,10 +141,7 @@ export class ReportAttachmentCreateComponent implements OnInit {
 
     this.patientService.createReportAttachment(patientReportId, payload)
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
@@ -156,5 +163,18 @@ export class ReportAttachmentCreateComponent implements OnInit {
     this.attachmentForm = this.fb.group({
       name: [null, [Validators.required]]
     });
+  }
+
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.attachmentForm.disable({ emitEvent: false });
+        } else {
+          this.attachmentForm.enable({ emitEvent: false });
+        }
+        this.cdr.markForCheck();
+      });
   }
 }

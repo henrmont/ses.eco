@@ -1,8 +1,17 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  DestroyRef,
+  Injector,
+  OnInit,
+  inject,
+  signal
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { saveAs } from 'file-saver';
 
 // Material Modules
@@ -49,6 +58,7 @@ export class ReportAttachmentUpdateComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<ReportAttachmentUpdateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Mensagens de Erro por Controle
@@ -89,6 +99,7 @@ export class ReportAttachmentUpdateComponent implements OnInit {
   // ==========================================
   ngOnInit(): void {
     this.initForm();
+    this.setupFormSubmittingHandler();
   }
 
   // ==========================================
@@ -159,7 +170,6 @@ export class ReportAttachmentUpdateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
     const payload = {
       ...this.attachmentForm.getRawValue(),
@@ -168,10 +178,7 @@ export class ReportAttachmentUpdateComponent implements OnInit {
 
     this.patientService.updateReportAttachment(attachmentId, payload)
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
@@ -183,6 +190,22 @@ export class ReportAttachmentUpdateComponent implements OnInit {
           const fallbackError = err?.error?.message || 'Erro ao processar a atualização do anexo.';
           this.messageService.showMessage(fallbackError);
         }
+      });
+  }
+
+  // ==========================================
+  // Métodos Privados / Auxiliares
+  // ==========================================
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.attachmentForm.disable({ emitEvent: false });
+        } else {
+          this.attachmentForm.enable({ emitEvent: false });
+        }
+        this.cdr.markForCheck();
       });
   }
 }

@@ -12,7 +12,7 @@
           
           <mat-expansion-panel-header>
             <mat-panel-title>
-              {{ report.cid?.code ? (report.cid?.code + ' - ' + report.cid?.description) : 'CID não informado' }}
+              {{ report.cid?.code ? (report.cid?.code + ' - ' + report.cid?.name) : 'CID não informado' }}
             </mat-panel-title>
           </mat-expansion-panel-header>
 
@@ -37,7 +37,7 @@
                   <div>
                     <strong>CID:</strong> 
                     <span class="highlight">
-                      {{ report.cid?.code ? (report.cid?.code + ' - ' + report.cid?.description) : 'Não informado' }}
+                      {{ report.cid?.code ? (report.cid?.code + ' - ' + report.cid?.name) : 'Não informado' }}
                     </span>
                   </div>
                 </div>

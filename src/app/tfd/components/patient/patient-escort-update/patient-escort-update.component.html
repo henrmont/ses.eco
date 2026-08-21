@@ -19,11 +19,11 @@
                         </mat-form-field>
                         
                         <div class="file-actions-cell">
-                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data?.patient_escort?.file_cns_id" (click)="download(data?.patient_escort?.file_cns_id, 'cns')">
+                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data?.patient_escort?.file_cns_id || isSubmitting()" (click)="download(data?.patient_escort?.file_cns_id, 'cns')">
                                 <mat-icon>download</mat-icon>
                             </button>
-                            <input type="file" hidden (change)="onFileSelected($event, 'cns')" #fileCNS>
-                            <button mat-raised-button type="button" (click)="fileCNS.click()" [matTooltip]="files.cns.label()">
+                            <input type="file" hidden (change)="onFileSelected($event, 'cns')" #fileCNS [disabled]="isSubmitting()">
+                            <button mat-raised-button type="button" (click)="fileCNS.click()" [matTooltip]="files.cns.label()" [disabled]="isSubmitting()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar CNS
                             </button>
@@ -40,11 +40,11 @@
                         </mat-form-field>
                         
                         <div class="file-actions-cell">
-                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data?.patient_escort?.file_document_id" (click)="download(data?.patient_escort?.file_document_id, 'document')">
+                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data?.patient_escort?.file_document_id || isSubmitting()" (click)="download(data?.patient_escort?.file_document_id, 'document')">
                                 <mat-icon>download</mat-icon>
                             </button>
-                            <input type="file" hidden (change)="onFileSelected($event, 'document')" #fileDocument>
-                            <button mat-raised-button type="button" (click)="fileDocument.click()" [matTooltip]="files.document.label()">
+                            <input type="file" hidden (change)="onFileSelected($event, 'document')" #fileDocument [disabled]="isSubmitting()">
+                            <button mat-raised-button type="button" (click)="fileDocument.click()" [matTooltip]="files.document.label()" [disabled]="isSubmitting()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar documento
                             </button>
@@ -100,7 +100,7 @@
                         </mat-form-field>
                         
                         <div class="toggle">
-                            <mat-slide-toggle formControlName="is_same_address">Reside no mesmo endereço?</mat-slide-toggle>
+                            <mat-slide-toggle formControlName="is_same_address" [disabled]="isSubmitting()">Reside no mesmo endereço?</mat-slide-toggle>
                         </div>
                     </div>
 
@@ -124,11 +124,11 @@
                         </mat-form-field>
                         
                         <div class="file-actions-cell">
-                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data?.patient_escort?.file_address_id" (click)="download(data?.patient_escort?.file_address_id, 'address')">
+                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data?.patient_escort?.file_address_id || isSubmitting()" (click)="download(data?.patient_escort?.file_address_id, 'address')">
                                 <mat-icon>download</mat-icon>
                             </button>
-                            <input type="file" hidden (change)="onFileSelected($event, 'address')" #fileAddress [disabled]="isSameAddressSignal()">
-                            <button mat-raised-button type="button" (click)="fileAddress.click()" [matTooltip]="files.address.label()" [disabled]="isSameAddressSignal()">
+                            <input type="file" hidden (change)="onFileSelected($event, 'address')" #fileAddress [disabled]="isSameAddressSignal() || isSubmitting()">
+                            <button mat-raised-button type="button" (click)="fileAddress.click()" [matTooltip]="files.address.label()" [disabled]="isSameAddressSignal() || isSubmitting()">
                                 <mat-icon>attach_file</mat-icon>
                                 Comprovante de endereço
                             </button>
@@ -191,7 +191,7 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-    <button mat-button type="button" [mat-dialog-close]="false">Fechar</button>
+    <button mat-button type="button" [mat-dialog-close]="false" [disabled]="isSubmitting()">Fechar</button>
     <button 
         mat-flat-button 
         color="primary" 

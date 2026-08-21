@@ -17,7 +17,7 @@
                 </mat-form-field>
 
                 <div class="toggle">
-                    <mat-slide-toggle formControlName="lawsuit">Ação judicial</mat-slide-toggle>
+                    <mat-slide-toggle formControlName="lawsuit" [disabled]="isSubmitting()">Ação judicial</mat-slide-toggle>
                 </div>
             </div>
 
@@ -96,7 +96,7 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-    <button mat-button type="button" [mat-dialog-close]="false">Fechar</button>
+    <button mat-button type="button" [mat-dialog-close]="false" [disabled]="isSubmitting()">Fechar</button>
     <button 
         mat-flat-button 
         color="primary" 

@@ -43,7 +43,9 @@ interface UserTableRow extends User {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UsersPage implements OnInit, OnDestroy {
-  // Instância própria da página
+  // ==========================================
+  // Instância própria do canal
+  // ==========================================
   private readonly usersChannel = new BroadcastChannel('tfd-users-channel');
 
   // ==========================================

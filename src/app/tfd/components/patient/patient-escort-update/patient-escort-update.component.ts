@@ -1,9 +1,18 @@
 import { STEPPER_GLOBAL_OPTIONS } from '@angular/cdk/stepper';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  DestroyRef,
+  Injector,
+  OnInit,
+  inject,
+  signal
+} from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Observable, debounceTime, distinctUntilChanged, filter, finalize, map, startWith } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { saveAs } from 'file-saver';
 
 // Material Modules
@@ -84,6 +93,7 @@ export class PatientEscortUpdateComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<PatientEscortUpdateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Opções dos Enums Centralizadas no Controle
@@ -181,6 +191,7 @@ export class PatientEscortUpdateComponent implements OnInit {
     this.registerAddressDependency();
     this.registerCepListener();
     this.setupAutocompleteFilters();
+    this.setupFormSubmittingHandler();
   }
 
   // ==========================================
@@ -283,6 +294,28 @@ export class PatientEscortUpdateComponent implements OnInit {
               }
             }
           });
+      });
+  }
+
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        const forms = [this.personalForm, this.addressForm];
+
+        forms.forEach(form => {
+          if (isSubmitting) {
+            form.disable({ emitEvent: false });
+          } else {
+            form.enable({ emitEvent: false });
+          }
+        });
+
+        if (!isSubmitting && this.isSameAddressSignal()) {
+          this.addressForm.disable({ emitEvent: false });
+        }
+
+        this.cdr.markForCheck();
       });
   }
 
@@ -459,14 +492,13 @@ export class PatientEscortUpdateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
     const rawPersonal = this.personalForm.getRawValue();
     const formattedBirthDate = rawPersonal.birth_date
       ? moment(rawPersonal.birth_date).format('YYYY-MM-DD')
       : null;
 
-    const patientEscortPayload = {
+    const payload = {
       ...rawPersonal,
       birth_date: formattedBirthDate,
       ...this.addressForm.getRawValue(),
@@ -475,12 +507,9 @@ export class PatientEscortUpdateComponent implements OnInit {
       file_address: this.files.address.file
     };
 
-    this.patientService.updatePatientEscort(patientEscortId, patientEscortPayload)
+    this.patientService.updatePatientEscort(patientEscortId, payload)
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({

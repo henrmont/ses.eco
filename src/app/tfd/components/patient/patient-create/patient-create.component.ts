@@ -5,6 +5,7 @@ import {
   ChangeDetectorRef,
   Component,
   DestroyRef,
+  Injector,
   OnInit,
   inject,
   signal
@@ -17,10 +18,10 @@ import {
   ReactiveFormsModule,
   Validators
 } from '@angular/forms';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, filter, finalize, map, Observable, startWith } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-// Material Modules
+// Angular Material
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerInputEvent, MatDatepickerModule } from '@angular/material/datepicker';
@@ -33,15 +34,19 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatStepperModule } from '@angular/material/stepper';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { NgxMaskDirective } from 'ngx-mask';
 
+// Bibliotecas de Terceiros
+import { NgxMaskDirective } from 'ngx-mask';
 import * as _moment from 'moment';
 const moment = (_moment as any).default || _moment;
 
+// Core, Services & Validators
 import { ApiResponse } from '../../../../core/models/api-response.model';
 import { MessageService } from '../../../../core/services/message-service';
 import { ViacepService } from '../../../../core/services/viacep-service';
 import { CustomValidators } from '../../../../core/validators/custom.validator';
+
+// Enums & Models
 import { Deficiency } from '../../../enums/deficiency';
 import { Ethnicity } from '../../../enums/ethnicity';
 import { Gender } from '../../../enums/gender';
@@ -52,6 +57,7 @@ import { Ufs } from '../../../enums/ufs';
 import { Patient } from '../../../models/patient.model';
 import { PatientService } from '../../../services/patient.service';
 
+// Types & Interfaces
 export type FileType = 'cns' | 'document' | 'deficiency' | 'address' | 'protocol';
 
 interface NaturalnessOption {
@@ -70,20 +76,20 @@ interface AttachedFileState {
   imports: [
     CommonModule,
     FormsModule,
-    ReactiveFormsModule,
-    MatSelectModule,
-    MatDialogModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatStepperModule,
-    MatIconModule,
-    MatDatepickerModule,
-    MatSlideToggleModule,
     MatAutocompleteModule,
+    MatButtonModule,
+    MatDatepickerModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+    MatSlideToggleModule,
+    MatStepperModule,
     MatTooltipModule,
     NgxMaskDirective,
-    MatProgressSpinnerModule
+    ReactiveFormsModule
   ],
   templateUrl: './patient-create.component.html',
   styleUrl: './patient-create.component.scss',
@@ -101,6 +107,7 @@ export class PatientCreateComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<PatientCreateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Opções dos Enums Centralizadas no Controle
@@ -217,13 +224,92 @@ export class PatientCreateComponent implements OnInit {
     this.setupAutocompleteFilters();
     this.fetchNaturalness();
     this.registerCepListener();
+    this.setupFormSubmittingHandler();
   }
 
   // ==========================================
-  // Inicialização de Formulários
+  // Métodos Acessíveis pelo Template
+  // ==========================================
+  protected setBirthDate(event: MatDatepickerInputEvent<any>): void {
+    if (event.value) {
+      const momentDate = moment(event.value);
+      this.personalForm.get('birth_date')?.setValue(momentDate, { emitEvent: true });
+      this.personalForm.markAsDirty();
+      this.cdr.markForCheck();
+    }
+  }
+
+  protected onFileSelected(event: Event, type: FileType): void {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+
+    if (file) {
+      this.files[type].file = file;
+      this.files[type].label.set(file.name);
+      this.cdr.markForCheck();
+    }
+  }
+
+  protected onNaturalnessSelected(option: string): void {
+    this.personalForm.patchValue({ naturalness: option });
+    this.personalForm.get('naturalness')?.markAsDirty();
+  }
+
+  protected onSubmit(): void {
+    if (
+      this.identificationForm.invalid ||
+      this.personalForm.invalid ||
+      this.addressForm.invalid ||
+      this.infoForm.invalid
+    ) {
+      this.identificationForm.markAllAsTouched();
+      this.personalForm.markAllAsTouched();
+      this.addressForm.markAllAsTouched();
+      this.infoForm.markAllAsTouched();
+      return;
+    }
+
+    this.isSubmitting.set(true);
+
+    const rawPersonal = this.personalForm.getRawValue();
+    const formattedBirthDate = rawPersonal.birth_date
+      ? moment(rawPersonal.birth_date).format('YYYY-MM-DD')
+      : null;
+
+    const payload = {
+      ...this.identificationForm.getRawValue(),
+      ...rawPersonal,
+      birth_date: formattedBirthDate,
+      ...this.addressForm.getRawValue(),
+      ...this.infoForm.getRawValue(),
+      file_cns: this.files.cns.file,
+      file_document: this.files.document.file,
+      file_deficiency: this.files.deficiency.file,
+      file_address: this.files.address.file,
+      file_protocol: this.files.protocol.file
+    };
+
+    this.patientService.createPatient(payload)
+      .pipe(
+        finalize(() => this.isSubmitting.set(false)),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (response: ApiResponse) => {
+          this.messageService.showMessage(response?.message || 'Paciente cadastrado com sucesso!');
+          this.dialogRef.close(true);
+        },
+        error: (err) => {
+          const fallbackError = 'Erro ao salvar paciente.';
+          this.messageService.showMessage(err?.error?.message || fallbackError);
+        }
+      });
+  }
+
+  // ==========================================
+  // Métodos Privados de Inicialização e Lógica
   // ==========================================
   private initForms(): void {
-    // Bind simples do callback
     const handleFound = (patient: Patient) => this.populateFromResponse(patient);
 
     this.identificationForm = this.fb.group({
@@ -275,9 +361,6 @@ export class PatientCreateComponent implements OnInit {
     });
   }
 
-  // ==========================================
-  // Listeners Reativos
-  // ==========================================
   private registerCepListener(): void {
     this.addressForm.get('cep')?.valueChanges.pipe(
       map(val => (val ? String(val).replace(/\D/g, '') : '')),
@@ -322,37 +405,6 @@ export class PatientCreateComponent implements OnInit {
       });
   }
 
-  // ==========================================
-  // Métodos de Interação
-  // ==========================================
-  protected setBirthDate(event: MatDatepickerInputEvent<any>): void {
-    if (event.value) {
-      const momentDate = moment(event.value);
-      this.personalForm.get('birth_date')?.setValue(momentDate, { emitEvent: true });
-      this.personalForm.markAsDirty();
-      this.cdr.markForCheck();
-    }
-  }
-
-  protected onFileSelected(event: Event, type: FileType): void {
-    const target = event.target as HTMLInputElement;
-    const file = target.files?.[0];
-
-    if (file) {
-      this.files[type].file = file;
-      this.files[type].label.set(file.name);
-      this.cdr.markForCheck();
-    }
-  }
-
-  protected onNaturalnessSelected(option: string): void {
-    this.personalForm.patchValue({ naturalness: option });
-    this.personalForm.get('naturalness')?.markAsDirty();
-  }
-
-  // ==========================================
-  // Autocomplete e Filtros Auxiliares
-  // ==========================================
   private fetchNaturalness(): void {
     this.naturalnessControl.setValue('');
     this.naturalnessLoading.set(true);
@@ -407,32 +459,25 @@ export class PatientCreateComponent implements OnInit {
     return options.filter(option => option.toLowerCase().includes(filterValue));
   }
 
-  // ==========================================
-  // Preenchimento Automático (Response API)
-  // ==========================================
   private populateFromResponse(response: Patient): void {
     if (!response) return;
 
     const cnsCtrl = this.identificationForm.get('cns');
     const docCtrl = this.identificationForm.get('document');
 
-    // Preenche o CNS apenas se o usuário NÃO estiver digitando nele
     if (!cnsCtrl?.dirty && response.cns) {
       cnsCtrl?.setValue(response.cns, { emitEvent: false });
     }
 
-    // Preenche o CPF/Documento apenas se o usuário NÃO estiver digitando nele
     if (!docCtrl?.dirty && response.document) {
       docCtrl?.setValue(response.document, { emitEvent: false });
     }
 
-    // Demais campos de identificação
     this.identificationForm.patchValue({
       document_type: response.document_type,
       sigadoc: response.sigadoc
     }, { emitEvent: false });
 
-    // Preenche os dados pessoais
     this.personalForm.patchValue({
       name: response.name,
       gender: response.gender,
@@ -454,7 +499,6 @@ export class PatientCreateComponent implements OnInit {
       this.naturalnessControl.setValue(response.naturalness, { emitEvent: false });
     }
 
-    // Preenche o endereço
     this.addressForm.patchValue({
       cep: response.cep,
       address: response.address,
@@ -465,13 +509,11 @@ export class PatientCreateComponent implements OnInit {
       state: response.state
     }, { emitEvent: false });
 
-    // Preenche as informações de controle
     this.infoForm.patchValue({
       control_number: response.patient_info?.control_number ?? null,
       observation: response.patient_info?.observation ?? null
     }, { emitEvent: false });
 
-    // Data de nascimento
     const birthDateControl = this.personalForm.get('birth_date');
     if (birthDateControl && response.birth_date) {
       const cleanDateStr = String(response.birth_date).split(' ')[0].split('T')[0];
@@ -480,7 +522,6 @@ export class PatientCreateComponent implements OnInit {
       birthDateControl.setValue(parsedBirthDate, { emitEvent: false });
     }
 
-    // Ajusta o estado da etnia
     const isIndigena = response.race === 'Indígena';
     this.isEthnicityDisabled.set(!isIndigena);
     const ethnicityCtrl = this.personalForm.get('ethnicity');
@@ -494,61 +535,31 @@ export class PatientCreateComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
-  // ==========================================
-  // Submissão
-  // ==========================================
-  protected onSubmit(): void {
-    if (
-      this.identificationForm.invalid ||
-      this.personalForm.invalid ||
-      this.addressForm.invalid ||
-      this.infoForm.invalid
-    ) {
-      this.identificationForm.markAllAsTouched();
-      this.personalForm.markAllAsTouched();
-      this.addressForm.markAllAsTouched();
-      this.infoForm.markAllAsTouched();
-      return;
-    }
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        const forms = [
+          this.identificationForm,
+          this.personalForm,
+          this.addressForm,
+          this.infoForm
+        ];
 
-    this.isSubmitting.set(true);
-    this.cdr.markForCheck();
+        forms.forEach(form => {
+          if (isSubmitting) {
+            form.disable({ emitEvent: false });
+          } else {
+            form.enable({ emitEvent: false });
+          }
+        });
 
-    const rawPersonal = this.personalForm.getRawValue();
-    const formattedBirthDate = rawPersonal.birth_date
-      ? moment(rawPersonal.birth_date).format('YYYY-MM-DD')
-      : null;
-
-    const patientPayload = {
-      ...this.identificationForm.getRawValue(),
-      ...rawPersonal,
-      birth_date: formattedBirthDate,
-      ...this.addressForm.getRawValue(),
-      ...this.infoForm.getRawValue(),
-      file_cns: this.files.cns.file,
-      file_document: this.files.document.file,
-      file_deficiency: this.files.deficiency.file,
-      file_address: this.files.address.file,
-      file_protocol: this.files.protocol.file
-    };
-
-    this.patientService.createPatient(patientPayload)
-      .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe({
-        next: (response: ApiResponse) => {
-          this.messageService.showMessage(response?.message || 'Paciente cadastrado com sucesso!');
-          this.dialogRef.close(true);
-        },
-        error: (err) => {
-          const fallbackError = 'Erro ao salvar paciente.';
-          this.messageService.showMessage(err?.error?.message || fallbackError);
+        // Caso especial para o controle de etnia
+        if (!isSubmitting && this.personalForm.get('race')?.value !== 'Indígena') {
+          this.personalForm.get('ethnicity')?.disable({ emitEvent: false });
         }
+
+        this.cdr.markForCheck();
       });
   }
 }

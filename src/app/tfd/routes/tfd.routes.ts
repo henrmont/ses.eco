@@ -38,7 +38,7 @@ export const tfdRoutes: Routes = [
     },
     {
         path: 'arquivo-pacientes',
-        loadComponent: () => import('./../pages/archive-patients-page/archive-patients-page').then( m => m.ArchivePatientsPage),
+        loadComponent: () => import('./../pages/archive-patients-page/archive-patients.page').then( m => m.ArchivePatientsPage),
         data: { permission: 'tfd/paciente listar' } // Adicionado
     },
     {

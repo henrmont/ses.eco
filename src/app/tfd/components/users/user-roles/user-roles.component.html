@@ -19,6 +19,7 @@
                 <span class="role-name">{{ formatRoleName(item.name!) }}</span>
                 <mat-slide-toggle
                   [checked]="checkRole(item.id!)"
+                  [disabled]="isSubmitting()"
                   (toggleChange)="toggleRole(item)"
                   color="primary">
                 </mat-slide-toggle>

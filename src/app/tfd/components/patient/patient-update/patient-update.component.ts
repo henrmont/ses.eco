@@ -1,12 +1,28 @@
 import { STEPPER_GLOBAL_OPTIONS } from '@angular/cdk/stepper';
 import { CommonModule, formatDate } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  DestroyRef,
+  Injector,
+  OnInit,
+  inject,
+  signal
+} from '@angular/core';
+import {
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators
+} from '@angular/forms';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, filter, finalize, map, Observable, startWith } from 'rxjs';
 import { saveAs } from 'file-saver';
 
-// Material Modules
+// Angular Material
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerInputEvent, MatDatepickerModule } from '@angular/material/datepicker';
@@ -19,16 +35,20 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatStepperModule } from '@angular/material/stepper';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { NgxMaskDirective } from 'ngx-mask';
 
+// Bibliotecas de Terceiros
+import { NgxMaskDirective } from 'ngx-mask';
 import * as _moment from 'moment';
 const moment = (_moment as any).default || _moment;
 
+// Core, Services & Validators
 import { ApiResponse } from '../../../../core/models/api-response.model';
 import { MessageService } from '../../../../core/services/message-service';
 import { StorageService } from '../../../../core/services/storage-service';
 import { ViacepService } from '../../../../core/services/viacep-service';
 import { CustomValidators } from '../../../../core/validators/custom.validator';
+
+// Enums & Models
 import { Deficiency } from '../../../enums/deficiency';
 import { Ethnicity } from '../../../enums/ethnicity';
 import { Gender } from '../../../enums/gender';
@@ -39,31 +59,39 @@ import { Ufs } from '../../../enums/ufs';
 import { Patient } from '../../../models/patient.model';
 import { PatientService } from '../../../services/patient.service';
 
+// Types & Interfaces
 export type FileType = 'cns' | 'document' | 'deficiency' | 'address' | 'protocol';
 
-interface NaturalnessOption { nome: string; [key: string]: unknown; }
-interface AttachedFileState { file: File | null; label: ReturnType<typeof signal<string>>; }
+interface NaturalnessOption {
+  nome: string;
+  [key: string]: unknown;
+}
+
+interface AttachedFileState {
+  file: File | null;
+  label: ReturnType<typeof signal<string>>;
+}
 
 @Component({
   selector: 'app-patient-update',
   standalone: true,
   imports: [
-    CommonModule, 
-    FormsModule, 
-    ReactiveFormsModule, 
-    MatSelectModule, 
-    MatDialogModule, 
-    MatButtonModule, 
-    MatFormFieldModule, 
-    MatInputModule, 
-    MatStepperModule, 
-    MatIconModule, 
-    MatDatepickerModule, 
-    MatSlideToggleModule, 
-    MatAutocompleteModule, 
-    MatTooltipModule, 
-    NgxMaskDirective, 
-    MatProgressSpinnerModule
+    CommonModule,
+    FormsModule,
+    MatAutocompleteModule,
+    MatButtonModule,
+    MatDatepickerModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+    MatSlideToggleModule,
+    MatStepperModule,
+    MatTooltipModule,
+    NgxMaskDirective,
+    ReactiveFormsModule
   ],
   templateUrl: './patient-update.component.html',
   styleUrl: './patient-update.component.scss',
@@ -83,6 +111,7 @@ export class PatientUpdateComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<PatientUpdateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Opções dos Enums Centralizadas no Controle
@@ -199,126 +228,11 @@ export class PatientUpdateComponent implements OnInit {
     this.setupAutocompleteFilters();
     this.fetchNaturalness();
     this.registerCepListener();
+    this.setupFormSubmittingHandler();
   }
 
   // ==========================================
-  // Inicialização de Formulários
-  // ==========================================
-  private initForms(): void {
-    const patient = this.data?.patient;
-
-    let initialBirthDate: any = null;
-    if (patient?.birth_date) {
-      const cleanDate = String(patient.birth_date).split(' ')[0].split('T')[0];
-      initialBirthDate = moment(cleanDate, 'YYYY-MM-DD');
-    }
-
-    const handleFound = (foundPatient: Patient) => this.populateFromResponse(foundPatient);
-
-    this.identificationForm = this.fb.group({
-      cns: [
-        patient?.cns ?? null,
-        [Validators.required, CustomValidators.cnsValidator()],
-        [this.patientService.cnsPatientExistsValidator(patient?.cns ?? null, handleFound)]
-      ],
-      document_type: [patient?.document_type ?? 'CPF', [Validators.required]],
-      document: [
-        patient?.document ?? null,
-        [Validators.required, CustomValidators.cpfOrCnjValidator()],
-        [this.patientService.documentPatientExistsValidator(patient?.document ?? null, handleFound)]
-      ],
-      sigadoc: [patient?.sigadoc ?? null, [Validators.required]]
-    });
-
-    this.personalForm = this.fb.group({
-      name: [patient?.name ?? null, [Validators.required]],
-      birth_date: [
-        initialBirthDate,
-        [Validators.required, CustomValidators.dateValidator(), CustomValidators.birthDateValidator()]
-      ],
-      gender: [patient?.gender ?? null, [Validators.required]],
-      newborn: [patient?.newborn ?? false],
-      race: [patient?.race ?? null, [Validators.required]],
-      ethnicity: [{ value: patient?.ethnicity ?? null, disabled: patient?.race !== 'Indígena' }],
-      marital_status: [patient?.marital_status ?? null],
-      mother_name: [patient?.mother_name ?? null],
-      father_name: [patient?.father_name ?? null],
-      naturalness: [patient?.naturalness ?? null, [Validators.required]],
-      phone: [patient?.phone ?? null],
-      cell_phone: [patient?.cell_phone ?? null],
-      email: [patient?.email ?? null],
-      profession: [patient?.profession ?? null],
-      deficiency: [patient?.deficiency ?? null]
-    });
-
-    this.addressForm = this.fb.group({
-      cep: [patient?.cep ?? null, [Validators.required, Validators.pattern(/^\d{5}-?\d{3}$/)]],
-      address: [patient?.address ?? null, [Validators.required]],
-      number: [patient?.number ?? null, [Validators.required]],
-      complement: [patient?.complement ?? null],
-      neighborhood: [patient?.neighborhood ?? null, [Validators.required]],
-      city: [patient?.city ?? null],
-      state: [patient?.state ?? null]
-    });
-
-    this.infoForm = this.fb.group({
-      control_number: [patient?.patient_info?.control_number ?? null],
-      observation: [patient?.patient_info?.observation ?? null]
-    });
-  }
-
-  // ==========================================
-  // Listeners Reativos
-  // ==========================================
-  private registerCepListener(): void {
-    this.addressForm.get('cep')?.valueChanges.pipe(
-      map(val => (val ? String(val).replace(/\D/g, '') : '')),
-      filter(val => val.length === 8),
-      debounceTime(400),
-      distinctUntilChanged(),
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe(cleanCep => {
-      this.viacepService.getAddress(cleanCep)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe(response => {
-          if (response) {
-            this.addressForm.patchValue({
-              address: response.logradouro,
-              neighborhood: response.bairro,
-              city: response.localidade,
-              state: response.uf
-            });
-            this.addressForm.markAsDirty();
-            this.cdr.markForCheck();
-          }
-        });
-    });
-  }
-
-  private registerRaceDependency(): void {
-    const isInitialIndigena = this.data?.patient?.race === 'Indígena';
-    this.isEthnicityDisabled.set(!isInitialIndigena);
-
-    this.personalForm.get('race')?.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((selectedRace: string) => {
-        const ethnicityCtrl = this.personalForm.get('ethnicity');
-        const isIndigena = selectedRace === 'Indígena';
-
-        this.isEthnicityDisabled.set(!isIndigena);
-
-        if (isIndigena) {
-          ethnicityCtrl?.enable();
-        } else {
-          ethnicityCtrl?.disable();
-          ethnicityCtrl?.reset();
-        }
-        this.cdr.markForCheck();
-      });
-  }
-
-  // ==========================================
-  // Métodos de Interação
+  // Métodos Acessíveis pelo Template
   // ==========================================
   protected setBirthDate(event: MatDatepickerInputEvent<any>): void {
     if (event.value) {
@@ -384,9 +298,182 @@ export class PatientUpdateComponent implements OnInit {
     );
   }
 
+  protected onSubmit(): void {
+    const patientId = this.data?.patient?.id;
+    if (!patientId) {
+      this.messageService.showMessage('Identificador do paciente inválido.');
+      return;
+    }
+
+    if (
+      this.identificationForm.invalid ||
+      this.personalForm.invalid ||
+      this.addressForm.invalid ||
+      this.infoForm.invalid
+    ) {
+      this.identificationForm.markAllAsTouched();
+      this.personalForm.markAllAsTouched();
+      this.addressForm.markAllAsTouched();
+      this.infoForm.markAllAsTouched();
+      return;
+    }
+
+    this.isSubmitting.set(true);
+
+    const rawPersonal = this.personalForm.getRawValue();
+    let formattedBirthDate: string | null = null;
+
+    if (rawPersonal.birth_date) {
+      if (moment.isMoment(rawPersonal.birth_date)) {
+        formattedBirthDate = rawPersonal.birth_date.format('YYYY-MM-DD');
+      } else {
+        formattedBirthDate = formatDate(rawPersonal.birth_date, 'yyyy-MM-dd', 'en');
+      }
+    }
+
+    const payload = {
+      ...this.identificationForm.getRawValue(),
+      ...rawPersonal,
+      birth_date: formattedBirthDate,
+      ...this.addressForm.getRawValue(),
+      ...this.infoForm.getRawValue(),
+      file_cns: this.files.cns.file,
+      file_document: this.files.document.file,
+      file_deficiency: this.files.deficiency.file,
+      file_address: this.files.address.file,
+      file_protocol: this.files.protocol.file
+    };
+
+    this.patientService.updatePatient(patientId, payload)
+      .pipe(
+        finalize(() => this.isSubmitting.set(false)),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (response: ApiResponse) => {
+          this.messageService.showMessage(response?.message || 'Paciente atualizado com sucesso!');
+          this.dialogRef.close(true);
+        },
+        error: (err) => {
+          const fallbackError = 'Erro ao atualizar paciente.';
+          this.messageService.showMessage(err?.error?.message || fallbackError);
+        }
+      });
+  }
+
   // ==========================================
-  // Autocomplete e Filtros Auxiliares
+  // Métodos Privados de Inicialização e Lógica
   // ==========================================
+  private initForms(): void {
+    const patient = this.data?.patient;
+
+    let initialBirthDate: any = null;
+    if (patient?.birth_date) {
+      const cleanDate = String(patient.birth_date).split(' ')[0].split('T')[0];
+      initialBirthDate = moment(cleanDate, 'YYYY-MM-DD');
+    }
+
+    const handleFound = (foundPatient: Patient) => this.populateFromResponse(foundPatient);
+
+    this.identificationForm = this.fb.group({
+      cns: [
+        patient?.cns ?? null,
+        [Validators.required, CustomValidators.cnsValidator()],
+        [this.patientService.cnsPatientExistsValidator(patient?.cns ?? null, handleFound)]
+      ],
+      document_type: [patient?.document_type ?? 'CPF', [Validators.required]],
+      document: [
+        patient?.document ?? null,
+        [Validators.required, CustomValidators.cpfOrCnjValidator()],
+        [this.patientService.documentPatientExistsValidator(patient?.document ?? null, handleFound)]
+      ],
+      sigadoc: [patient?.sigadoc ?? null, [Validators.required]]
+    });
+
+    this.personalForm = this.fb.group({
+      name: [patient?.name ?? null, [Validators.required]],
+      birth_date: [
+        initialBirthDate,
+        [Validators.required, CustomValidators.dateValidator(), CustomValidators.birthDateValidator()]
+      ],
+      gender: [patient?.gender ?? null, [Validators.required]],
+      newborn: [patient?.newborn ?? false],
+      race: [patient?.race ?? null, [Validators.required]],
+      ethnicity: [{ value: patient?.ethnicity ?? null, disabled: patient?.race !== 'Indígena' }],
+      marital_status: [patient?.marital_status ?? null],
+      mother_name: [patient?.mother_name ?? null],
+      father_name: [patient?.father_name ?? null],
+      naturalness: [patient?.naturalness ?? null, [Validators.required]],
+      phone: [patient?.phone ?? null],
+      cell_phone: [patient?.cell_phone ?? null],
+      email: [patient?.email ?? null],
+      profession: [patient?.profession ?? null],
+      deficiency: [patient?.deficiency ?? null]
+    });
+
+    this.addressForm = this.fb.group({
+      cep: [patient?.cep ?? null, [Validators.required, Validators.pattern(/^\d{5}-?\d{3}$/)]],
+      address: [patient?.address ?? null, [Validators.required]],
+      number: [patient?.number ?? null, [Validators.required]],
+      complement: [patient?.complement ?? null],
+      neighborhood: [patient?.neighborhood ?? null, [Validators.required]],
+      city: [patient?.city ?? null],
+      state: [patient?.state ?? null]
+    });
+
+    this.infoForm = this.fb.group({
+      control_number: [patient?.patient_info?.control_number ?? null],
+      observation: [patient?.patient_info?.observation ?? null]
+    });
+  }
+
+  private registerCepListener(): void {
+    this.addressForm.get('cep')?.valueChanges.pipe(
+      map(val => (val ? String(val).replace(/\D/g, '') : '')),
+      filter(val => val.length === 8),
+      debounceTime(400),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(cleanCep => {
+      this.viacepService.getAddress(cleanCep)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(response => {
+          if (response) {
+            this.addressForm.patchValue({
+              address: response.logradouro,
+              neighborhood: response.bairro,
+              city: response.localidade,
+              state: response.uf
+            });
+            this.addressForm.markAsDirty();
+            this.cdr.markForCheck();
+          }
+        });
+    });
+  }
+
+  private registerRaceDependency(): void {
+    const isInitialIndigena = this.data?.patient?.race === 'Indígena';
+    this.isEthnicityDisabled.set(!isInitialIndigena);
+
+    this.personalForm.get('race')?.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((selectedRace: string) => {
+        const ethnicityCtrl = this.personalForm.get('ethnicity');
+        const isIndigena = selectedRace === 'Indígena';
+
+        this.isEthnicityDisabled.set(!isIndigena);
+
+        if (isIndigena) {
+          ethnicityCtrl?.enable();
+        } else {
+          ethnicityCtrl?.disable();
+          ethnicityCtrl?.reset();
+        }
+        this.cdr.markForCheck();
+      });
+  }
+
   private fetchNaturalness(): void {
     this.naturalnessLoading.set(true);
 
@@ -443,9 +530,6 @@ export class PatientUpdateComponent implements OnInit {
     return options.filter(option => option.toLowerCase().includes(filterValue));
   }
 
-  // ==========================================
-  // Preenchimento Automático (Response API)
-  // ==========================================
   private populateFromResponse(response: Patient): void {
     if (!response) return;
 
@@ -528,73 +612,31 @@ export class PatientUpdateComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
-  // ==========================================
-  // Submissão
-  // ==========================================
-  protected onSubmit(): void {
-    const patientId = this.data?.patient?.id;
-    if (!patientId) {
-      this.messageService.showMessage('Identificador do paciente inválido.');
-      return;
-    }
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        const forms = [
+          this.identificationForm,
+          this.personalForm,
+          this.addressForm,
+          this.infoForm
+        ];
 
-    if (
-      this.identificationForm.invalid ||
-      this.personalForm.invalid ||
-      this.addressForm.invalid ||
-      this.infoForm.invalid
-    ) {
-      this.identificationForm.markAllAsTouched();
-      this.personalForm.markAllAsTouched();
-      this.addressForm.markAllAsTouched();
-      this.infoForm.markAllAsTouched();
-      return;
-    }
+        forms.forEach(form => {
+          if (isSubmitting) {
+            form.disable({ emitEvent: false });
+          } else {
+            form.enable({ emitEvent: false });
+          }
+        });
 
-    this.isSubmitting.set(true);
-    this.cdr.markForCheck();
-
-    const rawPersonal = this.personalForm.getRawValue();
-    let formattedBirthDate: string | null = null;
-
-    if (rawPersonal.birth_date) {
-      if (moment.isMoment(rawPersonal.birth_date)) {
-        formattedBirthDate = rawPersonal.birth_date.format('YYYY-MM-DD');
-      } else {
-        formattedBirthDate = formatDate(rawPersonal.birth_date, 'yyyy-MM-dd', 'en');
-      }
-    }
-
-    const patientPayload = {
-      ...this.identificationForm.getRawValue(),
-      ...rawPersonal,
-      birth_date: formattedBirthDate,
-      ...this.addressForm.getRawValue(),
-      ...this.infoForm.getRawValue(),
-      file_cns: this.files.cns.file,
-      file_document: this.files.document.file,
-      file_deficiency: this.files.deficiency.file,
-      file_address: this.files.address.file,
-      file_protocol: this.files.protocol.file
-    };
-
-    this.patientService.updatePatient(patientId, patientPayload)
-      .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe({
-        next: (response: ApiResponse) => {
-          this.messageService.showMessage(response?.message || 'Paciente atualizado com sucesso!');
-          this.dialogRef.close(true);
-        },
-        error: (err) => {
-          const fallbackError = 'Erro ao atualizar paciente.';
-          this.messageService.showMessage(err?.error?.message || fallbackError);
+        // Garante que o campo de etnia permaneça desabilitado caso a raça não seja Indígena ao reativar os formulários
+        if (!isSubmitting && this.personalForm.get('race')?.value !== 'Indígena') {
+          this.personalForm.get('ethnicity')?.disable({ emitEvent: false });
         }
+
+        this.cdr.markForCheck();
       });
   }
 }

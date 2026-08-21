@@ -1,6 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  DestroyRef,
+  Injector,
+  OnInit,
+  inject,
+  signal
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Observable, finalize, map, startWith } from 'rxjs';
 
@@ -60,6 +69,7 @@ export class PatientReportCreateComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<PatientReportCreateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Mensagens de Erro por Controle
@@ -108,6 +118,7 @@ export class PatientReportCreateComponent implements OnInit {
     this.setupAutocompleteFilters();
     this.fetchCids();
     this.registerCleaners();
+    this.setupFormSubmittingHandler();
   }
 
   // ==========================================
@@ -178,6 +189,19 @@ export class PatientReportCreateComponent implements OnInit {
           this.reportForm.get('specialty')?.setValue(null);
           this.reportForm.get('specialty')?.markAsDirty();
         }
+      });
+  }
+
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.reportForm.disable({ emitEvent: false });
+        } else {
+          this.reportForm.enable({ emitEvent: false });
+        }
+        this.cdr.markForCheck();
       });
   }
 
@@ -266,7 +290,6 @@ export class PatientReportCreateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
     const rawValue = this.reportForm.getRawValue();
     const payload = {
@@ -279,10 +302,7 @@ export class PatientReportCreateComponent implements OnInit {
 
     this.patientService.createPatientReport(patientCareId, payload)
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({

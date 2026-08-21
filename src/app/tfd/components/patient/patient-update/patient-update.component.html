@@ -18,11 +18,11 @@
                         </mat-form-field>
                         
                         <div class="file-actions-cell">
-                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient.file_cns_id" (click)="download(data.patient.file_cns_id, 'cns')">
+                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient.file_cns_id || isSubmitting()" (click)="download(data.patient.file_cns_id, 'cns')">
                                 <mat-icon>download</mat-icon>
                             </button>
-                            <input type="file" hidden (change)="onFileSelected($event, 'cns')" #fileCNS>
-                            <button mat-raised-button type="button" (click)="fileCNS.click()" [matTooltip]="files.cns.label()">
+                            <input type="file" hidden (change)="onFileSelected($event, 'cns')" #fileCNS [disabled]="isSubmitting()">
+                            <button mat-raised-button type="button" (click)="fileCNS.click()" [matTooltip]="files.cns.label()" [disabled]="isSubmitting()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar CNS
                             </button>
@@ -43,18 +43,18 @@
                         
                         <mat-form-field appearance="outline">
                             <mat-label>Documento</mat-label>
-                            <input matInput type="text" [mask]="identificationForm.get('document_type')?.value === 'CPF' ? '000.000.000-00' : '000000 00 00 0000 0 00000 000 0000000 00'" formControlName="document">
+                            <input matInput type="text" [mask]="identificationForm.get('document_type')?.value === 'CPF' ? '000.000.000-00' : '000000 00 00 0000 0 00000 000 0000000 00'" formControlName="document" [disabled]="isSubmitting()">
                             @for (item of errorMessages['document']; track $index) {
                                 <mat-error [hidden]="!identificationForm.get('document')?.hasError(item.type)">{{ item.message }}</mat-error>
                             }
                         </mat-form-field>
                         
                         <div class="file-actions-cell">
-                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient.file_document_id" (click)="download(data.patient.file_document_id, 'document')">
+                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient.file_document_id || isSubmitting()" (click)="download(data.patient.file_document_id, 'document')">
                                 <mat-icon>download</mat-icon>
                             </button>
                             <input type="file" hidden (change)="onFileSelected($event, 'document')" #fileDocument>
-                            <button mat-raised-button type="button" (click)="fileDocument.click()" [matTooltip]="files.document.label()">
+                            <button mat-raised-button type="button" (click)="fileDocument.click()" [matTooltip]="files.document.label()" [disabled]="isSubmitting()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar documento
                             </button>
@@ -205,7 +205,7 @@
                         </mat-form-field>
                         
                         <div class="toggle">
-                            <mat-slide-toggle formControlName="newborn">Recém nascido</mat-slide-toggle>
+                            <mat-slide-toggle formControlName="newborn" [disabled]="isSubmitting()">Recém nascido</mat-slide-toggle>
                         </div>
                     </div>
                     
@@ -220,11 +220,11 @@
                         </mat-form-field>
                         
                         <div class="file-actions-cell">
-                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient.file_deficiency_id" (click)="download(data.patient.file_deficiency_id, 'deficiency')">
+                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient.file_deficiency_id || isSubmitting()" (click)="download(data.patient.file_deficiency_id, 'deficiency')">
                                 <mat-icon>download</mat-icon>
                             </button>
-                            <input type="file" hidden (change)="onFileSelected($event, 'deficiency')" #fileDeficiency>
-                            <button mat-raised-button type="button" (click)="fileDeficiency.click()" [matTooltip]="files.deficiency.label()">
+                            <input type="file" hidden (change)="onFileSelected($event, 'deficiency')" #fileDeficiency [disabled]="isSubmitting()">
+                            <button mat-raised-button type="button" (click)="fileDeficiency.click()" [matTooltip]="files.deficiency.label()" [disabled]="isSubmitting()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar laudo
                             </button>
@@ -249,11 +249,11 @@
                         </mat-form-field>
                         
                         <div class="file-actions-cell">
-                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient.file_address_id" (click)="download(data.patient.file_address_id, 'address')">
+                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient.file_address_id || isSubmitting()" (click)="download(data.patient.file_address_id, 'address')">
                                 <mat-icon>download</mat-icon>
                             </button>
-                            <input type="file" hidden (change)="onFileSelected($event, 'address')" #fileAddress>
-                            <button mat-raised-button type="button" (click)="fileAddress.click()" [matTooltip]="files.address.label()">
+                            <input type="file" hidden (change)="onFileSelected($event, 'address')" #fileAddress [disabled]="isSubmitting()">
+                            <button mat-raised-button type="button" (click)="fileAddress.click()" [matTooltip]="files.address.label()" [disabled]="isSubmitting()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar comprovante de endereço
                             </button>
@@ -330,11 +330,11 @@
                         </mat-form-field>
                         
                         <div class="file-actions-cell">
-                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient.patient_info?.file_protocol_id" (click)="download(data.patient.patient_info?.file_protocol_id, 'protocol')">
+                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient.patient_info?.file_protocol_id || isSubmitting()" (click)="download(data.patient.patient_info?.file_protocol_id, 'protocol')">
                                 <mat-icon>download</mat-icon>
                             </button>
-                            <input type="file" hidden (change)="onFileSelected($event, 'protocol')" #fileProtocol>
-                            <button mat-raised-button type="button" (click)="fileProtocol.click()" [matTooltip]="files.protocol.label()">
+                            <input type="file" hidden (change)="onFileSelected($event, 'protocol')" #fileProtocol [disabled]="isSubmitting()">
+                            <button mat-raised-button type="button" (click)="fileProtocol.click()" [matTooltip]="files.protocol.label()" [disabled]="isSubmitting()">
                                 <mat-icon>attach_file</mat-icon>
                                 Anexar protocolo municipal
                             </button>
@@ -347,7 +347,7 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-    <button mat-button type="button" [mat-dialog-close]="false">Fechar</button>
+    <button mat-button type="button" [mat-dialog-close]="false" [disabled]="isSubmitting()">Fechar</button>
     <button 
         mat-flat-button 
         color="primary" 

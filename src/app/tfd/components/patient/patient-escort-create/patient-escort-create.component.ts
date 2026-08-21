@@ -1,9 +1,24 @@
 import { STEPPER_GLOBAL_OPTIONS } from '@angular/cdk/stepper';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  DestroyRef,
+  Injector,
+  OnInit,
+  inject,
+  signal
+} from '@angular/core';
+import {
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators
+} from '@angular/forms';
 import { Observable, debounceTime, distinctUntilChanged, filter, finalize, map, startWith } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 
 // Material Modules
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -81,6 +96,7 @@ export class PatientEscortCreateComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<PatientEscortCreateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Opções dos Enums Centralizadas no Controle
@@ -169,6 +185,7 @@ export class PatientEscortCreateComponent implements OnInit {
     this.registerAddressDependency();
     this.registerCepListener();
     this.setupAutocompleteFilters();
+    this.setupFormSubmittingHandler();
   }
 
   // ==========================================
@@ -231,7 +248,6 @@ export class PatientEscortCreateComponent implements OnInit {
   }
 
   private registerCepListener(): void {
-    // Busca reativa por CEP (8 dígitos)
     this.addressForm.get('cep')?.valueChanges
       .pipe(
         map(val => (val ? String(val).replace(/\D/g, '') : '')),
@@ -257,6 +273,29 @@ export class PatientEscortCreateComponent implements OnInit {
               }
             }
           });
+      });
+  }
+
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        const forms = [this.personalForm, this.addressForm];
+
+        forms.forEach(form => {
+          if (isSubmitting) {
+            form.disable({ emitEvent: false });
+          } else {
+            form.enable({ emitEvent: false });
+          }
+        });
+
+        // Caso especial: reabilita o formulário de endereço apenas se a opção de mesmo endereço não estiver marcada
+        if (!isSubmitting && this.isSameAddressSignal()) {
+          this.addressForm.disable({ emitEvent: false });
+        }
+
+        this.cdr.markForCheck();
       });
   }
 
@@ -345,7 +384,6 @@ export class PatientEscortCreateComponent implements OnInit {
       docCtrl?.setValue(response.document, { emitEvent: false });
     }
 
-    // Preenche o formulário pessoal
     this.personalForm.patchValue({
       name: response.name,
       file_cns_id: response.file_cns_id,
@@ -355,16 +393,13 @@ export class PatientEscortCreateComponent implements OnInit {
       is_same_address: !!response.is_same_address
     }, { emitEvent: false });
 
-    // TRATAMENTO DO ENDEREÇO SEGUNDO O IS_SAME_ADDRESS
     const isSame = !!response.is_same_address;
     this.isSameAddressSignal.set(isSame);
 
     if (isSame) {
-      // Se reside no mesmo endereço, aplica o endereço do paciente e desabilita o formulário de endereço
       this.addressForm.disable();
       this.applyPatientAddress();
     } else {
-      // Se reside em endereço diferente, habilita o formulário e aplica o endereço vindo do acompanhante
       this.addressForm.enable();
       this.addressForm.patchValue({
         cep: response.cep,
@@ -378,7 +413,6 @@ export class PatientEscortCreateComponent implements OnInit {
       }, { emitEvent: false });
     }
 
-    // Tratamento da data de nascimento
     const birthDateControl = this.personalForm.get('birth_date');
     if (birthDateControl && response.birth_date) {
       const cleanDateStr = String(response.birth_date).split(' ')[0].split('T')[0];
@@ -396,8 +430,8 @@ export class PatientEscortCreateComponent implements OnInit {
   // Submissão
   // ==========================================
   protected onSubmit(): void {
-    const patientCaretId = this.data?.patient_care?.id;
-    if (!patientCaretId) {
+    const patientCareId = this.data?.patient_care?.id;
+    if (!patientCareId) {
       this.messageService.showMessage('Identificador do atendimento do paciente inválido.');
       return;
     }
@@ -409,14 +443,13 @@ export class PatientEscortCreateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
     const rawPersonal = this.personalForm.getRawValue();
     const formattedBirthDate = rawPersonal.birth_date
       ? moment(rawPersonal.birth_date).format('YYYY-MM-DD')
       : null;
 
-    const patientEscortPayload = {
+    const payload = {
       ...rawPersonal,
       birth_date: formattedBirthDate,
       ...this.addressForm.getRawValue(),
@@ -425,12 +458,9 @@ export class PatientEscortCreateComponent implements OnInit {
       file_address: this.files.address.file
     };
 
-    this.patientService.createPatientEscort(patientCaretId, patientEscortPayload)
+    this.patientService.createPatientEscort(patientCareId, payload)
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
