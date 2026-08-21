@@ -1,6 +1,6 @@
 <h2 mat-dialog-title>Novo usuário</h2>
 
-<form [formGroup]="userForm" (ngSubmit)="onSubmit()">
+<form [formGroup]="userForm">
   <mat-dialog-content>
     
     <div class="line">
@@ -78,9 +78,11 @@
   </mat-dialog-content>
   
   <mat-dialog-actions align="end">
-    <button mat-button type="button" [mat-dialog-close]="false">Fechar</button>
-    <button mat-flat-button color="primary" type="submit" 
-            [disabled]="userForm.invalid || userForm.pending || isSubmitting()">
+    <button mat-button type="button" [mat-dialog-close]="false" [disabled]="isSubmitting()">Fechar</button>
+    <button mat-flat-button color="primary" type="button" 
+            [disabled]="userForm.invalid || userForm.pending || isSubmitting()"
+            (click)="onSubmit()"
+            >
       <div class="waiting">
         @if (isSubmitting()) {
           <mat-spinner [diameter]="20"></mat-spinner>

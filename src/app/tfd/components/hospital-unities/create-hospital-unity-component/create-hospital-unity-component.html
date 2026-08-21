@@ -1,0 +1,62 @@
+<h2 mat-dialog-title>Nova unidade hospitalar</h2>
+
+<form [formGroup]="createHospitalUnityForm" (ngSubmit)="onSubmit()">
+  <mat-dialog-content>
+    <div class="line">
+      <mat-form-field appearance="outline">
+        <mat-label>Nome</mat-label>
+        <input matInput type="text" formControlName="name" />
+        @if (createHospitalUnityForm.get('name')?.hasError('required')) {
+          <mat-error>O nome é obrigatório.</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <div class="line">
+      <mat-form-field appearance="outline">
+        <mat-label>CNES</mat-label>
+        <input matInput type="text" formControlName="cnes" />
+        @if (createHospitalUnityForm.get('cnes')?.hasError('required')) {
+          <mat-error>O CNES é obrigatório.</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <div class="line" style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+      <mat-form-field appearance="outline">
+        <mat-label>Cidade</mat-label>
+        <input matInput type="text" formControlName="city" />
+        @if (createHospitalUnityForm.get('city')?.hasError('required')) {
+          <mat-error>A cidade é obrigatória.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>UF</mat-label>
+        <mat-select formControlName="state">
+          @for (uf of ufs; track uf) {
+            <mat-option [value]="uf">{{ uf }}</mat-option>
+          }
+        </mat-select>
+        @if (createHospitalUnityForm.get('state')?.hasError('required')) {
+          <mat-error>A UF é obrigatória.</mat-error>
+        }
+      </mat-form-field>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button 
+      mat-flat-button 
+      type="submit" 
+      [disabled]="createHospitalUnityForm.invalid || isSubmitting()">
+      <div class="waiting" style="display: flex; align-items: center; gap: 0.5rem;">
+        @if (isSubmitting()) {
+          <mat-spinner [diameter]="20"></mat-spinner>
+        }
+        Criar
+      </div>
+    </button>
+    <button mat-button type="button" [mat-dialog-close]="false" [disabled]="isSubmitting()">Fechar</button>
+  </mat-dialog-actions>
+</form>

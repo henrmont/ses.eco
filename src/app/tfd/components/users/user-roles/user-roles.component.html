@@ -1,6 +1,6 @@
 <h2 mat-dialog-title>Gerenciar Permissões</h2>
 
-<form [formGroup]="userRolesForm" (ngSubmit)="onSubmit()">
+<form [formGroup]="userRolesForm">
   <mat-dialog-content>
     @if (isLoading()) {
       <div class="loading-container">
@@ -42,8 +42,10 @@
     <button 
       mat-flat-button 
       color="primary" 
-      type="submit" 
-      [disabled]="userRolesForm.invalid || userRolesForm.pristine || isSubmitting()">
+      type="button" 
+      [disabled]="userRolesForm.invalid || userRolesForm.pristine || isSubmitting()"
+      (click)="onSubmit()"
+      >
       <div class="waiting">
         @if (isSubmitting()) {
           <mat-spinner [diameter]="20"></mat-spinner>

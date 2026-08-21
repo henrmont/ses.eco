@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, Injector, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
@@ -13,41 +13,44 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
-// Core & Services
+// Core & Models
 import { MessageService } from '../../../../core/services/message-service';
 import { CustomValidators } from '../../../../core/validators/custom.validator';
+
+// Services, Enums & Local Components
 import { Permission } from '../../../models/permission.model';
 import { RoleService } from '../../../services/role.service';
 
 @Component({
-  selector: 'app-role-create',
+  selector: 'app-role-update',
   standalone: true,
   imports: [
     FormsModule, 
-    ReactiveFormsModule, 
-    MatDialogModule, 
     MatButtonModule, 
+    MatCardModule,
+    MatDialogModule, 
     MatFormFieldModule, 
-    MatInputModule, 
-    MatSlideToggleModule, 
-    MatProgressSpinnerModule, 
     MatIconModule, 
-    MatCardModule
+    MatInputModule, 
+    MatProgressSpinnerModule, 
+    MatSlideToggleModule, 
+    ReactiveFormsModule
   ],
-  templateUrl: './role-create.component.html',
-  styleUrl: './role-create.component.scss',
+  templateUrl: './role-update.component.html',
+  styleUrl: './role-update.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class RoleCreateComponent implements OnInit {
+export class RoleUpdateComponent implements OnInit {
   // ==========================================
   // Injeção de Dependências
   // ==========================================
-  protected readonly data = inject(MAT_DIALOG_DATA);
+  protected readonly data = inject(MAT_DIALOG_DATA, { optional: true });
   private readonly fb = inject(FormBuilder);
   private readonly roleService = inject(RoleService);
   private readonly messageService = inject(MessageService);
-  private readonly dialogRef = inject(MatDialogRef<RoleCreateComponent>);
+  private readonly dialogRef = inject(MatDialogRef<RoleUpdateComponent>);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Propriedades e Estado Reativo
@@ -83,10 +86,11 @@ export class RoleCreateComponent implements OnInit {
   ngOnInit(): void {
     this.initForm();
     this.fetchPermissions();
+    this.setupFormSubmittingHandler();
   }
 
   // ==========================================
-  // Métodos Acessíveis pelo Template (Protected)
+  // Métodos Acessíveis pelo Template
   // ==========================================
   protected getFilteredRole(groupFilter: string): Permission[] {
     return this.permissions().filter((permission: Permission) => {
@@ -105,6 +109,9 @@ export class RoleCreateComponent implements OnInit {
   }
 
   protected togglePermission(item: Permission): void {
+    // Evita modificações caso o formulário esteja submetendo ou desativado
+    if (this.isSubmitting() || this.roleForm.disabled) return;
+
     const permissionsControl = this.roleForm.get('permissions');
     if (!permissionsControl) return;
 
@@ -122,6 +129,11 @@ export class RoleCreateComponent implements OnInit {
     permissionsControl.updateValueAndValidity();
   }
 
+  protected checkPermission(id: number): boolean {
+    const permissions = this.roleForm.get('permissions')?.value;
+    return Array.isArray(permissions) ? permissions.includes(id) : false;
+  }
+
   protected onSubmit(): void {
     if (this.roleForm.invalid) {
       this.roleForm.markAllAsTouched();
@@ -130,30 +142,35 @@ export class RoleCreateComponent implements OnInit {
 
     this.isSubmitting.set(true);
 
-    this.roleService.createRole(this.roleForm.getRawValue())
+    this.roleService.updateRole(this.data?.role?.id, this.roleForm.getRawValue())
       .pipe(
         finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
         next: (response) => {
-          this.messageService.showMessage(response?.message || 'Regra criada com sucesso!');
+          this.messageService.showMessage(response?.message || 'Regra atualizada com sucesso!');
           this.dialogRef.close(true);
         },
         error: (err) => {
-          const fallbackError = 'Erro ao criar a regra.';
+          const fallbackError = 'Erro ao atualizar a regra.';
           this.messageService.showMessage(err?.error?.message || fallbackError);
         }
       });
   }
 
   // ==========================================
-  // Métodos Privados / Auxiliares
+  // Métodos Privados
   // ==========================================
   private initForm(): void {
+    const roleName = this.data?.role?.name ? this.data.role.name.split('/')[1] : '';
+    const rolePermissions = this.data?.role?.permissions 
+      ? this.data.role.permissions.map((item: Permission) => item.id) 
+      : [];
+
     this.roleForm = this.fb.group({
-      name: ['', [Validators.required]],
-      permissions: [[], [CustomValidators.permissionsValidator()]]
+      name: [roleName, [Validators.required]],
+      permissions: [rolePermissions, [CustomValidators.permissionsValidator(2)]]
     });
   }
 
@@ -170,6 +187,18 @@ export class RoleCreateComponent implements OnInit {
         error: (err) => {
           const fallbackError = 'Erro ao carregar lista de permissões.';
           this.messageService.showMessage(err?.error?.message || fallbackError);
+        }
+      });
+  }
+
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.roleForm.disable({ emitEvent: false });
+        } else {
+          this.roleForm.enable({ emitEvent: false });
         }
       });
   }

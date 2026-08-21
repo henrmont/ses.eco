@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, inject, viewChild, DestroyRef, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, inject, viewChild, DestroyRef, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -17,25 +17,26 @@ import { LoadingComponent } from '../../../core/components/loading-component/loa
 import { DatasusService } from '../../services/datasus-service';
 
 // Modais (Dialogs)
-import { CreateHospitalUnityComponent } from '../../components/hospital-unity/create-hospital-unity-component/create-hospital-unity-component';
+import { CreateHospitalUnityComponent } from '../../components/hospital-unities/create-hospital-unity-component/create-hospital-unity-component';
 import { PatientCreateComponent } from '../../components/patient/patient-create/patient-create.component';
 import { PatientRequestCreateComponent } from '../../components/patient-request/patient-request-create/patient-request-create.component';
 import { PatientRequestTravelsImportComponent } from '../../components/patient-request-travels/patient-request-travels-import/patient-request-travels-import.component';
-import { UserCreateComponent } from '../../components/user/user-create/user-create.component';
-import { RoleCreateComponent } from '../../components/role/role-create/role-create.component';
+import { UserCreateComponent } from '../../components/users/user-create/user-create.component';
+import { RoleCreateComponent } from '../../components/roles/role-create/role-create.component';
 
-// Broadcast Channels Centralizados
-const CHANNELS = {
-  ROLES: new BroadcastChannel('tfd-roles-channel'),
-  USERS: new BroadcastChannel('tfd-users-channel'),
-  HOSPITALS: new BroadcastChannel('tfd-hospital-unities-channel'),
-  SIGTAP: new BroadcastChannel('tfd-sigtap-channel'),
-  PATIENTS: new BroadcastChannel('tfd-patients-channel'),
-  REQUESTS: new BroadcastChannel('tfd-patient-requests-channel'),
-  TRAVELS: new BroadcastChannel('tfd-travels-channel'),
+// Nomes dos canais do módulo TFD
+type TfdChannelKey = 'ROLES' | 'USERS' | 'HOSPITALS' | 'SIGTAP' | 'PATIENTS' | 'REQUESTS' | 'TRAVELS';
+
+const TFD_CHANNEL_NAMES: Record<TfdChannelKey, string> = {
+  ROLES: 'tfd-roles-channel',
+  USERS: 'tfd-users-channel',
+  HOSPITALS: 'tfd-hospital-unities-channel',
+  SIGTAP: 'tfd-sigtap-channel',
+  PATIENTS: 'tfd-patients-channel',
+  REQUESTS: 'tfd-patient-requests-channel',
+  TRAVELS: 'tfd-travels-channel',
 };
 
-// Adicione esta interface (opcional, mas recomendada para tipagem)
 interface MenuItem {
   label: string;
   icon: string;
@@ -66,23 +67,52 @@ interface MenuGroup {
   styleUrl: './tfd.layout.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TfdLayout {
-  // 🔒 Injeções de dependência modernas via inject()
+export class TfdLayout implements OnInit, OnDestroy {
+  // 🔒 Injeções de dependência
   private readonly route = inject(ActivatedRoute);
   private readonly dialog = inject(MatDialog);
   private readonly messageService = inject(MessageService);
   private readonly datasusService = inject(DatasusService);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Captura do input HTML via Signal reativo (viewChild)
+  // Captura do input HTML
   protected readonly competence = viewChild.required<ElementRef>('competence');
   
   private loadingDialog!: MatDialogRef<LoadingComponent>;
   private readonly selectedFile = signal<File | null>(null);
 
+  // 📡 Mapa de instâncias dos BroadcastChannels do TFD
+  private readonly channels = new Map<TfdChannelKey, BroadcastChannel>();
+
+  // ==========================================
+  // Ciclo de Vida (Inicialização e Finalização dos Canais)
+  // ==========================================
+  ngOnInit(): void {
+    // Instancia todos os canais quando o layout é carregado
+    (Object.keys(TFD_CHANNEL_NAMES) as TfdChannelKey[]).forEach(key => {
+      this.channels.set(key, new BroadcastChannel(TFD_CHANNEL_NAMES[key]));
+    });
+  }
+
+  ngOnDestroy(): void {
+    // Finaliza TODOS os canais de uma vez quando o usuário SAI do TfdLayout
+    this.channels.forEach(channel => channel.close());
+    this.channels.clear();
+  }
+
   /**
-   * Verifica as permissões baseando-se no snapshot da rota atual de forma puramente declarativa.
+   * Método auxiliar para emitir mensagens com segurança no canal especificado
    */
+  public postMessage(channelKey: TfdChannelKey, message: any = 'update'): void {
+    const channel = this.channels.get(channelKey);
+    if (channel) {
+      channel.postMessage(message);
+    }
+  }
+
+  // ==========================================
+  // Métodos do Template
+  // ==========================================
   protected checkPermission(names: string[]): boolean {
     const module = this.route.snapshot.routeConfig?.path;
     const roles = this.route.parent?.snapshot.data['user']?.roles || [];
@@ -93,16 +123,10 @@ export class TfdLayout {
     });
   }
 
-  /**
-   * Dispara o clique programático no input oculto de arquivos
-   */
   protected importCompetence(): void {
     this.competence().nativeElement.click();
   }
 
-  /**
-   * Gerencia o upload e processamento do arquivo ZIP do Datasus
-   */
   protected onFileChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     const files = input.files;
@@ -115,14 +139,14 @@ export class TfdLayout {
         .pipe(
           finalize(() => {
             if (this.loadingDialog) this.loadingDialog.close();
-            input.value = ''; // Limpa o input para permitir re-upload do mesmo arquivo
+            input.value = '';
           }),
           takeUntilDestroyed(this.destroyRef)
         )
         .subscribe({
           next: (response) => {
             this.messageService.showMessage(response.message);
-            CHANNELS.SIGTAP.postMessage('update');
+            this.postMessage('SIGTAP', 'update');
           },
           error: (error) => {
             const fallbackError = error?.error?.message || 'Erro ao processar arquivo';
@@ -142,10 +166,7 @@ export class TfdLayout {
     });
   }
 
-  /**
-   * ⚡ Método genérico, privado e centralizado para abertura de Modais (Design Pattern idêntico à sua referência)
-   */
-  private openDialog(component: any, width = '500px', height = 'auto', channel?: BroadcastChannel): void {
+  private openDialog(component: any, width = '500px', height = 'auto', channelKey?: TfdChannelKey): void {
     this.dialog.open(component, {
       width,
       height,
@@ -154,14 +175,13 @@ export class TfdLayout {
     }).afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(result => {
-        if (result && channel) {
-          channel.postMessage('update');
+        if (result && channelKey) {
+          this.postMessage(channelKey, 'update');
         }
       });
   }
 
   // --- MENU DO TEMPLATE HTML ---
-
   protected readonly menuGroups: MenuGroup[] = [
     {
       subHeader: 'Usuários',
@@ -264,28 +284,27 @@ export class TfdLayout {
   ];
 
   // --- MÉTODOS DE AÇÃO DO TEMPLATE HTML ---
-
   protected userCreate(): void {
-    this.openDialog(UserCreateComponent, '700px', 'auto', CHANNELS.USERS);
+    this.openDialog(UserCreateComponent, '700px', 'auto', 'USERS');
   }
 
   protected roleCreate(): void {
-    this.openDialog(RoleCreateComponent, '900px', 'auto', CHANNELS.ROLES);
+    this.openDialog(RoleCreateComponent, '900px', 'auto', 'ROLES');
   }
 
   protected createHospitalUnity(): void {
-    this.openDialog(CreateHospitalUnityComponent, '500px', 'auto', CHANNELS.HOSPITALS);
+    this.openDialog(CreateHospitalUnityComponent, '500px', 'auto', 'HOSPITALS');
   }
         
   protected patientCreate(): void {
-    this.openDialog(PatientCreateComponent, '1200px', '700px', CHANNELS.PATIENTS);
+    this.openDialog(PatientCreateComponent, '1200px', '700px', 'PATIENTS');
   }
 
   protected patientRequestCreate(): void {
-    this.openDialog(PatientRequestCreateComponent, '800px', 'auto', CHANNELS.REQUESTS);
+    this.openDialog(PatientRequestCreateComponent, '800px', 'auto', 'REQUESTS');
   }
 
   protected patientRequestTravelsImport(): void {
-    this.openDialog(PatientRequestTravelsImportComponent, '400px', 'auto', CHANNELS.TRAVELS);
+    this.openDialog(PatientRequestTravelsImportComponent, '400px', 'auto', 'TRAVELS');
   }
 }

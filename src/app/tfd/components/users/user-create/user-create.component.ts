@@ -1,15 +1,16 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, Injector, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { finalize } from 'rxjs';
+import { NgxMaskDirective } from 'ngx-mask';
+
+// Angular Material
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectChange, MatSelectModule } from '@angular/material/select';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { finalize } from 'rxjs';
-import { NgxMaskDirective } from 'ngx-mask';
 
 // Core & Models
 import { ApiResponse } from '../../../../core/models/api-response.model';
@@ -20,25 +21,24 @@ import { Professionals } from '../../../enums/professionals';
 import { UserService } from '../../../services/user.service';
 
 @Component({
-  selector: 'app-user-update',
+  selector: 'app-user-create',
   standalone: true,
   imports: [
     FormsModule,
     MatButtonModule,
     MatDialogModule,
     MatFormFieldModule,
-    MatIconModule,
     MatInputModule,
     MatProgressSpinnerModule,
     MatSelectModule,
     NgxMaskDirective,
     ReactiveFormsModule
   ],
-  templateUrl: './user-update.component.html',
-  styleUrl: './user-update.component.scss',
+  templateUrl: './user-create.component.html',
+  styleUrl: './user-create.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class UserUpdateComponent implements OnInit {
+export class UserCreateComponent implements OnInit {
   // ==========================================
   // Injeção de Dependências
   // ==========================================
@@ -46,8 +46,9 @@ export class UserUpdateComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly userService = inject(UserService);
   private readonly messageService = inject(MessageService);
-  private readonly dialogRef = inject(MatDialogRef<UserUpdateComponent>);
+  private readonly dialogRef = inject(MatDialogRef<UserCreateComponent>);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Propriedades e Estado Reativo
@@ -83,25 +84,17 @@ export class UserUpdateComponent implements OnInit {
   // ==========================================
   ngOnInit(): void {
     this.initForm();
-    this.loadInitialPermissions();
+    this.setupFormSubmittingHandler();
   }
 
   // ==========================================
-  // Métodos Acessíveis pelo Template (Protected)
+  // Métodos Acessíveis pelo Template
   // ==========================================
   protected onSelection(event: MatSelectChange): void {
     this.evaluateProfessionalControls(event.value);
-    this.userForm.markAsDirty();
   }
 
   protected onSubmit(): void {
-    const userId = this.data?.user?.id;
-    
-    if (!userId) {
-      this.messageService.showMessage('Identificador do usuário inválido.');
-      return;
-    }
-
     if (this.userForm.invalid) {
       this.userForm.markAllAsTouched();
       return;
@@ -109,55 +102,58 @@ export class UserUpdateComponent implements OnInit {
 
     this.isSubmitting.set(true);
 
-    this.userService.updateUser(userId, this.userForm.getRawValue())
+    this.userService.createUser(this.userForm.getRawValue())
       .pipe(
         finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
         next: (response: ApiResponse) => {
-          this.messageService.showMessage(response?.message || 'Usuário atualizado com sucesso!');
+          this.messageService.showMessage(response?.message || 'Usuário cadastrado com sucesso!');
           this.dialogRef.close(true);
         },
         error: (err) => {
-          const fallbackError = 'Erro ao atualizar o usuário.';
+          const fallbackError = 'Erro ao criar o usuário.';
           this.messageService.showMessage(err?.error?.message || fallbackError);
         }
       });
   }
 
   // ==========================================
-  // Métodos Privados / Auxiliares
+  // Métodos Privados
   // ==========================================
   private initForm(): void {
-    const professional = this.data?.user?.professional;
-    const initialEmail = this.data?.user?.email || null;
-    const initialCns = professional ? professional.cns : null;
-
     this.userForm = this.fb.group({
-      name: [professional ? professional.name : '', [Validators.required]],
+      name: ['', [Validators.required]],
       email: [
-        initialEmail, 
+        '', 
         [Validators.required, Validators.email], 
-        [this.userService.emailUserExistsValidator(initialEmail)]
+        [this.userService.emailUserExistsValidator(null)]
       ],
-      type: [professional ? professional.type : '', [Validators.required]],
+      type: ['', [Validators.required]],
       cns: [
-        initialCns, 
+        '', 
         [Validators.required], 
-        [this.userService.cnsUserExistsValidator(initialCns)]
+        [this.userService.cnsUserExistsValidator(null)]
       ],
-      registration: [professional ? professional.registration : '', [Validators.required]],
-      professional_register: [{ value: professional ? professional.professional_register : '', disabled: true }],
-      cbo: [{ value: professional ? professional.cbo : '', disabled: true }]
+      registration: ['', [Validators.required]],
+      professional_register: [{ value: '', disabled: true }],
+      cbo: [{ value: '', disabled: true }]
     });
   }
 
-  private loadInitialPermissions(): void {
-    const initialType = this.userForm.get('type')?.value;
-    if (initialType) {
-      this.evaluateProfessionalControls(initialType);
-    }
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.userForm.disable({ emitEvent: false });
+        } else {
+          this.userForm.enable({ emitEvent: false });
+          // Reavalia para manter o estado disabled correto dos campos condicionais após o submit
+          this.evaluateProfessionalControls(this.userForm.get('type')?.value);
+        }
+      });
   }
 
   private evaluateProfessionalControls(selectedType: string): void {

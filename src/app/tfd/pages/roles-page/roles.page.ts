@@ -23,11 +23,9 @@ import { User } from '../../models/user.model';
 import { RoleService } from '../../services/role.service';
 
 // Dialog Components
-import { RoleDeleteComponent } from '../../components/role/role-delete/role-delete.component';
-import { RoleUpdateComponent } from '../../components/role/role-update/role-update.component';
+import { RoleDeleteComponent } from '../../components/roles/role-delete/role-delete.component';
+import { RoleUpdateComponent } from '../../components/roles/role-update/role-update.component';
 
-// Constantes Locais
-const TFD_ROLES_CHANNEL = new BroadcastChannel('tfd-roles-channel');
 
 @Component({
   selector: 'app-roles-page',
@@ -38,6 +36,9 @@ const TFD_ROLES_CHANNEL = new BroadcastChannel('tfd-roles-channel');
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RolesPage implements OnInit, OnDestroy {
+  // Instância própria da página
+  private readonly rolesChannel = new BroadcastChannel('tfd-roles-channel');
+
   // ==========================================
   // Injeção de Dependências
   // ==========================================
@@ -74,7 +75,7 @@ export class RolesPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    TFD_ROLES_CHANNEL.close();
+    this.rolesChannel.close();
   }
 
   // ==========================================
@@ -150,7 +151,7 @@ export class RolesPage implements OnInit, OnDestroy {
   }
 
   private listenToBroadcastChannel(): void {
-    TFD_ROLES_CHANNEL.onmessage = (message: MessageEvent<string>) => {
+    this.rolesChannel.onmessage = (message: MessageEvent<string>) => {
       if (message.data === 'update') {
         this.fetchRoles(false);
       }
@@ -191,6 +192,6 @@ export class RolesPage implements OnInit, OnDestroy {
 
   private handleRoleChange(): void {
     this.fetchRoles(false);
-    TFD_ROLES_CHANNEL.postMessage('update');
+    this.rolesChannel.postMessage('update');
   }
 }

@@ -1,6 +1,6 @@
-<h2 mat-dialog-title>Nova regra</h2>
+<h2 mat-dialog-title>Atualizar regra</h2>
 
-<form [formGroup]="roleForm" (ngSubmit)="onSubmit()">
+<form [formGroup]="roleForm">
   <mat-dialog-content>
     @if (isLoading()) {
       <div class="loading-container">
@@ -33,7 +33,11 @@
               <div class="group-grid">
                 @for (item of getFilteredRole(group.filter); track $index) {
                   <div class="toggle-item">
-                    <mat-slide-toggle (toggleChange)="togglePermission(item)" color="primary">
+                    <mat-slide-toggle 
+                      [checked]="checkPermission(item.id)"
+                      [disabled]="isSubmitting()" 
+                      (toggleChange)="togglePermission(item)"
+                      color="primary">
                       {{ item.name.split('/').pop() }}
                     </mat-slide-toggle>
                   </div>
@@ -53,14 +57,17 @@
   </mat-dialog-content>
   
   <mat-dialog-actions align="end">
-    <button mat-button type="button" [mat-dialog-close]="false">Fechar</button>
-    <button mat-flat-button color="primary" type="submit" 
-            [disabled]="roleForm.invalid || roleForm.pending || isSubmitting()">
+    <button mat-button type="button" [mat-dialog-close]="false" [disabled]="isSubmitting()">Fechar</button>
+    
+    <button mat-flat-button color="primary" type="button" 
+            [disabled]="roleForm.invalid || roleForm.pristine || roleForm.pending || isSubmitting()"
+            (click)="onSubmit()"
+            >
       <div class="waiting">
         @if (isSubmitting()) {
           <mat-spinner [diameter]="20"></mat-spinner>
         }
-        Criar regra
+        Salvar alterações
       </div>
     </button>
   </mat-dialog-actions>

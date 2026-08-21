@@ -22,15 +22,12 @@ import { User } from '../../models/user.model';
 import { UserService } from '../../services/user.service';
 
 // Dialog Components
-import { UserDeleteComponent } from '../../components/user/user-delete/user-delete.component';
-import { UserDetailComponent } from '../../components/user/user-detail/user-detail.component';
-import { UserLockComponent } from '../../components/user/user-lock/user-lock.component';
-import { UserRolesComponent } from '../../components/user/user-roles/user-roles.component';
-import { UserUpdateComponent } from '../../components/user/user-update/user-update.component';
-import { UserValidateComponent } from '../../components/user/user-validate/user-validate.component';
-
-// Constantes Locais
-const TFD_USERS_CHANNEL = new BroadcastChannel('tfd-users-channel');
+import { UserDeleteComponent } from '../../components/users/user-delete/user-delete.component';
+import { UserDetailComponent } from '../../components/users/user-detail/user-detail.component';
+import { UserLockComponent } from '../../components/users/user-lock/user-lock.component';
+import { UserRolesComponent } from '../../components/users/user-roles/user-roles.component';
+import { UserUpdateComponent } from '../../components/users/user-update/user-update.component';
+import { UserValidateComponent } from '../../components/users/user-validate/user-validate.component';
 
 interface UserTableRow extends User {
   is_editable: boolean;
@@ -46,6 +43,9 @@ interface UserTableRow extends User {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UsersPage implements OnInit, OnDestroy {
+  // Instância própria da página
+  private readonly usersChannel = new BroadcastChannel('tfd-users-channel');
+
   // ==========================================
   // Injeção de Dependências
   // ==========================================
@@ -89,7 +89,7 @@ export class UsersPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    TFD_USERS_CHANNEL.close();
+    this.usersChannel.close();
   }
 
   // ==========================================
@@ -176,7 +176,7 @@ export class UsersPage implements OnInit, OnDestroy {
   }
 
   private listenToBroadcastChannel(): void {
-    TFD_USERS_CHANNEL.onmessage = (message: MessageEvent<string>) => {
+    this.usersChannel.onmessage = (message: MessageEvent<string>) => {
       if (message.data === 'update') {
         this.fetchUsers(false);
       }
@@ -239,6 +239,6 @@ export class UsersPage implements OnInit, OnDestroy {
 
   private handleUserChange(): void {
     this.fetchUsers(false);
-    TFD_USERS_CHANNEL.postMessage('update');
+    this.usersChannel.postMessage('update');
   }
 }
