@@ -26,11 +26,11 @@ import { Role } from '../../models/role.model';
 import { PatientRequestAccountabilityService } from '../../services/patient-request-accountability.service';
 
 // Dialog Components
-import { PatientRequestAttachmentsComponent } from '../../components/patient-request/patient-request-attachments/patient-request-attachments.component';
-import { PatientRequestDetailComponent } from '../../components/patient-request/patient-request-detail/patient-request-detail.component';
+import { PatientRequestAttachmentsComponent } from '../../components/patient-requests/patient-request-attachments/patient-request-attachments.component';
+import { PatientRequestDetailComponent } from '../../components/patient-requests/patient-request-detail/patient-request-detail.component';
 import { PatientRequestHaltedComponent } from '../../components/patient-request-accountabilities/patient-request-halted/patient-request-halted.component';
 import { PatientRequestAccountabilitiesComponent } from '../../components/patient-request-accountabilities/patient-request-accountabilities/patient-request-accountabilities.component';
-import { PatientRequestArchiveComponent } from '../../components/patient-request-cost-assistances/patient-request-archive/patient-request-archive.component';
+import { PatientRequestArchiveComponent } from '../../components/patient-request-accountabilities/patient-request-archive/patient-request-archive.component';
 import { PatientRequestFinishBackComponent } from '../../components/patient-request-cost-assistances/patient-request-finish-back/patient-request-finish-back.component';
 import { PatientRequestMoveFromOthersComponent } from '../../components/patient-request-accountabilities/patient-request-move-from-others/patient-request-move-from-others.component';
 

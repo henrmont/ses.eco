@@ -1,6 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { 
+  ChangeDetectionStrategy, 
+  ChangeDetectorRef, 
+  Component, 
+  DestroyRef, 
+  Injector, 
+  OnInit, 
+  inject, 
+  signal 
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
@@ -48,6 +57,7 @@ export class AccountabilityDailyUpdateComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<AccountabilityDailyUpdateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Formulário Principal
@@ -79,6 +89,7 @@ export class AccountabilityDailyUpdateComponent implements OnInit {
   // ==========================================
   ngOnInit(): void {
     this.initForm();
+    this.setupFormSubmittingHandler();
     this.fetchDailyCosts();
   }
 
@@ -92,6 +103,22 @@ export class AccountabilityDailyUpdateComponent implements OnInit {
       daily_cost_id: [daily?.daily_cost_id ?? null, [Validators.required]],
       amount: [daily?.amount ?? null, [Validators.required, Validators.min(1)]]
     });
+  }
+
+  // ==========================================
+  // Handlers Reativos
+  // ==========================================
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.updateAccountabilityDailyForm.disable({ emitEvent: false });
+        } else {
+          this.updateAccountabilityDailyForm.enable({ emitEvent: false });
+        }
+        this.cdr.markForCheck();
+      });
   }
 
   // ==========================================
@@ -141,16 +168,12 @@ export class AccountabilityDailyUpdateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
     const payload = this.updateAccountabilityDailyForm.getRawValue();
 
     this.accountabilityService.updateAccountabilityDaily(dailyId, payload)
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({

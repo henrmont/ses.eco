@@ -364,14 +364,23 @@
                       [disabled]="checkPermissions('tfd/parecer listar')">
                 <mat-icon>visibility</mat-icon>
               </button>
-
-              <button mat-icon-button 
-                      type="button" 
-                      matTooltip="Mover para minha caixa" 
-                      (click)="patientRequestMoveFromOthers(element)" 
-                      [disabled]="element.has_medical_opinion || element.has_social_opinion || checkPermissions('tfd/parecer atualizar')">
-                <mat-icon>move_to_inbox</mat-icon>
-              </button>
+              @if (profileType() === 'medical') {
+                <button mat-icon-button 
+                        type="button" 
+                        matTooltip="Mover para minha caixa" 
+                        (click)="patientRequestMoveFromOthers(element)" 
+                        [disabled]="element.has_medical_opinion || element.is_medical_bookmark || checkPermissions('tfd/parecer atualizar')">
+                  <mat-icon>move_to_inbox</mat-icon>
+                </button>
+              } @else {
+                <button mat-icon-button 
+                        type="button" 
+                        matTooltip="Mover para minha caixa" 
+                        (click)="patientRequestMoveFromOthers(element)" 
+                        [disabled]="element.has_social_opinion || element.is_social_bookmark || checkPermissions('tfd/parecer atualizar')">
+                  <mat-icon>move_to_inbox</mat-icon>
+                </button>
+              }
             </td>
           </ng-container>
           

@@ -1,8 +1,19 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { 
+  ChangeDetectionStrategy, 
+  ChangeDetectorRef, 
+  Component, 
+  DestroyRef, 
+  Injector, 
+  OnInit, 
+  Signal, 
+  computed, 
+  inject, 
+  signal 
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Observable, finalize, map, startWith } from 'rxjs';
+import { finalize } from 'rxjs';
 
 // Material Modules
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -54,6 +65,7 @@ export class PatientRequestProcessToMedicalComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<PatientRequestProcessToMedicalComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Mensagens de Erro por Controle
@@ -71,22 +83,30 @@ export class PatientRequestProcessToMedicalComponent implements OnInit {
   protected readonly medicalProfessionalLoading = signal<boolean>(false);
   protected readonly medicalProfessionalReadOnly = signal<boolean>(true);
 
-  // ==========================================
-  // FormGroups
-  // ==========================================
-  protected patientRequestForm!: FormGroup;
+  private readonly medicalProfessionalOptions = signal<MedicalProfessional[]>([]);
 
   // ==========================================
-  // Autocomplete e Observables
+  // FormGroups e Signal Controls
   // ==========================================
-  private medicalProfessionalOptions: MedicalProfessional[] = [];
-  protected filteredMedicalProfessionalOptions!: Observable<MedicalProfessional[]>;
+  protected patientRequestForm!: FormGroup;
+  private medicalSearchValue!: Signal<string | MedicalProfessional>;
+
+  // Autocomplete Filtrado Reativo (Computed)
+  protected readonly filteredMedicalProfessionalOptions = computed(() => {
+    const val = this.medicalSearchValue ? this.medicalSearchValue() : '';
+    const query = typeof val === 'string' ? val.toLowerCase().trim() : val?.name?.toLowerCase().trim() || '';
+    
+    return query
+      ? this.medicalProfessionalOptions().filter(opt => opt.name && opt.name.toLowerCase().includes(query)).slice(0, 10)
+      : this.medicalProfessionalOptions().slice(0, 10);
+  });
 
   // ==========================================
   // Ciclo de Vida (Hooks)
   // ==========================================
   ngOnInit(): void {
     this.initForm();
+    this.setupFormSubmittingHandler();
     this.fetchMedicalProfessionals();
     this.registerCleaners();
   }
@@ -99,23 +119,28 @@ export class PatientRequestProcessToMedicalComponent implements OnInit {
       medical_professional_id: [null, [Validators.required]],
       medical_professional_search: [null, [Validators.required]]
     });
+
+    const medicalCtrl = this.patientRequestForm.get('medical_professional_search')!;
+    this.medicalSearchValue = toSignal(medicalCtrl.valueChanges, {
+      initialValue: '',
+      injector: this.injector
+    });
   }
 
   // ==========================================
-  // Autocomplete e Filtros
+  // Handler de Estado de Submissão
   // ==========================================
-  private configureMedicalProfessionalFilter(): void {
-    const medicalCtrl = this.patientRequestForm.get('medical_professional_search');
-    if (medicalCtrl) {
-      this.filteredMedicalProfessionalOptions = medicalCtrl.valueChanges.pipe(
-        startWith(''),
-        map(value => {
-          const name = typeof value === 'string' ? value : value?.name;
-          return name ? this._filterMedicalProfessional(name) : this.medicalProfessionalOptions.slice(0, 10);
-        }),
-        takeUntilDestroyed(this.destroyRef)
-      );
-    }
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.patientRequestForm.disable({ emitEvent: false });
+        } else {
+          this.patientRequestForm.enable({ emitEvent: false });
+        }
+        this.cdr.markForCheck();
+      });
   }
 
   private registerCleaners(): void {
@@ -128,13 +153,6 @@ export class PatientRequestProcessToMedicalComponent implements OnInit {
           this.cdr.markForCheck();
         }
       });
-  }
-
-  private _filterMedicalProfessional(name: string): MedicalProfessional[] {
-    const filterValue = name.toLowerCase().trim();
-    return this.medicalProfessionalOptions
-      .filter(option => option.name && option.name.toLowerCase().includes(filterValue))
-      .slice(0, 10);
   }
 
   // ==========================================
@@ -155,15 +173,14 @@ export class PatientRequestProcessToMedicalComponent implements OnInit {
       .subscribe({
         next: response => {
           if (response) {
-            this.medicalProfessionalOptions = response;
-            this.configureMedicalProfessionalFilter();
+            this.medicalProfessionalOptions.set(response);
             this.medicalProfessionalReadOnly.set(false);
             this.cdr.markForCheck();
           }
         },
         error: () => {
           this.medicalProfessionalReadOnly.set(true);
-          this.medicalProfessionalOptions = [];
+          this.medicalProfessionalOptions.set([]);
           this.cdr.markForCheck();
         }
       });

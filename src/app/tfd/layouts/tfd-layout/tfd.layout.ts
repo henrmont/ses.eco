@@ -18,8 +18,8 @@ import { DatasusService } from '../../services/datasus-service';
 
 // Modais (Dialogs)
 import { CreateHospitalUnityComponent } from '../../components/hospital-unities/create-hospital-unity-component/create-hospital-unity-component';
-import { PatientCreateComponent } from '../../components/patient/patient-create/patient-create.component';
-import { PatientRequestCreateComponent } from '../../components/patient-request/patient-request-create/patient-request-create.component';
+import { PatientCreateComponent } from '../../components/patients/patient-create/patient-create.component';
+import { PatientRequestCreateComponent } from '../../components/patient-requests/patient-request-create/patient-request-create.component';
 import { PatientRequestTravelsImportComponent } from '../../components/patient-request-travels/patient-request-travels-import/patient-request-travels-import.component';
 import { UserCreateComponent } from '../../components/users/user-create/user-create.component';
 import { RoleCreateComponent } from '../../components/roles/role-create/role-create.component';
@@ -261,8 +261,15 @@ export class TfdLayout implements OnInit, OnDestroy {
       requiredRoles: ['ajuda de custo listar'],
       items: [
         { label: 'Ajuda de custo', icon: 'price_check', permissions: ['ajuda de custo listar'], routerLink: ['ajudas-de-custo'] },
+        { label: 'Arquivo', icon: 'inventory_2', permissions: ['ajuda de custo listar'], routerLink: ['arquivo-ajudas-de-custo'] },
+      ]
+    },
+    {
+      subHeader: 'Prestações de conta',
+      requiredRoles: ['ajuda de custo listar'],
+      items: [
         { label: 'Prestação de contas', icon: 'receipt_long', permissions: ['ajuda de custo listar'], routerLink: ['prestacoes-de-conta'] },
-        { label: 'Arquivo', icon: 'inventory_2', permissions: ['ajuda de custo listar'], routerLink: ['arquivo-ajudas-de-custo'] }
+        { label: 'Arquivo', icon: 'inventory_2', permissions: ['ajuda de custo listar'], routerLink: ['arquivo-prestacoes-de-conta'] }
       ]
     },
     {

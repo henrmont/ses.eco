@@ -1,6 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { 
+  ChangeDetectionStrategy, 
+  ChangeDetectorRef, 
+  Component, 
+  DestroyRef, 
+  Injector, 
+  OnInit, 
+  inject, 
+  signal 
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
@@ -48,6 +57,7 @@ export class AccountabilityDailyCreateComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<AccountabilityDailyCreateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Mensagens de Erro por Controle
@@ -79,17 +89,34 @@ export class AccountabilityDailyCreateComponent implements OnInit {
   // ==========================================
   ngOnInit(): void {
     this.initForm();
+    this.setupFormSubmittingHandler();
     this.fetchDailyCosts();
   }
 
   // ==========================================
-  // Inicialização de Formulário
+  // Inicialização do Formulário
   // ==========================================
   private initForm(): void {
     this.createAccountabilityDailyForm = this.fb.group({
       daily_cost_id: [null, [Validators.required]],
       amount: [null, [Validators.required, Validators.min(1)]]
     });
+  }
+
+  // ==========================================
+  // Handlers Reativos
+  // ==========================================
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.createAccountabilityDailyForm.disable({ emitEvent: false });
+        } else {
+          this.createAccountabilityDailyForm.enable({ emitEvent: false });
+        }
+        this.cdr.markForCheck();
+      });
   }
 
   // ==========================================
@@ -124,7 +151,12 @@ export class AccountabilityDailyCreateComponent implements OnInit {
   protected onSubmit(): void {
     const accountabilityId = this.data?.accountability?.id;
 
-    if (this.createAccountabilityDailyForm.invalid || !accountabilityId) {
+    if (!accountabilityId) {
+      this.messageService.showMessage('Identificador da prestação de contas não encontrado.');
+      return;
+    }
+
+    if (this.createAccountabilityDailyForm.invalid) {
       this.createAccountabilityDailyForm.markAllAsTouched();
       return;
     }
@@ -134,16 +166,12 @@ export class AccountabilityDailyCreateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
     const payload = this.createAccountabilityDailyForm.getRawValue();
 
     this.accountabilityService.createAccountabilityDaily(accountabilityId, payload)
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({

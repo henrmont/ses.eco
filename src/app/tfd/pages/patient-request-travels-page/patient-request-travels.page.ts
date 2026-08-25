@@ -27,9 +27,9 @@ import { Role } from '../../models/role.model';
 import { PatientRequestTravelService } from '../../services/patient-request-travel.service';
 
 // Dialog Components
-import { PatientEscortsComponent } from '../../components/patient/patient-escorts/patient-escorts.component';
-import { PatientRequestAttachmentsComponent } from '../../components/patient-request/patient-request-attachments/patient-request-attachments.component';
-import { PatientRequestDetailComponent } from '../../components/patient-request/patient-request-detail/patient-request-detail.component';
+import { PatientEscortsComponent } from '../../components/patients/patient-escorts/patient-escorts.component';
+import { PatientRequestAttachmentsComponent } from '../../components/patient-requests/patient-request-attachments/patient-request-attachments.component';
+import { PatientRequestDetailComponent } from '../../components/patient-requests/patient-request-detail/patient-request-detail.component';
 import { PatientRequestArchiveComponent } from '../../components/patient-request-travels/patient-request-archive/patient-request-archive.component';
 import { PatientRequestFinishBackComponent } from '../../components/patient-request-travels/patient-request-finish-back/patient-request-finish-back.component';
 import { PatientRequestHaltedComponent } from '../../components/patient-request-travels/patient-request-halted/patient-request-halted.component';
@@ -43,8 +43,6 @@ type PatientRequestDialogData =
   | { patient_care: PatientCare | undefined }
   | { patient_request: PatientRequest, permissions: Role[] };
 
-// Constantes Locais
-const TFD_TRAVELS_CHANNEL = new BroadcastChannel('tfd-travels-channel');
 
 @Component({
   selector: 'app-patient-request-travels-page',
@@ -68,6 +66,11 @@ const TFD_TRAVELS_CHANNEL = new BroadcastChannel('tfd-travels-channel');
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientRequestTravelsPage implements OnInit, OnDestroy {
+  // ==========================================
+  // Instância própria do canal
+  // ==========================================
+  private readonly travelsChannel = new BroadcastChannel('tfd-travels-channel');
+
   // ==========================================
   // Injeção de Dependências
   // ==========================================
@@ -109,7 +112,7 @@ export class PatientRequestTravelsPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    TFD_TRAVELS_CHANNEL.close();
+    this.travelsChannel.close();
   }
 
   // ==========================================
@@ -238,7 +241,7 @@ export class PatientRequestTravelsPage implements OnInit, OnDestroy {
   }
 
   private listenToBroadcastChannel(): void {
-    TFD_TRAVELS_CHANNEL.onmessage = (message: MessageEvent<string>) => {
+    this.travelsChannel.onmessage = (message: MessageEvent<string>) => {
       if (message.data === 'update') {
         this.fetchPatientRequests(false);
       }
@@ -290,6 +293,6 @@ export class PatientRequestTravelsPage implements OnInit, OnDestroy {
 
   private handleRequestsChange(): void {
     this.fetchPatientRequests(false);
-    TFD_TRAVELS_CHANNEL.postMessage('update');
+    this.travelsChannel.postMessage('update');
   }
 }

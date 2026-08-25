@@ -1,23 +1,31 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { 
+  ChangeDetectionStrategy, 
+  ChangeDetectorRef, 
+  Component, 
+  DestroyRef, 
+  Injector, 
+  OnInit, 
+  inject, 
+  signal 
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 
-// Importação do Moment
 import * as _moment from 'moment';
 const moment = (_moment as any).default || _moment;
 
 // Material Modules
+import { MatButtonModule } from '@angular/material/button';
 import { MAT_DATE_LOCALE, MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerInputEvent, MatDatepickerModule } from '@angular/material/datepicker';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
-// Core, Models, Validators e Serviços
+// Core, Models, Validators & Serviços
 import { ApiResponse } from '../../../../core/models/api-response.model';
 import { MessageService } from '../../../../core/services/message-service';
 import { CustomValidators } from '../../../../core/validators/custom.validator';
@@ -56,6 +64,7 @@ export class TravelRouteCreateComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<TravelRouteCreateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Mensagens de Erro por Controle
@@ -89,7 +98,7 @@ export class TravelRouteCreateComponent implements OnInit {
   protected readonly isSubmitting = signal<boolean>(false);
 
   // ==========================================
-  // FormGroups
+  // Formulário Principal
   // ==========================================
   protected createRouteForm!: FormGroup;
 
@@ -98,6 +107,7 @@ export class TravelRouteCreateComponent implements OnInit {
   // ==========================================
   ngOnInit(): void {
     this.initForm();
+    this.setupFormSubmittingHandler();
   }
 
   // ==========================================
@@ -116,6 +126,22 @@ export class TravelRouteCreateComponent implements OnInit {
       scales: [null],
       family: [null]
     });
+  }
+
+  // ==========================================
+  // Handlers Reativos
+  // ==========================================
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.createRouteForm.disable({ emitEvent: false });
+        } else {
+          this.createRouteForm.enable({ emitEvent: false });
+        }
+        this.cdr.markForCheck();
+      });
   }
 
   // ==========================================
@@ -156,27 +182,35 @@ export class TravelRouteCreateComponent implements OnInit {
   }
 
   // ==========================================
-  // Submissão
+  // Submissão do Formulário
   // ==========================================
   protected onSubmit(): void {
     const travelId = this.data?.travel?.id;
 
-    if (this.createRouteForm.invalid || !travelId) {
+    if (!travelId) {
+      this.messageService.showMessage('Identificador da viagem não encontrado.');
+      return;
+    }
+
+    if (this.createRouteForm.invalid) {
       this.createRouteForm.markAllAsTouched();
       return;
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
-    const payload = this.createRouteForm.getRawValue();
+    const rawValues = this.createRouteForm.getRawValue();
+
+    // Formata campos de data caso sejam objetos moment antes do envio
+    const payload = {
+      ...rawValues,
+      departure: rawValues.departure ? moment(rawValues.departure).format('YYYY-MM-DD HH:mm:ss') : null,
+      arrival: rawValues.arrival ? moment(rawValues.arrival).format('YYYY-MM-DD HH:mm:ss') : null
+    };
 
     this.travelService.createRoute(travelId, payload)
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({

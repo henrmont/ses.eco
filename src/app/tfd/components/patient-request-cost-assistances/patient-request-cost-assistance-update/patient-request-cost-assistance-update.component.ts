@@ -1,8 +1,17 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { 
+  ChangeDetectionStrategy, 
+  ChangeDetectorRef, 
+  Component, 
+  DestroyRef, 
+  Injector, 
+  OnInit, 
+  inject, 
+  signal 
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 
 // Material Modules
 import { MatButtonModule } from '@angular/material/button';
@@ -13,11 +22,11 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 
-// Core, Models e Serviços
+// Services e Models
 import { MessageService } from '../../../../core/services/message-service';
 import { PatientRequestCostAssistanceService } from '../../../services/patient-request-cost-assistance.service';
 
-interface UnifiedPassengerOption {
+export interface UnifiedPassengerOption {
   id: number;
   name: string;
   isPatient: boolean;
@@ -29,14 +38,14 @@ interface UnifiedPassengerOption {
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule, 
-    ReactiveFormsModule, 
-    MatDialogModule, 
-    MatButtonModule, 
-    MatFormFieldModule, 
-    MatInputModule, 
-    MatSelectModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
     MatProgressSpinnerModule,
+    MatSelectModule,
     MatIconModule
   ],
   templateUrl: './patient-request-cost-assistance-update.component.html',
@@ -47,18 +56,26 @@ export class PatientRequestCostAssistanceUpdateComponent implements OnInit {
   // ==========================================
   // Injeção de Dependências
   // ==========================================
-  protected readonly data = inject(MAT_DIALOG_DATA);
+  protected readonly data = inject(MAT_DIALOG_DATA, { optional: true });
   private readonly fb = inject(FormBuilder);
   private readonly costAssistanceService = inject(PatientRequestCostAssistanceService);
   private readonly messageService = inject(MessageService);
   private readonly dialogRef = inject(MatDialogRef<PatientRequestCostAssistanceUpdateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
-  // Formulário Principal
+  // Mensagens de Erro por Controle
   // ==========================================
-  protected updateCostAssistanceForm!: FormGroup;
+  protected readonly errorMessages: Record<string, Array<{ type: string; message: string }>> = {
+    name: [
+      { type: 'required', message: 'O nome da ajuda de custo é obrigatório.' }
+    ],
+    type: [
+      { type: 'required', message: 'O tipo da ajuda de custo é obrigatório.' }
+    ]
+  };
 
   // ==========================================
   // Estados Reativos via Signals
@@ -67,20 +84,9 @@ export class PatientRequestCostAssistanceUpdateComponent implements OnInit {
   protected readonly isSubmitting = signal<boolean>(false);
 
   // ==========================================
-  // Dicionário de Mensagens de Erro
+  // FormGroups
   // ==========================================
-  protected readonly errorMessages: Record<string, Array<{ type: string; message: string }>> = {
-    name: [
-      { type: 'required', message: 'O nome da ajuda de custo é obrigatório.' }
-    ],
-    type: [
-      { type: 'required', message: 'O tipo da ajuda de custo é obrigatório.' }
-    ],
-    passenger_id: [],
-    bank: [],
-    agency: [],
-    account: []
-  };
+  protected updateCostAssistanceForm!: FormGroup;
 
   // ==========================================
   // Ciclo de Vida (Hooks)
@@ -88,6 +94,7 @@ export class PatientRequestCostAssistanceUpdateComponent implements OnInit {
   ngOnInit(): void {
     this.extractPassengers();
     this.initForm();
+    this.setupFormSubmittingHandler();
   }
 
   // ==========================================
@@ -98,7 +105,7 @@ export class PatientRequestCostAssistanceUpdateComponent implements OnInit {
 
     this.updateCostAssistanceForm = this.fb.group({
       name: [costAssistance?.name || null, [Validators.required]],
-      type: [costAssistance?.type || null, [Validators.required]],
+      type: [{ value: costAssistance?.type || null, disabled: true }, [Validators.required]],
       passenger_id: [costAssistance?.passenger_id || null],
       bank: [costAssistance?.bank || null],
       agency: [costAssistance?.agency || null],
@@ -107,13 +114,28 @@ export class PatientRequestCostAssistanceUpdateComponent implements OnInit {
   }
 
   // ==========================================
+  // Handlers Reativos
+  // ==========================================
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.updateCostAssistanceForm.disable({ emitEvent: false });
+        } else {
+          this.updateCostAssistanceForm.enable({ emitEvent: false });
+          // Mantém o campo de tipo sempre desabilitado
+          this.updateCostAssistanceForm.get('type')?.disable({ emitEvent: false });
+        }
+        this.cdr.markForCheck();
+      });
+  }
+
+  // ==========================================
   // Helpers e Métodos Auxiliares
   // ==========================================
-  /**
-   * Mapeia e extrai as opções de passageiros para seleção.
-   */
   private extractPassengers(): void {
-    const travels = this.data?.cost_assistance?.patient_request?.travels || [];
+    const travels = this.data?.patient_request?.travels || this.data?.cost_assistance?.patient_request?.travels || [];
     const mapPassengers = new Map<string, UnifiedPassengerOption>();
 
     for (const travel of travels) {
@@ -162,16 +184,12 @@ export class PatientRequestCostAssistanceUpdateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
     const payload = this.updateCostAssistanceForm.getRawValue();
 
     this.costAssistanceService.updateCostAssistance(costAssistanceId, payload)
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({

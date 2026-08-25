@@ -25,7 +25,7 @@ import { Permission } from '../../models/permission.model';
 import { PatientRequestCostAssistanceService } from '../../services/patient-request-cost-assistance.service';
 
 // Components (Dialogs)
-import { PatientRequestDetailComponent } from '../../components/patient-request/patient-request-detail/patient-request-detail.component';
+import { PatientRequestDetailComponent } from '../../components/patient-requests/patient-request-detail/patient-request-detail.component';
 import { PatientRequestMoveFromArchiveComponent } from '../../components/patient-request-cost-assistances/patient-request-move-from-archive/patient-request-move-from-archive.component';
 
 const TFD_ACCOUNTABILITIES_CHANNEL = new BroadcastChannel('tfd-accountabilities-channel');
@@ -51,6 +51,7 @@ const TFD_ACCOUNTABILITIES_CHANNEL = new BroadcastChannel('tfd-accountabilities-
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ArchivePatientRequestCostAssistancesPage implements OnInit {
+
   // Injeções de Dependência
   private readonly costAssistanceService = inject(PatientRequestCostAssistanceService);
   private readonly dialog = inject(MatDialog);
@@ -134,7 +135,7 @@ export class ArchivePatientRequestCostAssistancesPage implements OnInit {
             name: item.report?.patient_care?.patient?.name,
             cns: item.report?.patient_care?.patient?.cns,
             type: item.type,
-            responsible: item.accountability_professional?.name || '-'
+            responsible: item.cost_assistance_professional?.name || '-'
           }));
 
           this.rawArchiveList.set(archivedRequests);

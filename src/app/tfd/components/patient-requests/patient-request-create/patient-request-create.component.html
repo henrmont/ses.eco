@@ -20,7 +20,7 @@
                     }
 
                     <mat-autocomplete #patientAuto="matAutocomplete" [displayWith]="displayPatient">
-                        @for (option of filteredPatientOptions | async; track $index) {
+                        @for (option of filteredPatientOptions(); track $index) {
                             <mat-option [value]="option" (onSelectionChange)="setPatient(option)">
                                 {{ option.name }}
                             </mat-option>
@@ -51,7 +51,7 @@
                     }
 
                     <mat-autocomplete #cidAuto="matAutocomplete" [displayWith]="displayCid">
-                        @for (option of filteredCidOptions | async; track $index) {
+                        @for (option of filteredCidOptions(); track $index) {
                             <mat-option [value]="option" (onSelectionChange)="setCid(option)">
                                 {{ option.code }} - {{ option.name }}
                             </mat-option>
@@ -82,7 +82,7 @@
                     }
 
                     <mat-autocomplete #hospitalAuto="matAutocomplete" [displayWith]="displayHospitalUnity">
-                        @for (option of filteredHospitalOptions | async; track $index) {
+                        @for (option of filteredHospitalOptions(); track $index) {
                             <mat-option [value]="option" (onSelectionChange)="setHospitalUnity(option)">
                                 {{ option.name }}
                             </mat-option>
@@ -154,7 +154,7 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-    <button mat-button type="button" [mat-dialog-close]="false">Fechar</button>
+    <button mat-button type="button" [mat-dialog-close]="false" [disabled]="isSubmitting()">Fechar</button>
     <button 
         mat-flat-button 
         color="primary" 

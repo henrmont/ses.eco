@@ -13,7 +13,6 @@
             type="text" 
             formControlName="name" 
             placeholder="Nome da prestação de contas"
-            [readonly]="isSubmitting()"
           >
 
           @for (item of errorMessages['name']; track $index) {

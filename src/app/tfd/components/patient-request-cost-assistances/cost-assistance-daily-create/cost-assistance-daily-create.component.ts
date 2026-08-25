@@ -1,10 +1,19 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { 
+  ChangeDetectionStrategy, 
+  ChangeDetectorRef, 
+  Component, 
+  DestroyRef, 
+  Injector, 
+  OnInit, 
+  inject, 
+  signal 
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
-// Angular Material e Módulos Externos
+// Material Modules e Externos
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -48,6 +57,7 @@ export class CostAssistanceDailyCreateComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<CostAssistanceDailyCreateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Mensagens de Erro por Controle
@@ -79,17 +89,34 @@ export class CostAssistanceDailyCreateComponent implements OnInit {
   // ==========================================
   ngOnInit(): void {
     this.initForm();
+    this.setupFormSubmittingHandler();
     this.fetchDailyCosts();
   }
 
   // ==========================================
-  // Inicialização de Formulário
+  // Inicialização do Formulário
   // ==========================================
   private initForm(): void {
     this.createCostAssistanceDailyForm = this.fb.group({
       daily_cost_id: [null, [Validators.required]],
       amount: [null, [Validators.required, Validators.min(1)]]
     });
+  }
+
+  // ==========================================
+  // Handlers Reativos
+  // ==========================================
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.createCostAssistanceDailyForm.disable({ emitEvent: false });
+        } else {
+          this.createCostAssistanceDailyForm.enable({ emitEvent: false });
+        }
+        this.cdr.markForCheck();
+      });
   }
 
   // ==========================================
@@ -134,16 +161,12 @@ export class CostAssistanceDailyCreateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
     const payload = this.createCostAssistanceDailyForm.getRawValue();
 
     this.costAssistanceService.createCostAssistanceDaily(costAssistanceId, payload)
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({

@@ -36,10 +36,10 @@ import { PatientService } from '../../services/patient.service';
 import { Patient } from '../../models/patient.model';
 
 // Dialog Components
-import { PatientDetailComponent } from '../../components/patient/patient-detail/patient-detail.component';
-import { PatientArchivedEscortsComponent } from '../../components/patient/patient-archived-escorts/patient-archived-escorts.component';
-import { PatientArchivedReportsComponent } from '../../components/patient/patient-archived-reports/patient-archived-reports.component';
-import { PatientMoveFromArchiveComponent } from '../../components/patient/patient-move-from-archive/patient-move-from-archive.component';
+import { PatientDetailComponent } from '../../components/patients/patient-detail/patient-detail.component';
+import { PatientArchivedEscortsComponent } from '../../components/patients/patient-archived-escorts/patient-archived-escorts.component';
+import { PatientArchivedReportsComponent } from '../../components/patients/patient-archived-reports/patient-archived-reports.component';
+import { PatientMoveFromArchiveComponent } from '../../components/patients/patient-move-from-archive/patient-move-from-archive.component';
 
 // Define o tipo aceito para as propriedades do Modal
 type PatientDialogData =

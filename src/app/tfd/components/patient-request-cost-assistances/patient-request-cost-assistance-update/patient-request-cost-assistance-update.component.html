@@ -4,18 +4,12 @@
   <mat-dialog-content>
     <div class="stepper">
 
-      <!-- Linha 1: Nome + Tipo -->
+      <!-- Linha 1: Nome e Tipo -->
       <div class="line cols-1-1">
         <mat-form-field appearance="outline">
           <mat-label>Nome</mat-label>
-          <input 
-            matInput 
-            type="text" 
-            formControlName="name" 
-            placeholder="Nome da ajuda de custo"
-            [readonly]="isSubmitting()"
-          >
-
+          <input matInput type="text" formControlName="name" placeholder="Ex: Ajuda de custo inicial">
+          
           @for (item of errorMessages['name']; track $index) {
             <mat-error [hidden]="!updateCostAssistanceForm.get('name')?.hasError(item.type)">
               {{ item.message }}
@@ -25,13 +19,8 @@
 
         <mat-form-field appearance="outline">
           <mat-label>Tipo</mat-label>
-          <input 
-            matInput 
-            type="text" 
-            formControlName="type" 
-            [readonly]="true"
-          >
-          <mat-icon matSuffix class="locked-icon">lock</mat-icon>
+          <input matInput type="text" formControlName="type" readonly>
+          <mat-icon matSuffix>lock</mat-icon>
 
           @for (item of errorMessages['type']; track $index) {
             <mat-error [hidden]="!updateCostAssistanceForm.get('type')?.hasError(item.type)">
@@ -41,54 +30,36 @@
         </mat-form-field>
       </div>
 
-      <!-- Linha 2: Seleção de Passageiro -->
+      <!-- Linha 2: Passageiro Beneficiário -->
       <div class="line cols-1-col">
         <mat-form-field appearance="outline">
-          <mat-label>Credor</mat-label>
-          <mat-select formControlName="passenger_id" [disabled]="isSubmitting()">
-            <mat-option [value]="null">Nenhum</mat-option>
-            @for (passenger of passengersOptions(); track $index) {
-              <mat-option [value]="passenger.id">
-                {{ passenger.name }} ({{ passenger.typeLabel }})
+          <mat-label>Passageiro beneficiário</mat-label>
+          <mat-select formControlName="passenger_id">
+            <mat-option [value]="null">Nenhum especificadamente</mat-option>
+            @for (option of passengersOptions(); track option.id) {
+              <mat-option [value]="option.id">
+                {{ option.name }} ({{ option.typeLabel }})
               </mat-option>
             }
           </mat-select>
         </mat-form-field>
       </div>
 
-      <!-- Linha 3: Banco, Agência e Conta -->
+      <!-- Linha 3: Dados Bancários (Banco, Agência e Conta) -->
       <div class="line cols-1-1-1">
         <mat-form-field appearance="outline">
           <mat-label>Banco</mat-label>
-          <input 
-            matInput 
-            type="text" 
-            formControlName="bank" 
-            placeholder="Nome ou código do banco"
-            [readonly]="isSubmitting()"
-          >
+          <input matInput type="text" formControlName="bank">
         </mat-form-field>
 
         <mat-form-field appearance="outline">
           <mat-label>Agência</mat-label>
-          <input 
-            matInput 
-            type="text" 
-            formControlName="agency" 
-            placeholder="Nº da agência"
-            [readonly]="isSubmitting()"
-          >
+          <input matInput type="text" formControlName="agency">
         </mat-form-field>
 
         <mat-form-field appearance="outline">
           <mat-label>Conta</mat-label>
-          <input 
-            matInput 
-            type="text" 
-            formControlName="account" 
-            placeholder="Nº da conta"
-            [readonly]="isSubmitting()"
-          >
+          <input matInput type="text" formControlName="account">
         </mat-form-field>
       </div>
 
@@ -99,12 +70,12 @@
     <button mat-button type="button" [disabled]="isSubmitting()" [mat-dialog-close]="false">
       Cancelar
     </button>
-    
+
     <button 
       mat-flat-button 
       color="primary" 
-      type="submit" 
-      [disabled]="updateCostAssistanceForm.invalid || updateCostAssistanceForm.pending || updateCostAssistanceForm.pristine || isSubmitting()"
+      type="button" 
+      [disabled]="updateCostAssistanceForm.invalid || updateCostAssistanceForm.pending || isSubmitting()"
       (click)="onSubmit()"
     >
       <div class="waiting">

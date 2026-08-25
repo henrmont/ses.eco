@@ -1,18 +1,26 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { 
+  ChangeDetectionStrategy, 
+  ChangeDetectorRef, 
+  Component, 
+  DestroyRef, 
+  Injector, 
+  OnInit, 
+  inject, 
+  signal 
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 
-// Importação segura do Moment
 import * as _moment from 'moment';
 const moment = (_moment as any).default || _moment;
 
 // Material Modules
+import { MatButtonModule } from '@angular/material/button';
 import { MAT_DATE_LOCALE, MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerInputEvent, MatDatepickerModule } from '@angular/material/datepicker';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -56,16 +64,7 @@ export class TravelRouteUpdateComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<TravelRouteUpdateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
-
-  // ==========================================
-  // Formulário Principal
-  // ==========================================
-  protected updateRouteForm!: FormGroup;
-
-  // ==========================================
-  // Estados Reativos via Signals
-  // ==========================================
-  protected readonly isSubmitting = signal<boolean>(false);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Dicionário de Mensagens de Erro
@@ -94,10 +93,21 @@ export class TravelRouteUpdateComponent implements OnInit {
   };
 
   // ==========================================
+  // Estados Reativos via Signals
+  // ==========================================
+  protected readonly isSubmitting = signal<boolean>(false);
+
+  // ==========================================
+  // Formulário Principal
+  // ==========================================
+  protected updateRouteForm!: FormGroup;
+
+  // ==========================================
   // Ciclo de Vida (Hooks)
   // ==========================================
   ngOnInit(): void {
     this.initForm();
+    this.setupFormSubmittingHandler();
   }
 
   // ==========================================
@@ -106,7 +116,6 @@ export class TravelRouteUpdateComponent implements OnInit {
   private initForm(): void {
     const route = this.data?.route;
 
-    // Converte datas recebidas para instâncias do Moment caso existam
     const departureRaw = route?.departure || route?.departureTime || route?.departure_time;
     const arrivalRaw = route?.arrival || route?.arrivalTime || route?.arrival_time;
 
@@ -125,6 +134,22 @@ export class TravelRouteUpdateComponent implements OnInit {
       scales: [route?.scales || route?.stopover || route?.stops || null],
       family: [route?.family || route?.fare_family || null]
     });
+  }
+
+  // ==========================================
+  // Handlers Reativos
+  // ==========================================
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.updateRouteForm.disable({ emitEvent: false });
+        } else {
+          this.updateRouteForm.enable({ emitEvent: false });
+        }
+        this.cdr.markForCheck();
+      });
   }
 
   // ==========================================
@@ -181,16 +206,18 @@ export class TravelRouteUpdateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
-    const payload = this.updateRouteForm.getRawValue();
+    const rawValues = this.updateRouteForm.getRawValue();
+
+    const payload = {
+      ...rawValues,
+      departure: rawValues.departure ? moment(rawValues.departure).format('YYYY-MM-DD HH:mm:ss') : null,
+      arrival: rawValues.arrival ? moment(rawValues.arrival).format('YYYY-MM-DD HH:mm:ss') : null
+    };
 
     this.travelService.updateRoute(routeId, payload)
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({

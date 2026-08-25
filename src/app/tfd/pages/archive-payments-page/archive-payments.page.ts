@@ -25,7 +25,7 @@ import { Permission } from '../../models/permission.model';
 import { PaymentService } from '../../services/payment.service';
 
 // Components (Dialogs)
-import { PatientRequestDetailComponent } from '../../components/patient-request/patient-request-detail/patient-request-detail.component';
+import { PatientRequestDetailComponent } from '../../components/patient-requests/patient-request-detail/patient-request-detail.component';
 import { PaymentMoveFromArchiveComponent } from '../../components/payments/payment-move-from-archive/payment-move-from-archive.component';
 import { Payment } from '../../models/payment.model';
 

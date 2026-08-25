@@ -1,6 +1,6 @@
 <h2 mat-dialog-title>Editar parecer</h2>
 
-<form [formGroup]="opinionForm" (ngSubmit)="onSubmit()">
+<form [formGroup]="opinionForm">
   <mat-dialog-content>
     <div class="stepper">
       
@@ -54,8 +54,9 @@
     <button 
       mat-flat-button 
       color="primary" 
-      type="submit" 
+      type="button" 
       [disabled]="opinionForm.invalid || opinionForm.pristine || opinionForm.pending || isSubmitting()"
+      (click)="onSubmit()"
     >
       <div class="waiting">
         @if (isSubmitting()) {

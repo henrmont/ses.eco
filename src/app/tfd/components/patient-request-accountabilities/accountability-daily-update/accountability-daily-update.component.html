@@ -11,10 +11,13 @@
           <mat-select 
             formControlName="daily_cost_id" 
             placeholder="Selecione o tipo de diária"
-            [disabled]="isSubmitting()"
           >
-            @for (item of dailyCostsOptions(); track $index) {
-              <mat-option [value]="item.id">{{ item.name }}</mat-option>
+            @if (isLoadingOptions()) {
+              <mat-option disabled>Carregando opções...</mat-option>
+            } @else {
+              @for (item of dailyCostsOptions(); track item.id) {
+                <mat-option [value]="item.id">{{ item.name }}</mat-option>
+              }
             }
           </mat-select>
           
@@ -36,7 +39,6 @@
             mask="0*"
             formControlName="amount" 
             placeholder="Informe a quantidade"
-            [readonly]="isSubmitting()"
           >
           
           @for (item of errorMessages['amount']; track $index) {
@@ -59,7 +61,7 @@
       mat-flat-button 
       color="primary" 
       type="button" 
-      [disabled]="updateAccountabilityDailyForm.invalid || updateAccountabilityDailyForm.pending || isSubmitting()"
+      [disabled]="updateAccountabilityDailyForm.invalid || updateAccountabilityDailyForm.pending || updateAccountabilityDailyForm.pristine || isSubmitting()"
       (click)="onSubmit()"
     >
       <div class="waiting">

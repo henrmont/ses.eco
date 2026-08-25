@@ -1,8 +1,17 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { 
+  ChangeDetectionStrategy, 
+  ChangeDetectorRef, 
+  Component, 
+  DestroyRef, 
+  Injector, 
+  OnInit, 
+  inject, 
+  signal 
+} from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { saveAs } from 'file-saver';
 
 // Material Modules
@@ -49,6 +58,7 @@ export class PatientRequestAttachmentUpdateComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<PatientRequestAttachmentUpdateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Mensagens de Erro por Controle
@@ -89,6 +99,7 @@ export class PatientRequestAttachmentUpdateComponent implements OnInit {
   // ==========================================
   ngOnInit(): void {
     this.initForm();
+    this.setupFormSubmittingHandler();
   }
 
   // ==========================================
@@ -99,6 +110,22 @@ export class PatientRequestAttachmentUpdateComponent implements OnInit {
     this.attachmentForm = this.fb.group({
       name: [currentName, [Validators.required]]
     });
+  }
+
+  // ==========================================
+  // Handlers Reativos
+  // ==========================================
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.attachmentForm.disable({ emitEvent: false });
+        } else {
+          this.attachmentForm.enable({ emitEvent: false });
+        }
+        this.cdr.markForCheck();
+      });
   }
 
   // ==========================================
@@ -159,7 +186,6 @@ export class PatientRequestAttachmentUpdateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
     const payload = {
       ...this.attachmentForm.getRawValue(),
@@ -168,10 +194,7 @@ export class PatientRequestAttachmentUpdateComponent implements OnInit {
 
     this.patientRequestService.updatePatientRequestAttachment(attachmentId, payload)
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({

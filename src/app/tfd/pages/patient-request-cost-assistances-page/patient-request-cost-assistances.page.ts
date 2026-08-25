@@ -27,8 +27,8 @@ import { Role } from '../../models/role.model';
 import { PatientRequestCostAssistanceService } from '../../services/patient-request-cost-assistance.service';
 
 // Dialog Components
-import { PatientRequestAttachmentsComponent } from '../../components/patient-request/patient-request-attachments/patient-request-attachments.component';
-import { PatientRequestDetailComponent } from '../../components/patient-request/patient-request-detail/patient-request-detail.component';
+import { PatientRequestAttachmentsComponent } from '../../components/patient-requests/patient-request-attachments/patient-request-attachments.component';
+import { PatientRequestDetailComponent } from '../../components/patient-requests/patient-request-detail/patient-request-detail.component';
 import { PatientRequestFinishBackComponent } from '../../components/patient-request-cost-assistances/patient-request-finish-back/patient-request-finish-back.component';
 import { PatientRequestHaltedComponent } from '../../components/patient-request-cost-assistances/patient-request-halted/patient-request-halted.component';
 import { PatientRequestHistoryComponent } from '../../components/patient-request-cost-assistances/patient-request-history/patient-request-history.component';
@@ -43,8 +43,6 @@ type PatientRequestDialogData =
   | { patient_request: PatientRequest }
   | { patient_request: PatientRequest; permissions: Role[] };
 
-// Constantes Locais
-const TFD_COST_ASSISTANCES_CHANNEL = new BroadcastChannel('tfd-cost-assistances-channel');
 
 @Component({
   selector: 'app-patient-request-cost-assistance-page',
@@ -68,6 +66,11 @@ const TFD_COST_ASSISTANCES_CHANNEL = new BroadcastChannel('tfd-cost-assistances-
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PatientRequestCostAssistancesPage implements OnInit, OnDestroy {
+  // ==========================================
+  // Instância própria do canal
+  // ==========================================
+  private readonly costAssistancesChannel = new BroadcastChannel('tfd-cost-assistances-channel');
+
   // ==========================================
   // Injeção de Dependências
   // ==========================================
@@ -109,7 +112,7 @@ export class PatientRequestCostAssistancesPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    TFD_COST_ASSISTANCES_CHANNEL.close();
+    this.costAssistancesChannel.close();
   }
 
   // ==========================================
@@ -246,7 +249,7 @@ export class PatientRequestCostAssistancesPage implements OnInit, OnDestroy {
   }
 
   private listenToBroadcastChannel(): void {
-    TFD_COST_ASSISTANCES_CHANNEL.onmessage = (message: MessageEvent<string>) => {
+    this.costAssistancesChannel.onmessage = (message: MessageEvent<string>) => {
       if (message.data === 'update') {
         this.fetchPatientRequests(false);
       }
@@ -299,6 +302,6 @@ export class PatientRequestCostAssistancesPage implements OnInit, OnDestroy {
 
   private handleRequestsChange(): void {
     this.fetchPatientRequests(false);
-    TFD_COST_ASSISTANCES_CHANNEL.postMessage('update');
+    this.costAssistancesChannel.postMessage('update');
   }
 }

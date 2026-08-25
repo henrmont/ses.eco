@@ -1,30 +1,40 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, ChangeDetectorRef, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { 
+  ChangeDetectionStrategy, 
+  ChangeDetectorRef, 
+  Component, 
+  DestroyRef, 
+  Injector, 
+  OnInit, 
+  effect, 
+  inject, 
+  signal 
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize } from 'rxjs/operators';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 
 // Material Modules
+import { MAT_DATE_LOCALE, MatNativeDateModule } from '@angular/material/core';
+import { MatDatepickerInputEvent, MatDatepickerModule } from '@angular/material/datepicker';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatDatepickerInputEvent, MatDatepickerModule } from '@angular/material/datepicker';
-import { MAT_DATE_LOCALE, MatNativeDateModule } from '@angular/material/core';
 import { MatSelectChange, MatSelectModule } from '@angular/material/select';
 
 // Importação segura do Moment
 import * as _moment from 'moment';
 const moment = (_moment as any).default || _moment;
 
-// Domínio & Serviços
-import { TravelTransportation } from '../../../enums/travel-transportation';
-import { TravelType } from '../../../enums/travel-type';
-import { TravelCompany } from '../../../enums/travel-company';
-import { PatientRequestTravelService } from '../../../services/patient-request-travel.service';
+// Services, Enums e Validators
 import { MessageService } from '../../../../core/services/message-service';
 import { CustomValidators } from '../../../../core/validators/custom.validator';
+import { TravelCompany } from '../../../enums/travel-company';
+import { TravelTransportation } from '../../../enums/travel-transportation';
+import { TravelType } from '../../../enums/travel-type';
+import { PatientRequestTravelService } from '../../../services/patient-request-travel.service';
 
 @Component({
   selector: 'app-patient-request-travel-update',
@@ -53,37 +63,20 @@ export class PatientRequestTravelUpdateComponent implements OnInit {
   // ==========================================
   // Injeção de Dependências
   // ==========================================
-  protected readonly data = inject(MAT_DIALOG_DATA);
+  protected readonly data = inject(MAT_DIALOG_DATA, { optional: true });
   private readonly fb = inject(FormBuilder);
   private readonly travelService = inject(PatientRequestTravelService);
   private readonly messageService = inject(MessageService);
   private readonly dialogRef = inject(MatDialogRef<PatientRequestTravelUpdateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
-  // ==========================================
-  // Propriedades de Domínio e Suporte
-  // ==========================================
+  // Data de referência vinda da requisição ou viagem
   private readonly consultationDate = this.data?.travel?.patient_request?.consultation_date || this.data?.consultation_date;
 
-  protected readonly transportations = Object.values(TravelTransportation);
-  protected readonly types = Object.values(TravelType);
-  protected readonly airlines = Object.entries(TravelCompany).map(([key, value]) => ({ key, value }));
-
   // ==========================================
-  // Formulário Principal
-  // ==========================================
-  protected updateTravelForm!: FormGroup;
-
-  // ==========================================
-  // Estados Reativos via Signals
-  // ==========================================
-  protected readonly disableDepartureDate = signal<boolean>(true);
-  protected readonly disableReturnDate = signal<boolean>(true);
-  protected readonly isSubmitting = signal<boolean>(false);
-
-  // ==========================================
-  // Dicionário de Mensagens de Erro
+  // Mensagens de Erro por Controle
   // ==========================================
   protected readonly errorMessages: Record<string, Array<{ type: string; message: string }>> = {
     transportation: [
@@ -106,11 +99,33 @@ export class PatientRequestTravelUpdateComponent implements OnInit {
   };
 
   // ==========================================
+  // Listagens Estáticas (Enums)
+  // ==========================================
+  protected readonly transportations = Object.values(TravelTransportation);
+  protected readonly types = Object.values(TravelType);
+  protected readonly airlines = Object.entries(TravelCompany).map(([key, value]) => ({ key, value }));
+
+  // ==========================================
+  // Estados Reativos via Signals
+  // ==========================================
+  protected readonly disableDepartureDate = signal<boolean>(true);
+  protected readonly disableReturnDate = signal<boolean>(true);
+  protected readonly isSubmitting = signal<boolean>(false);
+
+  // ==========================================
+  // FormGroups
+  // ==========================================
+  protected updateTravelForm!: FormGroup;
+
+  // ==========================================
   // Ciclo de Vida (Hooks)
   // ==========================================
   ngOnInit(): void {
     this.initForm();
+    this.setupFormSubmittingHandler();
+    this.configureReactiveDateEffects();
 
+    // Sincroniza o estado inicial do Signal com base no valor vindo da API
     if (this.data?.travel?.type) {
       this.setType(this.data.travel.type);
     }
@@ -152,77 +167,89 @@ export class PatientRequestTravelUpdateComponent implements OnInit {
   }
 
   // ==========================================
-  // Regras de Negócio e Controle de Campos
+  // Handlers e Effects Reativos
   // ==========================================
-  private setType(type: string): void {
-    const departureCtrl = this.updateTravelForm.get('departure_date');
-    const returnCtrl = this.updateTravelForm.get('return_date');
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.updateTravelForm.disable({ emitEvent: false });
+        } else {
+          this.updateTravelForm.enable({ emitEvent: false });
+          // Restaura os estados dinâmicos das datas respeitando a seleção atual
+          this.applyDateControlsState();
+        }
+        this.cdr.markForCheck();
+      });
+  }
 
+  private configureReactiveDateEffects(): void {
+    effect(() => {
+      this.disableDepartureDate();
+      this.disableReturnDate();
+
+      if (!this.isSubmitting()) {
+        this.applyDateControlsState();
+      }
+    }, { injector: this.injector });
+  }
+
+  private applyDateControlsState(): void {
+    const departureCtrl = this.updateTravelForm.get('departure_date');
     const baseDepartureValidators = [
       CustomValidators.dateValidator(),
       CustomValidators.dateBeforeValidator(this.consultationDate)
     ];
 
+    if (this.disableDepartureDate()) {
+      departureCtrl?.disable({ emitEvent: false });
+      departureCtrl?.setValue(null, { emitEvent: false });
+      departureCtrl?.setValidators(baseDepartureValidators);
+    } else {
+      departureCtrl?.enable({ emitEvent: false });
+      departureCtrl?.setValidators([Validators.required, ...baseDepartureValidators]);
+    }
+    departureCtrl?.updateValueAndValidity({ emitEvent: false });
+
+    const returnCtrl = this.updateTravelForm.get('return_date');
     const baseReturnValidators = [
       CustomValidators.dateValidator(),
       CustomValidators.dateAfterValidator(this.consultationDate)
     ];
 
-    if (type === 'Ida') {
-      this.disableDepartureDate.set(false);
-      this.disableReturnDate.set(true);
-
-      departureCtrl?.enable({ emitEvent: false });
-      departureCtrl?.setValidators([Validators.required, ...baseDepartureValidators]);
-
+    if (this.disableReturnDate()) {
       returnCtrl?.disable({ emitEvent: false });
       returnCtrl?.setValue(null, { emitEvent: false });
       returnCtrl?.setValidators(baseReturnValidators);
-
-    } else if (type === 'Volta') {
-      this.disableDepartureDate.set(true);
-      this.disableReturnDate.set(false);
-
-      departureCtrl?.disable({ emitEvent: false });
-      departureCtrl?.setValue(null, { emitEvent: false });
-      departureCtrl?.setValidators(baseDepartureValidators);
-
-      returnCtrl?.enable({ emitEvent: false });
-      returnCtrl?.setValidators([Validators.required, ...baseReturnValidators]);
-
-    } else if (type === 'Ida e Volta') {
-      this.disableDepartureDate.set(false);
-      this.disableReturnDate.set(false);
-
-      departureCtrl?.enable({ emitEvent: false });
-      departureCtrl?.setValidators([Validators.required, ...baseDepartureValidators]);
-
-      returnCtrl?.enable({ emitEvent: false });
-      returnCtrl?.setValidators([Validators.required, ...baseReturnValidators]);
-
     } else {
-      this.disableDepartureDate.set(true);
-      this.disableReturnDate.set(true);
-
-      departureCtrl?.disable({ emitEvent: false });
-      departureCtrl?.setValue(null, { emitEvent: false });
-      departureCtrl?.setValidators(baseDepartureValidators);
-
-      returnCtrl?.disable({ emitEvent: false });
-      returnCtrl?.setValue(null, { emitEvent: false });
-      returnCtrl?.setValidators(baseReturnValidators);
+      returnCtrl?.enable({ emitEvent: false });
+      returnCtrl?.setValidators([Validators.required, ...baseReturnValidators]);
     }
-
-    departureCtrl?.updateValueAndValidity({ emitEvent: false });
     returnCtrl?.updateValueAndValidity({ emitEvent: false });
-    this.cdr.markForCheck();
   }
 
   // ==========================================
-  // Handlers e Eventos da Interface
+  // Helpers de Seleção e Manipulação de Datas
   // ==========================================
   protected onSelection(event: MatSelectChange): void {
     this.setType(event.value);
+  }
+
+  private setType(type: string): void {
+    if (type === 'Ida') {
+      this.disableDepartureDate.set(false);
+      this.disableReturnDate.set(true);
+    } else if (type === 'Volta') {
+      this.disableDepartureDate.set(true);
+      this.disableReturnDate.set(false);
+    } else if (type === 'Ida e Volta') {
+      this.disableDepartureDate.set(false);
+      this.disableReturnDate.set(false);
+    } else {
+      this.disableDepartureDate.set(true);
+      this.disableReturnDate.set(true);
+    }
   }
 
   protected setDepartureDate(event: MatDatepickerInputEvent<any>): void {
@@ -231,7 +258,6 @@ export class PatientRequestTravelUpdateComponent implements OnInit {
       if (parsedDate.isValid()) {
         this.updateTravelForm.get('departure_date')?.setValue(parsedDate, { emitEvent: true });
         this.updateTravelForm.get('departure_date')?.markAsDirty();
-        this.cdr.markForCheck();
       }
     }
   }
@@ -242,7 +268,6 @@ export class PatientRequestTravelUpdateComponent implements OnInit {
       if (parsedDate.isValid()) {
         this.updateTravelForm.get('return_date')?.setValue(parsedDate, { emitEvent: true });
         this.updateTravelForm.get('return_date')?.markAsDirty();
-        this.cdr.markForCheck();
       }
     }
   }
@@ -250,7 +275,7 @@ export class PatientRequestTravelUpdateComponent implements OnInit {
   protected onlyNumbersAndSlashes(event: KeyboardEvent): boolean {
     const charCode = event.key;
     const allowedCharacters = /^[0-9\/]$/;
-    
+
     if (!allowedCharacters.test(charCode)) {
       event.preventDefault();
       return false;
@@ -275,7 +300,6 @@ export class PatientRequestTravelUpdateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
     const rawValue = this.updateTravelForm.getRawValue();
     const payload = {
@@ -290,10 +314,7 @@ export class PatientRequestTravelUpdateComponent implements OnInit {
 
     this.travelService.updateTravel(travelId, payload)
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({

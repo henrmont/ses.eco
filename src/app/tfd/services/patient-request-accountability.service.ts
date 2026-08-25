@@ -85,6 +85,10 @@ export class PatientRequestAccountabilityService {
     return this.http.patch<ApiResponse>(`${this.apiUrl}/patient-requests/${patientRequestId}/archive`, {});
   }
 
+  movePatientRequestFromArchive(patientRequestId: number): Observable<ApiResponse> {
+    return this.http.patch<ApiResponse>(`${this.apiUrl}/patient-requests/${patientRequestId}/move-from-archive`, {});
+  }
+
   movePatientRequestFromOthers(patientRequestId: number): Observable<ApiResponse> {
     return this.http.patch<ApiResponse>(`${this.apiUrl}/patient-requests/${patientRequestId}/move-from-others`, {});
   }

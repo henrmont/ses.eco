@@ -1,6 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { 
+  ChangeDetectionStrategy, 
+  ChangeDetectorRef, 
+  Component, 
+  DestroyRef, 
+  Injector, 
+  OnInit, 
+  inject, 
+  signal 
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
@@ -38,13 +47,14 @@ export class PatientRequestAccountabilityUpdateComponent implements OnInit {
   // ==========================================
   // Injeção de Dependências
   // ==========================================
-  protected readonly data = inject(MAT_DIALOG_DATA);
+  protected readonly data = inject(MAT_DIALOG_DATA, { optional: true });
   private readonly fb = inject(FormBuilder);
   private readonly accountabilityService = inject(PatientRequestAccountabilityService);
   private readonly messageService = inject(MessageService);
   private readonly dialogRef = inject(MatDialogRef<PatientRequestAccountabilityUpdateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Formulário Principal
@@ -70,6 +80,7 @@ export class PatientRequestAccountabilityUpdateComponent implements OnInit {
   // ==========================================
   ngOnInit(): void {
     this.initForm();
+    this.setupFormSubmittingHandler();
   }
 
   // ==========================================
@@ -79,8 +90,24 @@ export class PatientRequestAccountabilityUpdateComponent implements OnInit {
     const accountability = this.data?.accountability;
 
     this.updateAccountabilityForm = this.fb.group({
-      name: [accountability?.name || null, [Validators.required]],
+      name: [accountability?.name ?? null, [Validators.required]],
     });
+  }
+
+  // ==========================================
+  // Handlers Reativos
+  // ==========================================
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.updateAccountabilityForm.disable({ emitEvent: false });
+        } else {
+          this.updateAccountabilityForm.enable({ emitEvent: false });
+        }
+        this.cdr.markForCheck();
+      });
   }
 
   // ==========================================
@@ -107,16 +134,12 @@ export class PatientRequestAccountabilityUpdateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
     const payload = this.updateAccountabilityForm.getRawValue();
 
     this.accountabilityService.updateAccountability(accountabilityId, payload)
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({

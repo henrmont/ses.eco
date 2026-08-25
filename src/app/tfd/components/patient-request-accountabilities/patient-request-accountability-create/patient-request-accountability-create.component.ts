@@ -1,6 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { 
+  ChangeDetectionStrategy, 
+  ChangeDetectorRef, 
+  Component, 
+  DestroyRef, 
+  Injector, 
+  OnInit, 
+  inject, 
+  signal 
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
@@ -45,6 +54,7 @@ export class PatientRequestAccountabilityCreateComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<PatientRequestAccountabilityCreateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Mensagens de Erro por Controle
@@ -70,6 +80,7 @@ export class PatientRequestAccountabilityCreateComponent implements OnInit {
   // ==========================================
   ngOnInit(): void {
     this.initForm();
+    this.setupFormSubmittingHandler();
   }
 
   // ==========================================
@@ -82,12 +93,33 @@ export class PatientRequestAccountabilityCreateComponent implements OnInit {
   }
 
   // ==========================================
+  // Handlers Reativos
+  // ==========================================
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.createAccountabilityForm.disable({ emitEvent: false });
+        } else {
+          this.createAccountabilityForm.enable({ emitEvent: false });
+        }
+        this.cdr.markForCheck();
+      });
+  }
+
+  // ==========================================
   // Submissão
   // ==========================================
   protected onSubmit(): void {
     const requestId = this.data?.patient_request?.id;
 
-    if (this.createAccountabilityForm.invalid || !requestId) {
+    if (!requestId) {
+      this.messageService.showMessage('Identificador da solicitação não encontrado.');
+      return;
+    }
+
+    if (this.createAccountabilityForm.invalid) {
       this.createAccountabilityForm.markAllAsTouched();
       return;
     }
@@ -97,17 +129,13 @@ export class PatientRequestAccountabilityCreateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
     const payload = this.createAccountabilityForm.getRawValue();
 
     this.accountabilityService
       .createAccountability(requestId, payload)
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({

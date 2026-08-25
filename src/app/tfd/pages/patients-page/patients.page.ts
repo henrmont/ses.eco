@@ -26,14 +26,14 @@ import { Permission } from '../../models/permission.model';
 import { PatientService } from '../../services/patient.service';
 
 // Dialog Components
-import { PatientArchiveComponent } from '../../components/patient/patient-archive/patient-archive.component';
-import { PatientDetailComponent } from '../../components/patient/patient-detail/patient-detail.component';
-import { PatientEscortsComponent } from '../../components/patient/patient-escorts/patient-escorts.component';
-import { PatientFinishBackComponent } from '../../components/patient/patient-finish-back/patient-finish-back.component';
-import { PatientMoveFromOthersComponent } from '../../components/patient/patient-move-from-others/patient-move-from-others.component';
-import { PatientReportsComponent } from '../../components/patient/patient-reports/patient-reports.component';
-import { PatientUpdateComponent } from '../../components/patient/patient-update/patient-update.component';
-import { PatientValidateComponent } from '../../components/patient/patient-validate/patient-validate.component';
+import { PatientArchiveComponent } from '../../components/patients/patient-archive/patient-archive.component';
+import { PatientDetailComponent } from '../../components/patients/patient-detail/patient-detail.component';
+import { PatientEscortsComponent } from '../../components/patients/patient-escorts/patient-escorts.component';
+import { PatientFinishBackComponent } from '../../components/patients/patient-finish-back/patient-finish-back.component';
+import { PatientMoveFromOthersComponent } from '../../components/patients/patient-move-from-others/patient-move-from-others.component';
+import { PatientReportsComponent } from '../../components/patients/patient-reports/patient-reports.component';
+import { PatientUpdateComponent } from '../../components/patients/patient-update/patient-update.component';
+import { PatientValidateComponent } from '../../components/patients/patient-validate/patient-validate.component';
 import { Patient } from '../../models/patient.model';
 
 // Define o tipo aceito para as propriedades do Modal

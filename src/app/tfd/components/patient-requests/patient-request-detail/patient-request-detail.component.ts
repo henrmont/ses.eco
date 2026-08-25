@@ -24,8 +24,8 @@ import { PatientRequestAccountability } from '../../../models/patient-request-ac
 import { Patient } from '../../../models/patient.model';
 
 // Sub-dialogs
-import { PatientDetailComponent } from '../../patient/patient-detail/patient-detail.component';
-import { PatientReportDetailComponent } from '../../patient/patient-report-detail/patient-report-detail.component';
+import { PatientDetailComponent } from '../../patients/patient-detail/patient-detail.component';
+import { PatientReportDetailComponent } from '../../patients/patient-report-detail/patient-report-detail.component';
 import { PatientRequestOpinionDetailComponent } from '../../patient-request-opinions/patient-request-opinion-detail/patient-request-opinion-detail.component';
 import { PatientRequestTravelDetailComponent } from '../../patient-request-travels/patient-request-travel-detail/patient-request-travel-detail.component';
 import { PatientRequestCostAssistanceDetailComponent } from '../../patient-request-cost-assistances/patient-request-cost-assistance-detail/patient-request-cost-assistance-detail.component';

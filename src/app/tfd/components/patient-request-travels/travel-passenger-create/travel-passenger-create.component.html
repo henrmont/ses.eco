@@ -8,7 +8,7 @@
       <div class="line cols-1-col">
         <mat-form-field appearance="outline">
           <mat-label>Passageiro</mat-label>
-          <mat-select formControlName="passenger" [disabled]="isSubmitting()">
+          <mat-select formControlName="passenger">
             @for (item of passengersOptions(); track $index) {
               <mat-option [value]="item">
                 {{ item.name }} ({{ item.typeLabel }})
@@ -33,7 +33,6 @@
             type="number" 
             formControlName="tariff" 
             placeholder="0.00"
-            [readonly]="isSubmitting()"
           >
           
           @for (item of errorMessages['tariff']; track $index) {
@@ -50,7 +49,6 @@
             type="number" 
             formControlName="tax" 
             placeholder="0.00"
-            [readonly]="isSubmitting()"
           >
           
           @for (item of errorMessages['tax']; track $index) {
@@ -67,7 +65,6 @@
             type="number" 
             formControlName="discount" 
             placeholder="0.00"
-            [readonly]="isSubmitting()"
           >
 
           <mat-icon matSuffix>percent</mat-icon>
@@ -84,7 +81,7 @@
       <div class="line cols-1-1-1">
         <mat-form-field appearance="outline">
           <mat-label>Sexo</mat-label>
-          <mat-select formControlName="gender" [disabled]="isSubmitting()">
+          <mat-select formControlName="gender">
             <mat-option [value]="null">Selecione...</mat-option>
             @for (gender of genders; track gender.key) {
               <mat-option [value]="gender.key">{{ gender.value }}</mat-option>
@@ -97,8 +94,7 @@
           <input 
             matInput 
             type="text" 
-            formControlName="seat" 
-            [readonly]="isSubmitting()"
+            formControlName="seat"
           >
         </mat-form-field>
 
@@ -107,8 +103,7 @@
           <input 
             matInput 
             type="text" 
-            formControlName="ticket" 
-            [readonly]="isSubmitting()"
+            formControlName="ticket"
           >
         </mat-form-field>
       </div>
@@ -124,7 +119,7 @@
     <button 
       mat-flat-button 
       color="primary" 
-      type="submit" 
+      type="button" 
       [disabled]="createPassengerForm.invalid || createPassengerForm.pending || isSubmitting()"
       (click)="onSubmit()"
     >

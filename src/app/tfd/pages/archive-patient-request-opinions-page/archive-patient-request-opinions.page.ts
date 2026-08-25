@@ -25,7 +25,7 @@ import { Permission } from '../../models/permission.model';
 import { PatientRequestOpinionService } from '../../services/patient-request-opinion.service';
 
 // Components (Dialogs)
-import { PatientRequestDetailComponent } from '../../components/patient-request/patient-request-detail/patient-request-detail.component';
+import { PatientRequestDetailComponent } from '../../components/patient-requests/patient-request-detail/patient-request-detail.component';
 import { PatientRequestOpinionsComponent } from '../../components/patient-request-opinions/patient-request-opinions/patient-request-opinions.component';
 import { PatientRequestMoveFromArchiveComponent } from '../../components/patient-request-opinions/patient-request-move-from-archive/patient-request-move-from-archive.component';
 

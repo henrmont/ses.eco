@@ -1,8 +1,18 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, Injector, OnInit, effect, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { finalize } from 'rxjs';
+import { 
+  ChangeDetectionStrategy, 
+  ChangeDetectorRef, 
+  Component, 
+  DestroyRef, 
+  Injector, 
+  OnInit, 
+  effect, 
+  inject, 
+  signal 
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { finalize } from 'rxjs';
 
 // Material Modules
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -116,6 +126,7 @@ export class PatientRequestTravelCreateComponent implements OnInit {
   // ==========================================
   ngOnInit(): void {
     this.initForm();
+    this.setupFormSubmittingHandler();
     this.configureReactiveDateEffects();
   }
 
@@ -150,44 +161,67 @@ export class PatientRequestTravelCreateComponent implements OnInit {
   }
 
   // ==========================================
-  // Effects e Regras Reativas
+  // Handlers e Effects Reativos
   // ==========================================
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.createTravelForm.disable({ emitEvent: false });
+        } else {
+          this.createTravelForm.enable({ emitEvent: false });
+          // Re-aplica as regras dinâmicas de desabilitação das datas caso precise reabilitar o formulário
+          this.applyDateControlsState();
+        }
+        this.cdr.markForCheck();
+      });
+  }
+
   private configureReactiveDateEffects(): void {
     effect(() => {
-      const departureCtrl = this.createTravelForm.get('departure_date');
-      const baseValidators = [
-        CustomValidators.dateValidator(),
-        CustomValidators.dateBeforeValidator(this.consultationDate)
-      ];
+      this.disableDepartureDate();
+      this.disableReturnDate();
 
-      if (this.disableDepartureDate()) {
-        departureCtrl?.disable({ emitEvent: false });
-        departureCtrl?.setValue(null, { emitEvent: false });
-        departureCtrl?.setValidators(baseValidators);
-      } else {
-        departureCtrl?.enable({ emitEvent: false });
-        departureCtrl?.setValidators([Validators.required, ...baseValidators]);
+      // Executa a atualização dos estados apenas se o formulário não estiver bloqueado por submissão
+      if (!this.isSubmitting()) {
+        this.applyDateControlsState();
       }
-      departureCtrl?.updateValueAndValidity({ emitEvent: false });
     }, { injector: this.injector });
+  }
 
-    effect(() => {
-      const returnCtrl = this.createTravelForm.get('return_date');
-      const baseValidators = [
-        CustomValidators.dateValidator(),
-        CustomValidators.dateAfterValidator(this.consultationDate)
-      ];
+  private applyDateControlsState(): void {
+    const departureCtrl = this.createTravelForm.get('departure_date');
+    const baseDepartureValidators = [
+      CustomValidators.dateValidator(),
+      CustomValidators.dateBeforeValidator(this.consultationDate)
+    ];
 
-      if (this.disableReturnDate()) {
-        returnCtrl?.disable({ emitEvent: false });
-        returnCtrl?.setValue(null, { emitEvent: false });
-        returnCtrl?.setValidators(baseValidators);
-      } else {
-        returnCtrl?.enable({ emitEvent: false });
-        returnCtrl?.setValidators([Validators.required, ...baseValidators]);
-      }
-      returnCtrl?.updateValueAndValidity({ emitEvent: false });
-    }, { injector: this.injector });
+    if (this.disableDepartureDate()) {
+      departureCtrl?.disable({ emitEvent: false });
+      departureCtrl?.setValue(null, { emitEvent: false });
+      departureCtrl?.setValidators(baseDepartureValidators);
+    } else {
+      departureCtrl?.enable({ emitEvent: false });
+      departureCtrl?.setValidators([Validators.required, ...baseDepartureValidators]);
+    }
+    departureCtrl?.updateValueAndValidity({ emitEvent: false });
+
+    const returnCtrl = this.createTravelForm.get('return_date');
+    const baseReturnValidators = [
+      CustomValidators.dateValidator(),
+      CustomValidators.dateAfterValidator(this.consultationDate)
+    ];
+
+    if (this.disableReturnDate()) {
+      returnCtrl?.disable({ emitEvent: false });
+      returnCtrl?.setValue(null, { emitEvent: false });
+      returnCtrl?.setValidators(baseReturnValidators);
+    } else {
+      returnCtrl?.enable({ emitEvent: false });
+      returnCtrl?.setValidators([Validators.required, ...baseReturnValidators]);
+    }
+    returnCtrl?.updateValueAndValidity({ emitEvent: false });
   }
 
   // ==========================================
@@ -256,7 +290,6 @@ export class PatientRequestTravelCreateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
     const rawValue = this.createTravelForm.getRawValue();
     const payload = {
@@ -271,10 +304,7 @@ export class PatientRequestTravelCreateComponent implements OnInit {
 
     this.travelService.createTravel(requestId, payload)
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({

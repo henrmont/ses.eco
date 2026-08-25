@@ -1,6 +1,15 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, ChangeDetectorRef as CDR, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { 
+  ChangeDetectionStrategy, 
+  ChangeDetectorRef, 
+  Component, 
+  DestroyRef, 
+  Injector, 
+  OnInit, 
+  inject, 
+  signal 
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
@@ -57,6 +66,7 @@ export class TravelPassengerCreateComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<TravelPassengerCreateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Mensagens de Erro por Controle
@@ -103,6 +113,7 @@ export class TravelPassengerCreateComponent implements OnInit {
   // ==========================================
   ngOnInit(): void {
     this.initForm();
+    this.setupFormSubmittingHandler();
     this.setPassengerOptions();
   }
 
@@ -121,6 +132,22 @@ export class TravelPassengerCreateComponent implements OnInit {
       seat: [null],
       ticket: [null]
     });
+  }
+
+  // ==========================================
+  // Handlers Reativos
+  // ==========================================
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.createPassengerForm.disable({ emitEvent: false });
+        } else {
+          this.createPassengerForm.enable({ emitEvent: false });
+        }
+        this.cdr.markForCheck();
+      });
   }
 
   // ==========================================
@@ -150,7 +177,7 @@ export class TravelPassengerCreateComponent implements OnInit {
       });
     }
 
-    // Adiciona apenas Acompanhantes com status === true usando for...of
+    // Adiciona apenas Acompanhantes ativos com status === true
     if (Array.isArray(reportData.escorts)) {
       for (const escort of reportData.escorts) {
         if (escort?.status === true) {
@@ -209,7 +236,6 @@ export class TravelPassengerCreateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
     const rawValue = this.createPassengerForm.getRawValue();
 
@@ -227,10 +253,7 @@ export class TravelPassengerCreateComponent implements OnInit {
 
     this.travelService.createPassenger(travelId, payload)
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({

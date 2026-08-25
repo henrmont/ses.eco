@@ -1,6 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { 
+  ChangeDetectionStrategy, 
+  ChangeDetectorRef, 
+  Component, 
+  DestroyRef, 
+  Injector, 
+  OnInit, 
+  inject, 
+  signal 
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { Editor, NgxEditorModule, Toolbar } from 'ngx-editor';
@@ -47,6 +56,7 @@ export class PatientRequestOpinionUpdateComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<PatientRequestOpinionUpdateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Mensagens de Erro por Controle
@@ -96,6 +106,7 @@ export class PatientRequestOpinionUpdateComponent implements OnInit {
   // ==========================================
   ngOnInit(): void {
     this.initForm();
+    this.setupFormSubmittingHandler();
     this.initEditor();
   }
 
@@ -120,6 +131,22 @@ export class PatientRequestOpinionUpdateComponent implements OnInit {
   }
 
   // ==========================================
+  // Handlers Reativos
+  // ==========================================
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.opinionForm.disable({ emitEvent: false });
+        } else {
+          this.opinionForm.enable({ emitEvent: false });
+        }
+        this.cdr.markForCheck();
+      });
+  }
+
+  // ==========================================
   // Submissão
   // ==========================================
   protected onSubmit(): void {
@@ -136,14 +163,10 @@ export class PatientRequestOpinionUpdateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
     this.opinionService.updateOpinion(opinionId, this.opinionForm.getRawValue())
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({

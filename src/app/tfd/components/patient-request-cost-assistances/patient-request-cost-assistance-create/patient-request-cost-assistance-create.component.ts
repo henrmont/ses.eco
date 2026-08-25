@@ -1,10 +1,21 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { 
+  ChangeDetectionStrategy, 
+  ChangeDetectorRef, 
+  Component, 
+  DestroyRef, 
+  Injector, 
+  OnInit, 
+  computed,
+  effect,
+  inject, 
+  signal 
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 
-// Angular Material
+// Material Modules
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -13,11 +24,11 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 
-// Core, Models e Serviços
+// Services e Models
 import { MessageService } from '../../../../core/services/message-service';
 import { PatientRequestCostAssistanceService } from '../../../services/patient-request-cost-assistance.service';
 
-interface UnifiedPassengerOption {
+export interface UnifiedPassengerOption {
   id: number;
   name: string;
   isPatient: boolean;
@@ -35,8 +46,8 @@ interface UnifiedPassengerOption {
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
-    MatSelectModule,
     MatProgressSpinnerModule,
+    MatSelectModule,
     MatIconModule
   ],
   templateUrl: './patient-request-cost-assistance-create.component.html',
@@ -54,6 +65,7 @@ export class PatientRequestCostAssistanceCreateComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<PatientRequestCostAssistanceCreateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Mensagens de Erro por Controle
@@ -64,16 +76,25 @@ export class PatientRequestCostAssistanceCreateComponent implements OnInit {
     ],
     type: [
       { type: 'required', message: 'O tipo da ajuda de custo é obrigatório.' }
-    ],
-    passenger_id: [],
-    bank: [],
-    agency: [],
-    account: []
+    ]
   };
 
   // ==========================================
   // Estados Reativos via Signals
   // ==========================================
+  // Signal para guardar o estado de has_initial_cost_assistance vindo da requisição
+  protected readonly hasInitialCostAssistance = signal<boolean>(
+    !!this.data?.patient_request?.has_initial_cost_assistance
+  );
+
+  /**
+   * Computed que reavalia automaticamente o tipo sempre que
+   * `hasInitialCostAssistance` for modificado.
+   */
+  protected readonly costAssistanceType = computed(() => {
+    return this.hasInitialCostAssistance() ? 'Complemento' : 'Inicial';
+  });
+
   protected readonly passengersOptions = signal<UnifiedPassengerOption[]>([]);
   protected readonly isSubmitting = signal<boolean>(false);
 
@@ -88,18 +109,17 @@ export class PatientRequestCostAssistanceCreateComponent implements OnInit {
   ngOnInit(): void {
     this.extractPassengers();
     this.initForm();
+    this.setupFormSubmittingHandler();
+    this.setupTypeSyncEffect();
   }
 
   // ==========================================
   // Inicialização de Formulário
   // ==========================================
   private initForm(): void {
-    const hasInitial = !!this.data?.patient_request?.has_initial_cost_assistance;
-    const initialType = hasInitial ? 'Complemento' : 'Inicial';
-
     this.createCostAssistanceForm = this.fb.group({
       name: [null, [Validators.required]],
-      type: [initialType, [Validators.required]],
+      type: [{ value: this.costAssistanceType(), disabled: true }, [Validators.required]],
       passenger_id: [null],
       bank: [null],
       agency: [null],
@@ -108,11 +128,40 @@ export class PatientRequestCostAssistanceCreateComponent implements OnInit {
   }
 
   // ==========================================
+  // Handlers e Effects Reativos
+  // ==========================================
+
+  /**
+   * Sincroniza o valor do `computed` com o campo `type` do formulário
+   * sempre que o estado reativo sofrer alteração.
+   */
+  private setupTypeSyncEffect(): void {
+    effect(() => {
+      const currentType = this.costAssistanceType();
+      if (this.createCostAssistanceForm) {
+        this.createCostAssistanceForm.get('type')?.setValue(currentType, { emitEvent: false });
+      }
+    }, { injector: this.injector });
+  }
+
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.createCostAssistanceForm.disable({ emitEvent: false });
+        } else {
+          this.createCostAssistanceForm.enable({ emitEvent: false });
+          // Mantém o campo de tipo desabilitado
+          this.createCostAssistanceForm.get('type')?.disable({ emitEvent: false });
+        }
+        this.cdr.markForCheck();
+      });
+  }
+
+  // ==========================================
   // Helpers e Métodos Auxiliares
   // ==========================================
-  /**
-   * Extrai e mapeia a lista de passageiros sem duplicidade.
-   */
   private extractPassengers(): void {
     const travels = this.data?.patient_request?.travels || [];
     const mapPassengers = new Map<string, UnifiedPassengerOption>();
@@ -158,21 +207,19 @@ export class PatientRequestCostAssistanceCreateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
     const payload = this.createCostAssistanceForm.getRawValue();
 
     this.costAssistanceService.createCostAssistance(requestId, payload)
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
         next: (response: any) => {
           this.messageService.showMessage(response?.message || 'Ajuda de custo criada com sucesso!');
+          // Atualiza a flag reativa local para 'true' caso precise refletir a criação de uma Inicial
+          this.hasInitialCostAssistance.set(true);
           this.dialogRef.close(true);
         },
         error: (err) => {

@@ -1,6 +1,15 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { 
+  ChangeDetectionStrategy, 
+  ChangeDetectorRef, 
+  Component, 
+  DestroyRef, 
+  Injector, 
+  OnInit, 
+  inject, 
+  signal 
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
 
@@ -50,6 +59,7 @@ export class TravelPassengerUpdateComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<TravelPassengerUpdateComponent>);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   // ==========================================
   // Propriedades de Domínio e Suporte
@@ -57,18 +67,7 @@ export class TravelPassengerUpdateComponent implements OnInit {
   protected readonly genders = Object.entries(TravelGender).map(([key, value]) => ({ key, value }));
 
   // ==========================================
-  // Formulário Principal
-  // ==========================================
-  protected passengerForm!: FormGroup;
-
-  // ==========================================
-  // Estados Reativos via Signals
-  // ==========================================
-  protected readonly passengerDisplayName = signal<string>('');
-  protected readonly isSubmitting = signal<boolean>(false);
-
-  // ==========================================
-  // Dicionário de Mensagens de Erro
+  // Mensagens de Erro por Controle
   // ==========================================
   protected readonly errorMessages: Record<string, Array<{ type: string; message: string }>> = {
     tariff: [
@@ -89,15 +88,27 @@ export class TravelPassengerUpdateComponent implements OnInit {
   };
 
   // ==========================================
+  // Estados Reativos via Signals
+  // ==========================================
+  protected readonly passengerDisplayName = signal<string>('');
+  protected readonly isSubmitting = signal<boolean>(false);
+
+  // ==========================================
+  // Formulário Principal
+  // ==========================================
+  protected passengerForm!: FormGroup;
+
+  // ==========================================
   // Ciclo de Vida (Hooks)
   // ==========================================
   ngOnInit(): void {
     this.initForm();
+    this.setupFormSubmittingHandler();
     this.setPassengerDisplayName();
   }
 
   // ==========================================
-  // Inicialização do Formulário
+  // Inicialização de Formulário
   // ==========================================
   private initForm(): void {
     const passenger = this.data?.passenger;
@@ -113,7 +124,23 @@ export class TravelPassengerUpdateComponent implements OnInit {
   }
 
   // ==========================================
-  // Helpers e Regras de Interface
+  // Handlers Reativos
+  // ==========================================
+  private setupFormSubmittingHandler(): void {
+    toObservable(this.isSubmitting, { injector: this.injector })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSubmitting => {
+        if (isSubmitting) {
+          this.passengerForm.disable({ emitEvent: false });
+        } else {
+          this.passengerForm.enable({ emitEvent: false });
+        }
+        this.cdr.markForCheck();
+      });
+  }
+
+  // ==========================================
+  // Helpers e Métodos Auxiliares
   // ==========================================
   /**
    * Formata o nome do passageiro (Paciente ou Acompanhante) para exibição read-only.
@@ -149,14 +176,10 @@ export class TravelPassengerUpdateComponent implements OnInit {
     }
 
     this.isSubmitting.set(true);
-    this.cdr.markForCheck();
 
     this.travelService.updatePassenger(passengerId, this.passengerForm.getRawValue())
       .pipe(
-        finalize(() => {
-          this.isSubmitting.set(false);
-          this.cdr.markForCheck();
-        }),
+        finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({

@@ -291,7 +291,7 @@
                       type="button"
                       matTooltip="Mover para minha caixa" 
                       (click)="patientRequestMoveFromOthers(element)" 
-                      [disabled]="element.has_medical_opinion || element.has_social_opinion || element.is_medical_bookmark || element.is_social_bookmark || checkPermissions('tfd/solicitação atualizar')">
+                      [disabled]="element.has_medical_opinion || element.has_social_opinion || element.is_medical_bookmark || element.is_social_bookmark || element.is_owner_bookmark || checkPermissions('tfd/solicitação atualizar')">
                 <mat-icon>move_to_inbox</mat-icon>
               </button>
             </td>

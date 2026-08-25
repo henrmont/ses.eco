@@ -20,7 +20,7 @@
                     }
 
                     <mat-autocomplete #medicalProfessionalAuto="matAutocomplete" [displayWith]="displayMedicalProfessional">
-                        @for (option of filteredMedicalProfessionalOptions | async; track $index) {
+                        @for (option of filteredMedicalProfessionalOptions(); track $index) {
                             <mat-option [value]="option" (onSelectionChange)="setMedicalProfessional(option)">
                                 <mat-chip style="margin-right: 20px;">{{ option?.patient_medical_requests_count ?? 0 }}</mat-chip>
                                 <span>{{ option?.name }}</span>

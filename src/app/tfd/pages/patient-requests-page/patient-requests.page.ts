@@ -25,18 +25,15 @@ import { Permission } from '../../models/permission.model';
 import { PatientRequestService } from '../../services/patient-request.service';
 
 // Dialog Components
-import { PatientRequestAttachmentsComponent } from '../../components/patient-request/patient-request-attachments/patient-request-attachments.component';
-import { PatientRequestDeleteComponent } from '../../components/patient-request/patient-request-delete/patient-request-delete.component';
-import { PatientRequestDetailComponent } from '../../components/patient-request/patient-request-detail/patient-request-detail.component';
-import { PatientRequestFinishBackComponent } from '../../components/patient-request/patient-request-finish-back/patient-request-finish-back.component';
-import { PatientRequestHaltedComponent } from '../../components/patient-request/patient-request-halted/patient-request-halted.component';
-import { PatientRequestMoveFromOthersComponent } from '../../components/patient-request/patient-request-move-from-others/patient-request-move-from-others.component';
-import { PatientRequestMoveFromProcessesComponent } from '../../components/patient-request/patient-request-move-from-processes/patient-request-move-from-processes.component';
-import { PatientRequestProcessToMedicalComponent } from '../../components/patient-request/patient-request-process-to-medical/patient-request-process-to-medical.component';
-import { PatientRequestUpdateComponent } from '../../components/patient-request/patient-request-update/patient-request-update.component';
-
-// Constantes Locais
-const TFD_PATIENT_REQUESTS_CHANNEL = new BroadcastChannel('tfd-patient-requests-channel');
+import { PatientRequestAttachmentsComponent } from '../../components/patient-requests/patient-request-attachments/patient-request-attachments.component';
+import { PatientRequestDeleteComponent } from '../../components/patient-requests/patient-request-delete/patient-request-delete.component';
+import { PatientRequestDetailComponent } from '../../components/patient-requests/patient-request-detail/patient-request-detail.component';
+import { PatientRequestFinishBackComponent } from '../../components/patient-requests/patient-request-finish-back/patient-request-finish-back.component';
+import { PatientRequestHaltedComponent } from '../../components/patient-requests/patient-request-halted/patient-request-halted.component';
+import { PatientRequestMoveFromOthersComponent } from '../../components/patient-requests/patient-request-move-from-others/patient-request-move-from-others.component';
+import { PatientRequestMoveFromProcessesComponent } from '../../components/patient-requests/patient-request-move-from-processes/patient-request-move-from-processes.component';
+import { PatientRequestProcessToMedicalComponent } from '../../components/patient-requests/patient-request-process-to-medical/patient-request-process-to-medical.component';
+import { PatientRequestUpdateComponent } from '../../components/patient-requests/patient-request-update/patient-request-update.component';
 
 @Component({
   selector: 'app-patient-requests-page',
@@ -59,6 +56,11 @@ const TFD_PATIENT_REQUESTS_CHANNEL = new BroadcastChannel('tfd-patient-requests-
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientRequestsPage implements OnInit, OnDestroy {
+  // ==========================================
+  // Instância própria do canal
+  // ==========================================
+  private readonly patientRequestsChannel = new BroadcastChannel('tfd-patient-requests-channel');
+
   // ==========================================
   // Injeção de Dependências
   // ==========================================
@@ -104,7 +106,7 @@ export class PatientRequestsPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    TFD_PATIENT_REQUESTS_CHANNEL.close();
+    this.patientRequestsChannel.close();
   }
 
   // ==========================================
@@ -254,7 +256,7 @@ export class PatientRequestsPage implements OnInit, OnDestroy {
   }
 
   private listenToBroadcastChannel(): void {
-    TFD_PATIENT_REQUESTS_CHANNEL.onmessage = (message: MessageEvent<string>) => {
+    this.patientRequestsChannel.onmessage = (message: MessageEvent<string>) => {
       if (message.data === 'update') {
         this.fetchPatientRequests(false);
       }
@@ -306,6 +308,6 @@ export class PatientRequestsPage implements OnInit, OnDestroy {
 
   private handlePatientRequestChange(): void {
     this.fetchPatientRequests(false);
-    TFD_PATIENT_REQUESTS_CHANNEL.postMessage('update');
+    this.patientRequestsChannel.postMessage('update');
   }
 }

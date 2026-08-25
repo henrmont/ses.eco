@@ -94,7 +94,7 @@
                   mat-icon-button 
                   type="button" 
                   matTooltip="Deletar ajuda de custo" 
-                  [disabled]="checkPermissions('tfd/ajuda de custo deletar')"
+                  [disabled]="element.payment || checkPermissions('tfd/ajuda de custo deletar')"
                   (click)="patientRequestCostAssistanceDelete(element)"
                 >
                   <mat-icon color="warn">delete</mat-icon>

@@ -35,8 +35,8 @@ import { PatientRequestOpinionsComponent } from '../../components/patient-reques
 import { PatientRequestProcessToCostAssistanceAndTravelComponent } from '../../components/patient-request-opinions/patient-request-process-to-cost-assistance-and-travel/patient-request-process-to-cost-assistance-and-travel.component';
 import { PatientRequestProcessToSocialComponent } from '../../components/patient-request-opinions/patient-request-process-to-social/patient-request-process-to-social.component';
 import { PatientRequestUndoComponent } from '../../components/patient-request-opinions/patient-request-undo/patient-request-undo.component';
-import { PatientRequestAttachmentsComponent } from '../../components/patient-request/patient-request-attachments/patient-request-attachments.component';
-import { PatientRequestDetailComponent } from '../../components/patient-request/patient-request-detail/patient-request-detail.component';
+import { PatientRequestAttachmentsComponent } from '../../components/patient-requests/patient-request-attachments/patient-request-attachments.component';
+import { PatientRequestDetailComponent } from '../../components/patient-requests/patient-request-detail/patient-request-detail.component';
 
 // Define o tipo aceito para as propriedades do Modal
 type PatientRequestDialogData = 
@@ -44,8 +44,6 @@ type PatientRequestDialogData =
   | { patient_request: PatientRequest; type: 'medical' | 'social' }
   | { patient_request: PatientRequest; permissions: any };
 
-// Constantes Locais
-const TFD_OPINIONS_CHANNEL = new BroadcastChannel('tfd-opinions-channel');
 
 @Component({
   selector: 'app-patient-request-opinions-page',
@@ -69,6 +67,11 @@ const TFD_OPINIONS_CHANNEL = new BroadcastChannel('tfd-opinions-channel');
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientRequestOpinionsPage implements OnInit, OnDestroy {
+  // ==========================================
+  // Instância própria do canal
+  // ==========================================
+  private readonly opinionsChannel = new BroadcastChannel('tfd-opinions-channel');
+
   // ==========================================
   // Injeção de Dependências
   // ==========================================
@@ -116,7 +119,7 @@ export class PatientRequestOpinionsPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    TFD_OPINIONS_CHANNEL.close();
+    this.opinionsChannel.close();
   }
 
   // ==========================================
@@ -291,7 +294,7 @@ export class PatientRequestOpinionsPage implements OnInit, OnDestroy {
   }
 
   private listenToBroadcastChannel(): void {
-    TFD_OPINIONS_CHANNEL.onmessage = (message: MessageEvent<string>) => {
+    this.opinionsChannel.onmessage = (message: MessageEvent<string>) => {
       if (message.data === 'update') {
         this.fetchPatientRequests(false);
       }
@@ -343,6 +346,6 @@ export class PatientRequestOpinionsPage implements OnInit, OnDestroy {
 
   private handleOpinionChange(): void {
     this.fetchPatientRequests(false);
-    TFD_OPINIONS_CHANNEL.postMessage('update');
+    this.opinionsChannel.postMessage('update');
   }
 }

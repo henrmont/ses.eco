@@ -25,7 +25,7 @@ import { Permission } from '../../models/permission.model';
 import { PatientRequestTravelService } from '../../services/patient-request-travel.service';
 
 // Components (Dialogs)
-import { PatientRequestDetailComponent } from '../../components/patient-request/patient-request-detail/patient-request-detail.component';
+import { PatientRequestDetailComponent } from '../../components/patient-requests/patient-request-detail/patient-request-detail.component';
 import { PatientRequestMoveFromArchiveComponent } from '../../components/patient-request-travels/patient-request-move-from-archive/patient-request-move-from-archive.component';
 
 const TFD_TRAVELS_CHANNEL = new BroadcastChannel('tfd-travels-channel');

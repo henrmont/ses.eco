@@ -27,7 +27,7 @@ import { Role } from '../../models/role.model';
 import { PaymentService } from '../../services/payment.service';
 
 // Dialog Components
-import { PatientRequestDetailComponent } from '../../components/patient-request/patient-request-detail/patient-request-detail.component';
+import { PatientRequestDetailComponent } from '../../components/patient-requests/patient-request-detail/patient-request-detail.component';
 import { PaymentArchiveComponent } from '../../components/payments/payment-archive/payment-archive.component';
 import { PaymentHaltedComponent } from '../../components/payments/payment-halted/payment-halted.component';
 import { PaymentMemoComponent } from '../../components/payments/payment-memo/payment-memo.component';
