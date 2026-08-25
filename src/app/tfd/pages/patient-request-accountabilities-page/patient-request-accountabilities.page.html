@@ -182,7 +182,7 @@
                                     type="button" 
                                     matTooltip="Mover para minha caixa" 
                                     (click)="patientRequestMoveFromOthers(element)" 
-                                    [disabled]="checkPermissions('tfd/solicitação atualizar')">
+                                    [disabled]="element.is_accountability_bookmark || checkPermissions('tfd/solicitação atualizar')">
                                 <mat-icon aria-hidden="true">move_to_inbox</mat-icon>
                             </button>
                         </td>

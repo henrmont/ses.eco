@@ -1,122 +1,166 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { 
+  ChangeDetectionStrategy, 
+  Component, 
+  DestroyRef, 
+  Injector, 
+  OnDestroy, 
+  OnInit, 
+  effect, 
+  inject, 
+  viewChild 
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs';
-import { CommonModule } from '@angular/common';
+import { NgxMaskPipe } from 'ngx-mask';
 
-// Angular Material
+// Angular Material & CDK
+import { Overlay } from '@angular/cdk/overlay';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatSort, MatSortModule } from '@angular/material/sort';
-import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
-import { Overlay } from '@angular/cdk/overlay';
-import { NgxMaskPipe } from 'ngx-mask';
 
-// Core & Shared
+// Core, Models e Serviços
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
 import { PatientRequest } from '../../models/patient-request.model';
 import { Permission } from '../../models/permission.model';
+import { Role } from '../../models/role.model';
 import { PatientRequestCostAssistanceService } from '../../services/patient-request-cost-assistance.service';
 
-// Components (Dialogs)
+// Dialog Components
 import { PatientRequestDetailComponent } from '../../components/patient-requests/patient-request-detail/patient-request-detail.component';
 import { PatientRequestMoveFromArchiveComponent } from '../../components/patient-request-cost-assistances/patient-request-move-from-archive/patient-request-move-from-archive.component';
 
-const TFD_ACCOUNTABILITIES_CHANNEL = new BroadcastChannel('tfd-accountabilities-channel');
+// Define os formatos de dados aceitos pelos modais da página de arquivos de ajuda de custo
+type PatientRequestDialogData =
+  | { patient_request: PatientRequest }
+  | { patient_request: PatientRequest; permissions: Role[] };
 
 @Component({
   selector: 'app-archive-patient-request-cost-assistances-page',
   standalone: true,
   imports: [
     CommonModule,
-    MatFormFieldModule, 
-    MatInputModule, 
-    MatTableModule, 
-    MatButtonModule, 
-    MatIconModule, 
-    MatTooltipModule, 
-    MatBadgeModule, 
-    MatSortModule,
+    MatBadgeModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
     MatPaginatorModule,
-    NgxMaskPipe
+    MatSortModule,
+    MatTableModule,
+    MatTooltipModule,
+    NgxMaskPipe,
   ],
   templateUrl: './archive-patient-request-cost-assistances.page.html',
   styleUrl: './archive-patient-request-cost-assistances.page.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ArchivePatientRequestCostAssistancesPage implements OnInit {
+export class ArchivePatientRequestCostAssistancesPage implements OnInit, OnDestroy {
+  // ==========================================
+  // Instância própria do canal
+  // ==========================================
+  private readonly costAssistancesChannel = new BroadcastChannel('tfd-cost-assistances-channel');
 
-  // Injeções de Dependência
+  // ==========================================
+  // Injeção de Dependências
+  // ==========================================
   private readonly costAssistanceService = inject(PatientRequestCostAssistanceService);
   private readonly dialog = inject(MatDialog);
   private readonly overlay = inject(Overlay);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
-  private loadingDialog!: MatDialogRef<LoadingComponent>;
-  private readonly currentUser = this.route.parent?.parent?.snapshot.data['user'];
-
-  // Captura reativa de Sort e Paginator do Template HTML
+  // ==========================================
+  // ViewChildren / Elementos da View
+  // ==========================================
   private readonly archiveSort = viewChild<MatSort>('archiveSort');
   private readonly archivePaginator = viewChild<MatPaginator>('archivePaginator');
 
-  // Definição de Colunas exibidas no grid (incluindo Responsável)
+  // ==========================================
+  // Propriedades e Estado Reativo
+  // ==========================================
+  private loadingDialog!: MatDialogRef<LoadingComponent>;
+  private readonly currentUser = this.route.parent?.parent?.snapshot.data['user'];
+
   protected readonly displayedColumns: string[] = ['name', 'cns', 'type', 'responsible', 'actions'];
+  protected readonly archivedDataSource = new MatTableDataSource<any>([]);
 
-  // Signal interno para armazenamento das solicitações arquivadas
-  private readonly rawArchiveList = signal<PatientRequest[]>([]);
-
-  // Computed signal reativo integrando dados, ordenação e paginação
-  protected readonly archivedDataSource = computed(() => {
-    const dataSource = new MatTableDataSource(this.rawArchiveList());
-    const sortRef = this.archiveSort();
-    const paginatorRef = this.archivePaginator();
-
-    if (sortRef) dataSource.sort = sortRef;
-    if (paginatorRef) dataSource.paginator = paginatorRef;
-
-    return dataSource;
-  });
-
+  // ==========================================
+  // Ciclo de Vida (Hooks)
+  // ==========================================
   ngOnInit(): void {
+    this.setupTableBindings();
     this.fetchArchivePatientRequests(true);
-
-    TFD_ACCOUNTABILITIES_CHANNEL.onmessage = (message) => {
-      if (message.data === 'update') {
-        this.fetchArchivePatientRequests(false);
-      }
-    };
-
-    // Fechamento seguro do BroadcastChannel
-    this.destroyRef.onDestroy(() => {
-      TFD_ACCOUNTABILITIES_CHANNEL.close();
-    });
+    this.listenToBroadcastChannel();
   }
 
-  // Método de Filtragem com reset de paginação
+  ngOnDestroy(): void {
+    this.costAssistancesChannel.close();
+  }
+
+  // ==========================================
+  // Métodos Acessíveis pelo Template (Protected)
+  // ==========================================
   protected applyFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    const dataSource = this.archivedDataSource();
-    dataSource.filter = filterValue.trim().toLowerCase();
-    
-    if (dataSource.paginator) {
-      dataSource.paginator.firstPage();
+    this.archivedDataSource.filter = filterValue.trim().toLowerCase();
+
+    if (this.archivedDataSource.paginator) {
+      this.archivedDataSource.paginator.firstPage();
     }
   }
 
-  /**
-   * Busca as solicitações de prestação de contas arquivadas no serviço.
-   */
+  protected checkPermissions(permissionName: string): boolean {
+    if (!this.currentUser?.roles) return true;
+
+    const hasPermission = this.currentUser.roles.some((role: Role) =>
+      role.permissions?.some((perm: Permission) => perm.name === permissionName)
+    );
+
+    return !hasPermission;
+  }
+
+  // Ações disparadas pelos botões da tabela
+  protected showPatientRequest(patientRequest: PatientRequest): void {
+    this.openDialog(PatientRequestDetailComponent, { patient_request: patientRequest }, '1000px', 'auto', false);
+  }
+
+  protected movePatientRequestFromArchive(patientRequest: PatientRequest): void {
+    this.openDialog(PatientRequestMoveFromArchiveComponent, { patient_request: patientRequest }, '400px');
+  }
+
+  // ==========================================
+  // Métodos Privados / Auxiliares
+  // ==========================================
+  private setupTableBindings(): void {
+    effect(
+      () => {
+        const sortRef = this.archiveSort();
+        const paginatorRef = this.archivePaginator();
+
+        if (sortRef) this.archivedDataSource.sort = sortRef;
+        if (paginatorRef) this.archivedDataSource.paginator = paginatorRef;
+      },
+      { injector: this.injector }
+    );
+  }
+
   private fetchArchivePatientRequests(showLoading = false): void {
     if (showLoading) this.openLoading();
 
-    this.costAssistanceService.getArchivePatientRequests()
+    this.costAssistanceService
+      .getArchivePatientRequests()
       .pipe(
         finalize(() => {
           if (showLoading && this.loadingDialog) {
@@ -127,23 +171,34 @@ export class ArchivePatientRequestCostAssistancesPage implements OnInit {
       )
       .subscribe({
         next: (response: any) => {
-          const rawData = response ?? [];
+          const rawData: any[] = response || [];
 
-          // Normalização dos dados mapeando o responsável accountability_professional
-          const archivedRequests: PatientRequest[] = rawData.map((item: any) => ({
-            ...item,
-            name: item.report?.patient_care?.patient?.name,
-            cns: item.report?.patient_care?.patient?.cns,
-            type: item.type,
-            responsible: item.cost_assistance_professional?.name || '-'
-          }));
+          const archivedRequests = rawData.map((item) => this.mapPatientRequestRow(item));
 
-          this.rawArchiveList.set(archivedRequests);
+          this.archivedDataSource.data = archivedRequests;
         },
         error: () => {
-          this.rawArchiveList.set([]);
-        }
+          this.archivedDataSource.data = [];
+        },
       });
+  }
+
+  private listenToBroadcastChannel(): void {
+    this.costAssistancesChannel.onmessage = (message: MessageEvent<string>) => {
+      if (message.data === 'update') {
+        this.fetchArchivePatientRequests(false);
+      }
+    };
+  }
+
+  private mapPatientRequestRow(item: any) {
+    return {
+      ...item,
+      name: item.report?.patient_care?.patient?.name || 'Não informado',
+      cns: item.report?.patient_care?.patient?.cns || '',
+      type: item.type,
+      responsible: item.cost_assistance_professional?.name || '-',
+    };
   }
 
   private openLoading(): void {
@@ -154,39 +209,25 @@ export class ArchivePatientRequestCostAssistancesPage implements OnInit {
     });
   }
 
-  /**
-   * Validação de permissões pelo Resolver
-   */
-  protected checkPermissions(permissionName: string): boolean {
-    if (!this.currentUser?.roles) return true;
-
-    const hasPermission = this.currentUser.roles.some((role: any) => 
-      role.permissions?.some((perm: Permission) => perm.name === permissionName)
-    );
-
-    return !hasPermission;
-  }
-
-  /**
-   * Modais e utilitários de interface
-   */
-  private openDialog(
-    component: any, 
-    data: any, 
-    width = '400px', 
-    height = 'auto', 
+  private openDialog<T>(
+    component: new (...args: any[]) => T,
+    data: PatientRequestDialogData,
+    width = '400px',
+    height = 'auto',
     requiresRefresh = true
   ): void {
-    this.dialog.open(component, {
-      width,
-      height,
-      disableClose: true,
-      autoFocus: false,
-      scrollStrategy: this.overlay.scrollStrategies.noop(),
-      data
-    }).afterClosed()
+    this.dialog
+      .open(component, {
+        width,
+        height,
+        disableClose: true,
+        autoFocus: false,
+        scrollStrategy: this.overlay.scrollStrategies.noop(),
+        data,
+      })
+      .afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(result => {
+      .subscribe((result) => {
         if (result && requiresRefresh) {
           this.handleRequestsChange();
         }
@@ -195,16 +236,6 @@ export class ArchivePatientRequestCostAssistancesPage implements OnInit {
 
   private handleRequestsChange(): void {
     this.fetchArchivePatientRequests(false);
-    TFD_ACCOUNTABILITIES_CHANNEL.postMessage('update');
-  }
-
-  // --- MÉTODOS DE AÇÃO DO TEMPLATE (PROTECTED) ---
-
-  protected showPatientRequest(patientRequest: PatientRequest): void {
-    this.openDialog(PatientRequestDetailComponent, { patient_request: patientRequest }, '1000px', 'auto', false);
-  }
-
-  protected movePatientRequestFromArchive(patientRequest: PatientRequest): void {
-    this.openDialog(PatientRequestMoveFromArchiveComponent, { patient_request: patientRequest }, '400px');
+    this.costAssistancesChannel.postMessage('update');
   }
 }

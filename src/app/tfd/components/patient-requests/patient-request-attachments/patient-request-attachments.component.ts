@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { saveAs } from 'file-saver';
@@ -30,11 +30,16 @@ type PatientRequestAttachmentDialogData =
   | { patient_request_attachment: PatientRequestAttachment }
   | { patient_request: PatientRequest | undefined };
 
-// Constantes Locais
-const TFD_PATIENT_REQUESTS_CHANNEL = new BroadcastChannel('tfd-patient-requests-channel');
-const TFD_COST_ASSISTANCES_CHANNEL = new BroadcastChannel('tfd-cost-assistances-channel');
-const TFD_OPINIONS_CHANNEL = new BroadcastChannel('tfd-opinions-channel');
-const TFD_TRAVELS_CHANNEL = new BroadcastChannel('tfd-travels-channel');
+  // Nomes dos canais do módulo TFD
+type TfdChannelKey = 'REQUESTS' | 'TRAVELS' | 'OPINIONS' | 'COST_ASSISTANCES';
+
+const TFD_CHANNEL_NAMES: Record<TfdChannelKey, string> = {
+  REQUESTS: 'tfd-patient-requests-channel',
+  TRAVELS: 'tfd-travels-channel',
+  OPINIONS: 'tfd-opinions-channel',
+  COST_ASSISTANCES: 'tfd-cost-assistances-channel'
+};
+
 
 @Component({
   selector: 'app-patient-request-attachments',
@@ -52,7 +57,7 @@ const TFD_TRAVELS_CHANNEL = new BroadcastChannel('tfd-travels-channel');
   styleUrl: './patient-request-attachments.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class PatientRequestAttachmentsComponent implements OnInit, OnDestroy {
+export class PatientRequestAttachmentsComponent implements OnInit{
   // ==========================================
   // Injeção de Dependências
   // ==========================================
@@ -73,17 +78,20 @@ export class PatientRequestAttachmentsComponent implements OnInit, OnDestroy {
   protected readonly isLoading = signal<boolean>(true);
 
   // ==========================================
+  // Mapa de instâncias dos BroadcastChannels do TFD
+  // ==========================================
+  private readonly channels = new Map<TfdChannelKey, BroadcastChannel>();
+
+  // ==========================================
   // Ciclo de Vida (Hooks)
   // ==========================================
   ngOnInit(): void {
     this.fetchPatientRequestAttachments(true);
-  }
 
-  ngOnDestroy(): void {
-    TFD_PATIENT_REQUESTS_CHANNEL.close();
-    TFD_COST_ASSISTANCES_CHANNEL.close();
-    TFD_OPINIONS_CHANNEL.close();
-    TFD_TRAVELS_CHANNEL.close();
+    // Instancia todos os canais quando o layout é carregado
+    (Object.keys(TFD_CHANNEL_NAMES) as TfdChannelKey[]).forEach(key => {
+      this.channels.set(key, new BroadcastChannel(TFD_CHANNEL_NAMES[key]));
+    });
   }
 
   // ==========================================
@@ -152,13 +160,23 @@ export class PatientRequestAttachmentsComponent implements OnInit, OnDestroy {
       });
   }
 
+  /**
+   * Método auxiliar para emitir mensagens com segurança no canal especificado
+   */
+  public postMessage(channelKey: TfdChannelKey, message: any = 'update'): void {
+    const channel = this.channels.get(channelKey);
+    if (channel) {
+      channel.postMessage(message);
+    }
+  }
+
   private openDialog<T>(
     component: new (...args: any[]) => T,
     data: PatientRequestAttachmentDialogData,
     width = '400px',
     height = 'auto',
     requiresRefresh = true,
-    emitGlobalBroadcast = true
+    emitGlobalBroadcast = true,
   ): void {
     this.dialog.open(component, {
       width,
@@ -173,14 +191,15 @@ export class PatientRequestAttachmentsComponent implements OnInit, OnDestroy {
       .subscribe((result) => {
         if (result) {
           this.fetchPatientRequestAttachments(requiresRefresh);
-
+          
           if (emitGlobalBroadcast) {
-            TFD_PATIENT_REQUESTS_CHANNEL.postMessage('update');
-            TFD_COST_ASSISTANCES_CHANNEL.postMessage('update');
-            TFD_OPINIONS_CHANNEL.postMessage('update');
-            TFD_TRAVELS_CHANNEL.postMessage('update');
+            for (const channelKey of Object.keys(TFD_CHANNEL_NAMES) as TfdChannelKey[]) {
+              this.postMessage(channelKey, 'update');
+            }
           }
           this.cdr.markForCheck();
+        }
+        if (result) {
         }
       });
   }

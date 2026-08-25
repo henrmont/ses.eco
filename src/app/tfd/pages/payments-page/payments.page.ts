@@ -39,8 +39,6 @@ type PaymentDialogData =
   | { patient_request: PatientRequest }
   | { payment: Payment };
 
-// Constantes Locais
-const TFD_PAYMENTS_CHANNEL = new BroadcastChannel('tfd-payments-channel');
 
 @Component({
   selector: 'app-payments-page',
@@ -64,6 +62,11 @@ const TFD_PAYMENTS_CHANNEL = new BroadcastChannel('tfd-payments-channel');
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PaymentsPage implements OnInit, OnDestroy {
+  // ==========================================
+  // Instância própria do canal
+  // ==========================================
+  private readonly paymentsChannel = new BroadcastChannel('tfd-payments-channel');
+
   // ==========================================
   // Injeção de Dependências
   // ==========================================
@@ -105,7 +108,7 @@ export class PaymentsPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    TFD_PAYMENTS_CHANNEL.close();
+    this.paymentsChannel.close();
   }
 
   // ==========================================
@@ -261,7 +264,7 @@ export class PaymentsPage implements OnInit, OnDestroy {
   }
 
   private listenToBroadcastChannel(): void {
-    TFD_PAYMENTS_CHANNEL.onmessage = (message: MessageEvent<string>) => {
+    this.paymentsChannel.onmessage = (message: MessageEvent<string>) => {
       if (message.data === 'update') {
         this.fetchPayments(false);
       }
@@ -314,6 +317,6 @@ export class PaymentsPage implements OnInit, OnDestroy {
 
   private handleRequestsChange(): void {
     this.fetchPayments(false);
-    TFD_PAYMENTS_CHANNEL.postMessage('update');
+    this.paymentsChannel.postMessage('update');
   }
 }

@@ -1,138 +1,166 @@
+import { CommonModule } from '@angular/common';
 import { 
   ChangeDetectionStrategy, 
   Component, 
   DestroyRef, 
+  Injector, 
+  OnDestroy, 
   OnInit, 
-  computed, 
+  effect, 
   inject, 
-  signal, 
   viewChild 
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { finalize } from 'rxjs/operators';
+import { finalize } from 'rxjs';
+import { NgxMaskPipe } from 'ngx-mask';
 
-// Angular Material Modules
+// Angular Material & CDK
+import { Overlay } from '@angular/cdk/overlay';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatSort, MatSortModule } from '@angular/material/sort';
-import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
-import { Overlay } from '@angular/cdk/overlay';
-import { NgxMaskPipe } from 'ngx-mask';
 
-// Core & Shared Models e Serviços
+// Core, Models e Serviços
 import { LoadingComponent } from '../../../core/components/loading-component/loading-component';
 import { PatientRequest } from '../../models/patient-request.model';
 import { Permission } from '../../models/permission.model';
-
-// Diálogos de Ação
-import { PatientRequestDetailComponent } from '../../components/patient-requests/patient-request-detail/patient-request-detail.component';
-import { PatientRequestMoveFromArchiveComponent } from '../../components/patient-request-accountabilities/patient-request-move-from-archive/patient-request-move-from-archive.component';
+import { Role } from '../../models/role.model';
 import { PatientRequestAccountabilityService } from '../../services/patient-request-accountability.service';
 
-const TFD_ACCOUNTABILITIES_CHANNEL = new BroadcastChannel('tfd-accountabilities-channel');
+// Dialog Components
+import { PatientRequestDetailComponent } from '../../components/patient-requests/patient-request-detail/patient-request-detail.component';
+import { PatientRequestMoveFromArchiveComponent } from '../../components/patient-request-accountabilities/patient-request-move-from-archive/patient-request-move-from-archive.component';
+
+// Types locais para entrada de dados nos modais
+type PatientRequestDialogData =
+  | { patient_request: PatientRequest }
+  | { patient_request: PatientRequest; permissions: Role[] };
 
 @Component({
   selector: 'app-archive-patient-request-accountabilities-page',
   standalone: true,
   imports: [
     CommonModule,
-    MatFormFieldModule, 
-    MatInputModule, 
-    MatTableModule, 
-    MatButtonModule, 
-    MatIconModule, 
-    MatTooltipModule, 
-    MatBadgeModule, 
-    MatSortModule,
+    MatBadgeModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
     MatPaginatorModule,
-    NgxMaskPipe
+    MatSortModule,
+    MatTableModule,
+    MatTooltipModule,
+    NgxMaskPipe,
   ],
   templateUrl: './archive-patient-request-accountabilities-page.html',
   styleUrl: './archive-patient-request-accountabilities-page.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ArchivePatientRequestAccountabilitiesPage implements OnInit {
+export class ArchivePatientRequestAccountabilitiesPage implements OnInit, OnDestroy {
   // ==========================================
-  // Injeções de Dependência
+  // Instância própria do canal
+  // ==========================================
+  private readonly accountabilitiesChannel = new BroadcastChannel('tfd-accountabilities-channel');
+
+  // ==========================================
+  // Injeção de Dependências
   // ==========================================
   private readonly accountabilityService = inject(PatientRequestAccountabilityService);
   private readonly dialog = inject(MatDialog);
   private readonly overlay = inject(Overlay);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
-
-  private loadingDialog!: MatDialogRef<LoadingComponent>;
-  private readonly currentUser = this.route.parent?.parent?.snapshot.data['user'];
+  private readonly injector = inject(Injector);
 
   // ==========================================
-  // Queries do Template (Sort & Paginator)
+  // ViewChildren / Elementos da View
   // ==========================================
   private readonly archiveSort = viewChild<MatSort>('archiveSort');
   private readonly archivePaginator = viewChild<MatPaginator>('archivePaginator');
 
   // ==========================================
-  // Configuração de Exibição
+  // Propriedades e Estado Reativo
   // ==========================================
+  private loadingDialog!: MatDialogRef<LoadingComponent>;
+  private readonly currentUser = this.route.parent?.parent?.snapshot.data['user'];
+
   protected readonly displayedColumns: string[] = ['name', 'cns', 'type', 'responsible', 'actions'];
-
-  // ==========================================
-  // Estados Reativos via Signals
-  // ==========================================
-  private readonly rawArchiveList = signal<PatientRequest[]>([]);
-
-  protected readonly archivedDataSource = computed(() => {
-    const dataSource = new MatTableDataSource(this.rawArchiveList());
-    const sortRef = this.archiveSort();
-    const paginatorRef = this.archivePaginator();
-
-    if (sortRef) dataSource.sort = sortRef;
-    if (paginatorRef) dataSource.paginator = paginatorRef;
-
-    return dataSource;
-  });
+  protected readonly archivedDataSource = new MatTableDataSource<any>([]);
 
   // ==========================================
   // Ciclo de Vida (Hooks)
   // ==========================================
   ngOnInit(): void {
+    this.setupTableBindings();
     this.fetchArchivePatientRequests(true);
+    this.listenToBroadcastChannel();
+  }
 
-    TFD_ACCOUNTABILITIES_CHANNEL.onmessage = (message) => {
-      if (message.data === 'update') {
-        this.fetchArchivePatientRequests(false);
-      }
-    };
-
-    this.destroyRef.onDestroy(() => {
-      TFD_ACCOUNTABILITIES_CHANNEL.close();
-    });
+  ngOnDestroy(): void {
+    this.accountabilitiesChannel.close();
   }
 
   // ==========================================
-  // Métodos de Filtragem e Busca
+  // Métodos Acessíveis pelo Template (Protected)
   // ==========================================
   protected applyFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    const dataSource = this.archivedDataSource();
-    dataSource.filter = filterValue.trim().toLowerCase();
-    
-    if (dataSource.paginator) {
-      dataSource.paginator.firstPage();
+    this.archivedDataSource.filter = filterValue.trim().toLowerCase();
+
+    if (this.archivedDataSource.paginator) {
+      this.archivedDataSource.paginator.firstPage();
     }
+  }
+
+  protected checkPermissions(permissionName: string): boolean {
+    if (!this.currentUser?.roles) return true;
+
+    const hasPermission = this.currentUser.roles.some((role: Role) =>
+      role.permissions?.some((perm: Permission) => perm.name === permissionName)
+    );
+
+    return !hasPermission;
+  }
+
+  // Ações disparadas pelos botões da tabela
+  protected showPatientRequest(patientRequest: PatientRequest): void {
+    this.openDialog(PatientRequestDetailComponent, { patient_request: patientRequest }, '1000px', 'auto', false);
+  }
+
+  protected movePatientRequestFromArchive(patientRequest: PatientRequest): void {
+    this.openDialog(PatientRequestMoveFromArchiveComponent, { patient_request: patientRequest }, '400px');
+  }
+
+  // ==========================================
+  // Métodos Privados / Auxiliares
+  // ==========================================
+  private setupTableBindings(): void {
+    effect(
+      () => {
+        const sortRef = this.archiveSort();
+        const paginatorRef = this.archivePaginator();
+
+        if (sortRef) this.archivedDataSource.sort = sortRef;
+        if (paginatorRef) this.archivedDataSource.paginator = paginatorRef;
+      },
+      { injector: this.injector }
+    );
   }
 
   private fetchArchivePatientRequests(showLoading = false): void {
     if (showLoading) this.openLoading();
 
-    this.accountabilityService.getArchivePatientRequests()
+    this.accountabilityService
+      .getArchivePatientRequests()
       .pipe(
         finalize(() => {
           if (showLoading && this.loadingDialog) {
@@ -143,27 +171,36 @@ export class ArchivePatientRequestAccountabilitiesPage implements OnInit {
       )
       .subscribe({
         next: (response: any) => {
-          const rawData = response ?? [];
+          const rawData: any[] = response || [];
 
-          const archivedRequests: PatientRequest[] = rawData.map((item: any) => ({
-            ...item,
-            name: item.report?.patient_care?.patient?.name || 'Não informado',
-            cns: item.report?.patient_care?.patient?.cns,
-            type: item.type,
-            responsible: item.accountability_professional?.name || '-'
-          }));
+          const archivedRequests = rawData.map((item) => this.mapPatientRequestRow(item));
 
-          this.rawArchiveList.set(archivedRequests);
+          this.archivedDataSource.data = archivedRequests;
         },
         error: () => {
-          this.rawArchiveList.set([]);
-        }
+          this.archivedDataSource.data = [];
+        },
       });
   }
 
-  // ==========================================
-  // Helpers de Diálogo e Permissões
-  // ==========================================
+  private listenToBroadcastChannel(): void {
+    this.accountabilitiesChannel.onmessage = (message: MessageEvent<string>) => {
+      if (message.data === 'update') {
+        this.fetchArchivePatientRequests(false);
+      }
+    };
+  }
+
+  private mapPatientRequestRow(item: any) {
+    return {
+      ...item,
+      name: item.report?.patient_care?.patient?.name || 'Não informado',
+      cns: item.report?.patient_care?.patient?.cns || '',
+      type: item.type,
+      responsible: item.accountability_professional?.name || '-',
+    };
+  }
+
   private openLoading(): void {
     this.loadingDialog = this.dialog.open(LoadingComponent, {
       height: '200px',
@@ -172,33 +209,25 @@ export class ArchivePatientRequestAccountabilitiesPage implements OnInit {
     });
   }
 
-  protected checkPermissions(permissionName: string): boolean {
-    if (!this.currentUser?.roles) return true;
-
-    const hasPermission = this.currentUser.roles.some((role: any) => 
-      role.permissions?.some((perm: Permission) => perm.name === permissionName)
-    );
-
-    return !hasPermission;
-  }
-
-  private openDialog(
-    component: any, 
-    data: any, 
-    width = '400px', 
-    height = 'auto', 
+  private openDialog<T>(
+    component: new (...args: any[]) => T,
+    data: PatientRequestDialogData,
+    width = '400px',
+    height = 'auto',
     requiresRefresh = true
   ): void {
-    this.dialog.open(component, {
-      width,
-      height,
-      disableClose: true,
-      autoFocus: false,
-      scrollStrategy: this.overlay.scrollStrategies.noop(),
-      data
-    }).afterClosed()
+    this.dialog
+      .open(component, {
+        width,
+        height,
+        disableClose: true,
+        autoFocus: false,
+        scrollStrategy: this.overlay.scrollStrategies.noop(),
+        data,
+      })
+      .afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(result => {
+      .subscribe((result) => {
         if (result && requiresRefresh) {
           this.handleRequestsChange();
         }
@@ -207,17 +236,6 @@ export class ArchivePatientRequestAccountabilitiesPage implements OnInit {
 
   private handleRequestsChange(): void {
     this.fetchArchivePatientRequests(false);
-    TFD_ACCOUNTABILITIES_CHANNEL.postMessage('update');
-  }
-
-  // ==========================================
-  // Ações do Template
-  // ==========================================
-  protected showPatientRequest(patientRequest: PatientRequest): void {
-    this.openDialog(PatientRequestDetailComponent, { patient_request: patientRequest }, '1000px', 'auto', false);
-  }
-
-  protected movePatientRequestFromArchive(patientRequest: PatientRequest): void {
-    this.openDialog(PatientRequestMoveFromArchiveComponent, { patient_request: patientRequest }, '400px');
+    this.accountabilitiesChannel.postMessage('update');
   }
 }

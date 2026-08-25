@@ -188,7 +188,7 @@
                                     type="button" 
                                     matTooltip="Mover para minha caixa" 
                                     (click)="patientRequestMoveFromOthers(element)" 
-                                    [disabled]="element.is_travel_bookmark || checkPermissions('tfd/passagem atualizar')">
+                                    [disabled]="element.is_travel_bookmark || element.back_to_travel || checkPermissions('tfd/passagem atualizar')">
                                 <mat-icon>move_to_inbox</mat-icon>
                             </button>
                         </td>

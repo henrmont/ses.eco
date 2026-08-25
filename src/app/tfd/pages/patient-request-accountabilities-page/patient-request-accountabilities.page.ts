@@ -39,8 +39,6 @@ type PatientRequestDialogData =
   | { patient_request: PatientRequest }
   | { patient_request: PatientRequest; permissions: Role[] };
 
-// Constantes Locais
-const TFD_ACCOUNTABILITIES_CHANNEL = new BroadcastChannel('tfd-accountabilities-channel');
 
 @Component({
   selector: 'app-patient-request-accountabilities-page',
@@ -64,6 +62,11 @@ const TFD_ACCOUNTABILITIES_CHANNEL = new BroadcastChannel('tfd-accountabilities-
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PatientRequestAccountabilitiesPage implements OnInit, OnDestroy {
+  // ==========================================
+  // Instância própria do canal
+  // ==========================================
+  private readonly accountabilitiesChannel = new BroadcastChannel('tfd-accountabilities-channel');
+
   // ==========================================
   // Injeção de Dependências
   // ==========================================
@@ -105,7 +108,7 @@ export class PatientRequestAccountabilitiesPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    TFD_ACCOUNTABILITIES_CHANNEL.close();
+    this.accountabilitiesChannel.close();
   }
 
   // ==========================================
@@ -230,7 +233,7 @@ export class PatientRequestAccountabilitiesPage implements OnInit, OnDestroy {
   }
 
   private listenToBroadcastChannel(): void {
-    TFD_ACCOUNTABILITIES_CHANNEL.onmessage = (message: MessageEvent<string>) => {
+    this.accountabilitiesChannel.onmessage = (message: MessageEvent<string>) => {
       if (message.data === 'update') {
         this.fetchPatientRequests(false);
       }
@@ -283,6 +286,6 @@ export class PatientRequestAccountabilitiesPage implements OnInit, OnDestroy {
 
   private handleRequestsChange(): void {
     this.fetchPatientRequests(false);
-    TFD_ACCOUNTABILITIES_CHANNEL.postMessage('update');
+    this.accountabilitiesChannel.postMessage('update');
   }
 }

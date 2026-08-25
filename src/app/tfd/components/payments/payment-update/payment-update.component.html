@@ -13,7 +13,6 @@
             type="text" 
             formControlName="sigadoc" 
             placeholder="Informe o número do SIGADOC"
-            [readonly]="isSubmitting()"
           >
 
           @for (item of errorMessages['sigadoc']; track $index) {
@@ -33,7 +32,6 @@
             type="text" 
             formControlName="creditor" 
             placeholder="Informe o código do credor"
-            [readonly]="isSubmitting()"
           >
 
           @for (item of errorMessages['creditor']; track $index) {
@@ -53,7 +51,6 @@
             type="text" 
             formControlName="document_number" 
             placeholder="Informe o número do documento"
-            [readonly]="isSubmitting()"
           >
 
           @for (item of errorMessages['document_number']; track $index) {
@@ -76,7 +73,7 @@
       mat-flat-button 
       color="primary" 
       type="button" 
-      [disabled]="updatePaymentForm.invalid || updatePaymentForm.pending || isSubmitting()"
+      [disabled]="updatePaymentForm.invalid || updatePaymentForm.pending || updatePaymentForm.pristine || isSubmitting()"
       (click)="onSubmit()"
     >
       <div class="waiting">

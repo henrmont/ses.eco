@@ -27,7 +27,7 @@
         <!-- Motivo / Justificativa -->
         <mat-form-field appearance="outline">
           <mat-label>Motivo</mat-label>
-          <textarea matInput rows="4" formControlName="reason" [readonly]="isSubmitting()"></textarea>
+          <textarea matInput rows="4" formControlName="reason"></textarea>
           
           @for (item of errorMessages['reason']; track $index) {
             <mat-error [hidden]="!undoForm.get('reason')?.hasError(item.type)">

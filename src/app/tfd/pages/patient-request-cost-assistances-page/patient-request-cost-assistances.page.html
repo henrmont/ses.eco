@@ -108,7 +108,7 @@
                       type="button"
                       matTooltip="Encaminhar para Pagamento"
                       (click)="patientRequestProcessToPayment(element)"
-                      [disabled]="element.is_cost_assistance_bookmark || element.back_to_cost_assistance || checkPermissions('tfd/ajuda de custo atualizar')">
+                      [disabled]="element.is_cost_assistance_bookmark || element.back_to_cost_assistance || !element.cost_assistance_status || checkPermissions('tfd/ajuda de custo atualizar')">
                 <mat-icon>payments</mat-icon>
               </button>
 
@@ -116,7 +116,7 @@
                       type="button"
                       matTooltip="Arquivar solicitação"
                       (click)="patientRequestArchive(element)"
-                      [disabled]="!element.cost_assistance_status || element.is_cost_assistance_bookmark || element.back_to_cost_assistance || checkPermissions('tfd/ajuda de custo atualizar')">
+                      [disabled]="!element.cost_assistance_status || element.is_cost_assistance_bookmark || element.back_to_cost_assistance || !element.has_cost_assistance_with_payment || checkPermissions('tfd/ajuda de custo atualizar')">
                 <mat-icon>inventory_2</mat-icon>
               </button>
             </td>
@@ -198,7 +198,7 @@
                       type="button"
                       matTooltip="Mover para minha caixa"
                       (click)="patientRequestMoveFromOthers(element)"
-                      [disabled]="element.is_cost_assistance_bookmark || checkPermissions('tfd/ajuda de custo atualizar')">
+                      [disabled]="element.is_cost_assistance_bookmark || element.back_to_cost_assistance || element.has_cost_assistance_with_payment || checkPermissions('tfd/ajuda de custo atualizar')">
                 <mat-icon>move_to_inbox</mat-icon>
               </button>
             </td>

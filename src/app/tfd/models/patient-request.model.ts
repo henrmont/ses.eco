@@ -32,6 +32,7 @@ export interface PatientRequest {
     has_travel?: boolean,
     cost_assistance_status?: boolean,
     has_cost_assistance?: boolean,
+    has_cost_assistance_with_payment?: boolean,
     accountability_status?: boolean,
     back_to_owner?: string | null,
     is_owner_archive?: boolean,
