@@ -6,6 +6,7 @@ import { authResolver } from './core/resolvers/auth-resolver';
 import { authGuard } from './core/guards/auth-guard';
 import { TfdLayout } from './tfd/layouts/tfd-layout/tfd.layout';
 import { AvaliableModules } from './core/enums/avaliable-modules';
+import { HomecareLayout } from './homecare/layouts/homecare-layout/homecare.layout';
 
 export const routes: Routes = [
     {
@@ -39,6 +40,12 @@ export const routes: Routes = [
                 component: TfdLayout,
                 canActivateChild: [authGuard.checkAccess()],
                 loadChildren: () => import('./tfd/routes/tfd.routes').then(m => m.tfdRoutes)
+            },
+            {
+                path: 'homecare',
+                component: HomecareLayout,
+                canActivateChild: [authGuard.checkAccess()],
+                loadChildren: () => import('./homecare/routes/homecare.routes').then(m => m.homecareRoutes)
             },
         ]
     }

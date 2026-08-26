@@ -133,7 +133,7 @@ export class PatientReportUpdateComponent implements OnInit {
     this.reportForm = this.fb.group({
       protocol: [{ value: this.data?.patient_report?.protocol ?? null, disabled: isExported }, [Validators.required]],
       specialty: [this.data?.patient_report?.specialty ?? null, [Validators.required]],
-      specialty_search: [{ value: null, disabled: isExported }, [Validators.required]],
+      specialty_search: [null, [Validators.required]],
       cid_id: [this.data?.patient_report?.cid_id ?? this.data?.patient_report?.cid?.id ?? null, [Validators.required]],
       cid_search: [{ value: null, disabled: isExported }, [Validators.required]],
       lawsuit: [{ value: !!this.data?.patient_report?.lawsuit, disabled: isExported }, [Validators.required]],
@@ -218,7 +218,6 @@ export class PatientReportUpdateComponent implements OnInit {
           // Se for um laudo exportado, re-desabilita os campos protegidos
           if (isExported) {
             this.reportForm.get('protocol')?.disable({ emitEvent: false });
-            this.reportForm.get('specialty_search')?.disable({ emitEvent: false });
             this.reportForm.get('cid_search')?.disable({ emitEvent: false });
             this.reportForm.get('lawsuit')?.disable({ emitEvent: false });
           }

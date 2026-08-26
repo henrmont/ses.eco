@@ -107,7 +107,7 @@
                       type="button"
                       matTooltip="Deletar solicitação" 
                       (click)="patientRequestDelete(element)" 
-                      [disabled]="checkPermissions('tfd/solicitação deletar') || element.medical_professional || element.is_owner_bookmark">
+                      [disabled]="checkPermissions('tfd/solicitação deletar') || element.medical_professional || element.is_owner_bookmark || element.back_to_owner">
                 <mat-icon>delete</mat-icon>
               </button>
               
@@ -115,7 +115,7 @@
                       type="button"
                       matTooltip="Tramitar solicitação" 
                       (click)="patientRequestProcessToMedical(element)" 
-                      [disabled]="element.is_owner_bookmark || element.medical_professional || checkPermissions('tfd/solicitação atualizar')">
+                      [disabled]="element.is_owner_bookmark || element.medical_professional || element.back_to_owner || checkPermissions('tfd/solicitação atualizar')">
                 <mat-icon>redo</mat-icon>
               </button>
             </td>
