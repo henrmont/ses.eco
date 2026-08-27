@@ -102,7 +102,7 @@ export class PatientUpdateComponent implements OnInit {
   // ==========================================
   // Injeção de Dependências
   // ==========================================
-  protected readonly data = inject<{ patient: Patient }>(MAT_DIALOG_DATA);
+  protected readonly data = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly viacepService = inject(ViacepService);
   private readonly patientService = inject(PatientService);
@@ -223,6 +223,7 @@ export class PatientUpdateComponent implements OnInit {
   // Ciclo de Vida (Hooks)
   // ==========================================
   ngOnInit(): void {
+    console.log(this.data)
     this.initForms();
     this.registerRaceDependency();
     this.setupAutocompleteFilters();
@@ -299,8 +300,8 @@ export class PatientUpdateComponent implements OnInit {
   }
 
   protected onSubmit(): void {
-    const patientId = this.data?.patient?.id;
-    if (!patientId) {
+    const patientCareId = this.data?.patient_care?.id;
+    if (!patientCareId) {
       this.messageService.showMessage('Identificador do paciente inválido.');
       return;
     }
@@ -344,7 +345,7 @@ export class PatientUpdateComponent implements OnInit {
       file_protocol: this.files.protocol.file
     };
 
-    this.patientService.updatePatient(patientId, payload)
+    this.patientService.updatePatient(patientCareId, payload)
       .pipe(
         finalize(() => this.isSubmitting.set(false)),
         takeUntilDestroyed(this.destroyRef)
@@ -365,7 +366,7 @@ export class PatientUpdateComponent implements OnInit {
   // Métodos Privados de Inicialização e Lógica
   // ==========================================
   private initForms(): void {
-    const patient = this.data?.patient;
+    const patient = this.data?.patient_care?.patient;
 
     let initialBirthDate: any = null;
     if (patient?.birth_date) {
@@ -453,7 +454,7 @@ export class PatientUpdateComponent implements OnInit {
   }
 
   private registerRaceDependency(): void {
-    const isInitialIndigena = this.data?.patient?.race === 'Indígena';
+    const isInitialIndigena = this.data?.patient_care?.patient?.race === 'Indígena';
     this.isEthnicityDisabled.set(!isInitialIndigena);
 
     this.personalForm.get('race')?.valueChanges
@@ -482,8 +483,8 @@ export class PatientUpdateComponent implements OnInit {
         finalize(() => {
           this.naturalnessLoading.set(false);
           this.naturalnessReadOnly.set(false);
-          if (this.data?.patient?.naturalness) {
-            this.naturalnessControl.setValue(this.data.patient.naturalness, { emitEvent: false });
+          if (this.data?.patient_care?.patient?.naturalness) {
+            this.naturalnessControl.setValue(this.data.patient_care.patient.naturalness, { emitEvent: false });
           }
           this.cdr.markForCheck();
         }),

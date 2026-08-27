@@ -148,7 +148,7 @@ export class PatientsPage implements OnInit, OnDestroy {
   }
 
   protected patientUpdate(patientCare: PatientCare): void {
-    this.openDialog(PatientUpdateComponent, { patient: patientCare.patient }, '1200px', '700px');
+    this.openDialog(PatientUpdateComponent, { patient_care: patientCare }, '1200px', '700px');
   }
 
   protected patientEscorts(patientCare: PatientCare): void {

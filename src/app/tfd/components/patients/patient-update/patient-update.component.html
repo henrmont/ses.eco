@@ -18,7 +18,7 @@
                         </mat-form-field>
                         
                         <div class="file-actions-cell">
-                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient.file_cns_id || isSubmitting()" (click)="download(data.patient.file_cns_id, 'cns')">
+                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient_care.patient.file_cns_id || isSubmitting()" (click)="download(data.patient_care.patient.file_cns_id, 'cns')">
                                 <mat-icon>download</mat-icon>
                             </button>
                             <input type="file" hidden (change)="onFileSelected($event, 'cns')" #fileCNS [disabled]="isSubmitting()">
@@ -50,7 +50,7 @@
                         </mat-form-field>
                         
                         <div class="file-actions-cell">
-                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient.file_document_id || isSubmitting()" (click)="download(data.patient.file_document_id, 'document')">
+                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient_care.patient.file_document_id || isSubmitting()" (click)="download(data.patient_care.patient.file_document_id, 'document')">
                                 <mat-icon>download</mat-icon>
                             </button>
                             <input type="file" hidden (change)="onFileSelected($event, 'document')" #fileDocument>
@@ -220,7 +220,7 @@
                         </mat-form-field>
                         
                         <div class="file-actions-cell">
-                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient.file_deficiency_id || isSubmitting()" (click)="download(data.patient.file_deficiency_id, 'deficiency')">
+                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient_care.patient.file_deficiency_id || isSubmitting()" (click)="download(data.patient_care.patient.file_deficiency_id, 'deficiency')">
                                 <mat-icon>download</mat-icon>
                             </button>
                             <input type="file" hidden (change)="onFileSelected($event, 'deficiency')" #fileDeficiency [disabled]="isSubmitting()">
@@ -249,7 +249,7 @@
                         </mat-form-field>
                         
                         <div class="file-actions-cell">
-                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient.file_address_id || isSubmitting()" (click)="download(data.patient.file_address_id, 'address')">
+                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient_care.patient.file_address_id || isSubmitting()" (click)="download(data.patient_care.patient.file_address_id, 'address')">
                                 <mat-icon>download</mat-icon>
                             </button>
                             <input type="file" hidden (change)="onFileSelected($event, 'address')" #fileAddress [disabled]="isSubmitting()">
@@ -330,7 +330,7 @@
                         </mat-form-field>
                         
                         <div class="file-actions-cell">
-                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient.patient_info?.file_protocol_id || isSubmitting()" (click)="download(data.patient.patient_info?.file_protocol_id, 'protocol')">
+                            <button class="btn-archive" type="button" mat-icon-button [disabled]="!data.patient_care.patient.patient_info?.file_protocol_id || isSubmitting()" (click)="download(data.patient_care.patient.patient_info?.file_protocol_id, 'protocol')">
                                 <mat-icon>download</mat-icon>
                             </button>
                             <input type="file" hidden (change)="onFileSelected($event, 'protocol')" #fileProtocol [disabled]="isSubmitting()">
