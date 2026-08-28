@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import * as moment from 'moment';
 
 // Environments & Models
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../../core/models/api-response.model';
 import { HospitalUnity } from '../models/hospital-unity.model';
 import { PatientReport } from '../models/patient-report.model';

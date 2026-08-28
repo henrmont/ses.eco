@@ -5,7 +5,7 @@ import { Observable, catchError, map, of } from 'rxjs';
 import * as moment from 'moment';
 
 // Environments & Models
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../../core/models/api-response.model';
 import { PatientRequest } from '../models/patient-request.model';
 

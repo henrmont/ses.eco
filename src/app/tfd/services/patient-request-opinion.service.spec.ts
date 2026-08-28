@@ -3,7 +3,8 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 import { OpinionService, ApiResponse } from './opinion-service';
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment
+';
 
 describe('OpinionService', () => {
   let service: OpinionService;

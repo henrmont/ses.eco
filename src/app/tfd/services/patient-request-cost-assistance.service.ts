@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 // Environments & Models
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../../core/models/api-response.model';
 import { PatientRequest } from '../models/patient-request.model';
 import { PatientRequestCostAssistance } from '../models/patient-request-cost-assistance.model';

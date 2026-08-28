@@ -4,7 +4,7 @@ import { AbstractControl, AsyncValidatorFn, ValidationErrors } from '@angular/fo
 import { Observable, catchError, map, of, switchMap, timer } from 'rxjs';
 import * as moment from 'moment';
 
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../../core/models/api-response.model';
 import { PatientCare } from '../models/patient-care.model';
 import { PatientEscort } from '../models/patient-escort.model';

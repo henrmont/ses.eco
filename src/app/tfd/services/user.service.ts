@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { AbstractControl, AsyncValidatorFn, ValidationErrors } from '@angular/forms';
 import { catchError, map, Observable, of, switchMap, timer } from 'rxjs';
 
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../../core/models/api-response.model';
 import { Role } from '../models/role.model';
 import { User } from '../models/user.model';

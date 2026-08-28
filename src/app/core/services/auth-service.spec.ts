@@ -2,7 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthService } from './auth-service';
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment
+';
 
 describe('AuthService (Vitest)', () => {
   let service: AuthService;

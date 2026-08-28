@@ -2,7 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { FormControl, ValidationErrors } from '@angular/forms';
 import { PatientService, ApiResponse } from './patient-service';
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment
+';
 import { Patient } from '../models/patient';
 import { Escort } from '../models/escort';
 import { ReportAttachment } from '../models/report-attachment';
