@@ -18,7 +18,7 @@ export class StorageService {
    * O HttpInterceptor injeta o token automaticamente em background.
    * @param archiveId ID do arquivo armazenado
    */
-  download(archiveId: number): Observable<Archive> {
-    return this.http.get<Archive>(`${this.apiUrl}/${archiveId}`);
+  download(module: string, archiveId: number): Observable<Archive> {
+    return this.http.get<Archive>(`${this.apiUrl}/${module}/${archiveId}`);
   }
 }

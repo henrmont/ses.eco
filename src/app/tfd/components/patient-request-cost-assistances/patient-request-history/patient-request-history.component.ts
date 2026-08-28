@@ -96,8 +96,10 @@ export class PatientRequestHistoryComponent implements OnInit {
   }
 
   // Métodos de ação disparados pelo template HTML (Modificadores Protected)
-  protected download(archive: number, name: string): void {
-    this.storageService.download(archive)
+  protected download(archiveId: number | null | undefined, name: string): void {
+    if (!archiveId) return;
+
+    this.storageService.download('tfd',archiveId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {

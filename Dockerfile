@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Copia arquivos de dependência
 COPY package*.json ./
-RUN npm install
+RUN npm ci --legacy-peer-deps
 
 # Copia o restante do código e gera o build de produção
 COPY . .
@@ -19,7 +19,7 @@ RUN rm -rf ./*
 
 # Copia os arquivos gerados no build (Atenção ao nome do projeto!)
 # Substitua 'NOME-DO-SEU-PROJETO' pelo name definido no seu angular.json
-COPY --from=build /app/dist/NOME-DO-SEU-PROJETO/browser ./
+COPY --from=build /app/dist/eco.regulacao/browser ./
 
 # Copia a configuração customizada do Nginx
 COPY nginx.conf /etc/nginx/conf.d/default.conf

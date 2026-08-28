@@ -51,7 +51,7 @@ export class PatientReportDetailComponent {
       return;
     }
 
-    this.storageService.download(archiveId)
+    this.storageService.download('tfd',archiveId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
