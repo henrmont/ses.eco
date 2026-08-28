@@ -20,19 +20,19 @@ export class AuthService {
   }
 
   login(data: any): Observable<any> {
-    return this.http.post<any>(`${environment.apiAuthUrl}/auth/login`, data);
+    return this.http.post<any>(`${environment.apiAuthUrl}/login`, data);
   }
 
   logout(): Observable<any> {
     // 🌟 CORREÇÃO: Cabeçalhos gerados dinamicamente no momento do clique/chamada
-    return this.http.get<any>(`${environment.apiAuthUrl}/auth/logout`, { headers: this.getHeaders() });
+    return this.http.get<any>(`${environment.apiAuthUrl}/logout`, { headers: this.getHeaders() });
   }
 
   me(): Observable<any> {
-    return this.http.get<any>(`${environment.apiAuthUrl}/auth/me`, { headers: this.getHeaders() });
+    return this.http.get<any>(`${environment.apiAuthUrl}/me`, { headers: this.getHeaders() });
   }
 
   refresh(): Observable<any> {
-    return this.http.get<any>(`${environment.apiAuthUrl}/auth/refresh`, { headers: this.getHeaders() });
+    return this.http.get<any>(`${environment.apiAuthUrl}/refresh`, { headers: this.getHeaders() });
   }
 }
