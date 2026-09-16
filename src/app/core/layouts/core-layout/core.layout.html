@@ -1,0 +1,97 @@
+<mat-drawer-container hasBackdrop="true">
+  <mat-drawer #drawer mode="push" position="end">
+    <section class="menu">
+      <div class="banner"></div>
+      <div class="profile">
+        <div class="avatar" [style.background-image]="user().image ? 'url(' + user().image + ')' : null">
+          <input type="file" class="file-input" (change)="onFileSelected($event)" #fileUpload style="display: none;">
+          <button mat-mini-fab color="primary" (click)="fileUpload.click()">
+            <mat-icon>edit</mat-icon>
+          </button>
+        </div>
+        <div class="info">
+          <div>
+            <h2>{{ user().name }}</h2>
+            <h4>{{ user().email }}</h4>
+          </div>
+          <div>
+            <button mat-icon-button (click)="changeProfileInfo()">
+              <mat-icon>edit</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <mat-divider></mat-divider>
+
+      <mat-action-list>
+        <div mat-subheader>Sistema</div>
+        <button mat-list-item (click)="changeProfileModule(); drawer.toggle()">
+          <div class="list-button">
+            <mat-icon>app_registration</mat-icon>
+            <div>Selecionar módulo</div>
+          </div>
+        </button>
+        <button mat-list-item (click)="openAboutBox(); drawer.toggle()">
+          <div class="list-button">
+            <mat-icon>info</mat-icon>
+            <div>Sobre</div>
+          </div>
+        </button>
+        <button mat-list-item (click)="logout()">
+          <div class="list-button">
+            <mat-icon>logout</mat-icon>
+            <div>Sair</div>
+          </div>
+        </button>
+      </mat-action-list>
+    </section>
+  </mat-drawer>
+
+  <mat-drawer-content class="content">
+    <mat-toolbar>
+      <div class="pages">
+        <button mat-icon-button [routerLink]="['dashboard']">
+          <mat-icon>dashboard</mat-icon>
+        </button>
+
+        <!-- Exibição ajustada para o sinal module() contendo a Chave do Enum diretamente -->
+        @if (module()) {
+          <button mat-fab extended [routerLink]="[module()]">
+            <mat-icon>web_asset</mat-icon>
+            {{ moduleKey }}
+          </button>
+        } @else {
+          <button mat-icon-button disabled>
+            <mat-icon>web_asset_off</mat-icon>
+          </button>
+        }
+      </div>
+
+      <div class="resources">
+        <button mat-icon-button [matMenuTriggerFor]="menu" disabled>
+          <mat-icon>notifications</mat-icon>
+        </button>
+        
+        <mat-menu #menu="matMenu">
+          <mat-list></mat-list>
+          <div class="notifications-link">
+            <button mat-button [routerLink]="['notifications']" disabled>Ver todas as notificações</button>
+          </div>
+        </mat-menu>
+
+        <button mat-icon-button [routerLink]="['messages']" disabled>
+          <mat-icon>forum</mat-icon>
+        </button>
+
+        <button mat-icon-button (click)="drawer.toggle()">
+          <mat-icon>menu</mat-icon>
+        </button>
+      </div>
+    </mat-toolbar>
+
+    <div class="container">
+      <router-outlet></router-outlet>
+    </div>
+  </mat-drawer-content>
+</mat-drawer-container>

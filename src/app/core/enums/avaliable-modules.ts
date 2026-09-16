@@ -3,5 +3,5 @@ export enum AvaliableModules {
   HOMECARE = 'homecare',
   TRANSPLANTE = 'transplante',
   // JURIDICO = 'juridico',
-  // FINANCEIRO = 'financeiro'
+  // SISLIC = 'sislic'
 }

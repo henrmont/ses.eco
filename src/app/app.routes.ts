@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
-import { IndexLayout } from './core/layouts/index-layout/index-layout';
+import { IndexLayout } from './core/layouts/index-layout/index.layout';
 import { loggedGuard } from './core/guards/logged-guard';
-import { CoreLayout } from './core/layouts/core-layout/core-layout';
+import { CoreLayout } from './core/layouts/core-layout/core.layout';
 import { authResolver } from './core/resolvers/auth-resolver';
 import { authGuard } from './core/guards/auth-guard';
 import { TfdLayout } from './tfd/layouts/tfd-layout/tfd.layout';
