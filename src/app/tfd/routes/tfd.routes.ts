@@ -17,11 +17,6 @@ export const tfdRoutes: Routes = [
         data: { permission: 'tfd/regra listar' } // Adicionado
     },
     {
-        path: 'unidades-hospitalares',
-        loadComponent: () => import('./../pages/hospital-unities-page/hospital-unities-page').then( m => m.HospitalUnitiesPage),
-        data: { permission: 'tfd/unidade hospitalar listar' } // Adicionado
-    },
-    {
         path: 'sigtap',
         loadComponent: () => import('./../pages/sigtap-page/sigtap-page').then( m => m.SigtapPage),
         data: { permission: 'tfd/datasus listar' } // Adicionado

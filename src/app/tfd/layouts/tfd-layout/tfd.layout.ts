@@ -17,7 +17,6 @@ import { LoadingComponent } from '../../../core/components/loading-component/loa
 import { DatasusService } from '../../services/datasus-service';
 
 // Modais (Dialogs)
-import { CreateHospitalUnityComponent } from '../../components/hospital-unities/create-hospital-unity-component/create-hospital-unity-component';
 import { PatientCreateComponent } from '../../components/patients/patient-create/patient-create.component';
 import { PatientRequestCreateComponent } from '../../components/patient-requests/patient-request-create/patient-request-create.component';
 import { PatientRequestTravelsImportComponent } from '../../components/patient-request-travels/patient-request-travels-import/patient-request-travels-import.component';
@@ -200,14 +199,6 @@ export class TfdLayout implements OnInit, OnDestroy {
       ]
     },
     {
-      subHeader: 'Unidades hospitalares',
-      requiredRoles: ['unidade hospitalar listar', 'unidade hospitalar criar'],
-      items: [
-        { label: 'Unidades hospitalares', icon: 'domain', permissions: ['unidade hospitalar listar'], routerLink: ['unidades-hospitalares'] },
-        { label: 'Nova unidade hospitalar', icon: 'domain_add', permissions: ['unidade hospitalar criar'], action: () => this.createHospitalUnity() }
-      ]
-    },
-    {
       subHeader: 'Datasus',
       requiredRoles: ['datasus listar', 'datasus importar'],
       items: [
@@ -297,10 +288,6 @@ export class TfdLayout implements OnInit, OnDestroy {
 
   protected roleCreate(): void {
     this.openDialog(RoleCreateComponent, '900px', 'auto', 'ROLES');
-  }
-
-  protected createHospitalUnity(): void {
-    this.openDialog(CreateHospitalUnityComponent, '500px', 'auto', 'HOSPITALS');
   }
         
   protected patientCreate(): void {

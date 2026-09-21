@@ -19,7 +19,7 @@ RUN rm -rf ./*
 
 # Copia os arquivos gerados no build (Atenção ao nome do projeto!)
 # Substitua 'NOME-DO-SEU-PROJETO' pelo name definido no seu angular.json
-COPY --from=build /app/dist/eco.regulacao/browser ./
+COPY --from=build /app/dist/eco/browser ./
 
 # Copia a configuração customizada do Nginx
 COPY nginx.conf /etc/nginx/conf.d/default.conf
