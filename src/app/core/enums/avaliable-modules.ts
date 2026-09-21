@@ -1,7 +1,5 @@
 export enum AvaliableModules {
   TFD = 'tfd',
-  HOMECARE = 'homecare',
-  TRANSPLANTE = 'transplante',
-  // JURIDICO = 'juridico',
+  DATASUS = 'datasus',
   // SISLIC = 'sislic'
 }
