@@ -6,6 +6,7 @@ import { authResolver } from './core/resolvers/auth-resolver';
 import { authGuard } from './core/guards/auth-guard';
 import { TfdLayout } from './tfd/layouts/tfd-layout/tfd.layout';
 import { AvaliableModules } from './core/enums/avaliable-modules';
+import { DatasusLayout } from './datasus/layouts/datasus-layout/datasus.layout';
 
 export const routes: Routes = [
     {
@@ -39,6 +40,12 @@ export const routes: Routes = [
                 component: TfdLayout,
                 canActivateChild: [authGuard.checkAccess()],
                 loadChildren: () => import('./tfd/routes/tfd.routes').then(m => m.tfdRoutes)
+            },
+            {
+                path: 'datasus',
+                component: DatasusLayout,
+                canActivateChild: [authGuard.checkAccess()],
+                loadChildren: () => import('./datasus/routes/datasus.routes').then(m => m.datasusRoutes)
             },
         ]
     }
