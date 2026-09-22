@@ -76,6 +76,15 @@ mat-error,
   color: var(--mat-sys-error) !important;
 }
 
+mat-error[hidden] {
+  display: none !important;
+}
+
+mat-form-field {
+  width: 100%;
+  height: auto;
+}
+
 // Garante que a superfície não seja coberta por fundo branco estático
 mat-sidenav-container,
 mat-sidenav-content,
@@ -83,6 +92,10 @@ mat-drawer-container,
 mat-drawer-content,
 app-root {
   background-color: var(--mat-sys-surface) !important;
+}
+
+mat-form-field mat-spinner {
+  margin-right: 10px !important;
 }
 
 .waiting {
@@ -94,10 +107,16 @@ app-root {
   }
 }
 
-mat-form-field mat-spinner {
-  margin-right: 10px !important;
-}
-
 .mat-mdc-paginator-range-label {
   display: none !important;
+}
+
+// Customização da cor dos Títulos / Headings
+h1, h2, h3, h4, h5, h6,
+.mat-headline-large, .mat-headline-medium, .mat-headline-small,
+.mat-title-large, .mat-title-medium, .mat-title-small, .title-header, .title-header mat-icon {
+  color: var(--md-sys-color-primary) !important; // Usa o Azul Royal do tema
+  font-family: 'Outfit', sans-serif !important;
+  // Ou defina uma cor fixa em RGB/Hex se preferir:
+  // color: rgb(13 32 86) !important; 
 }

@@ -109,13 +109,3 @@ $search-input-max-width: 500px;
   height: 100%;
   overflow: hidden;
 }
-
-// Regras centralizadas no global:
-mat-error[hidden] {
-  display: none !important;
-}
-
-mat-form-field {
-  width: 100%;
-  height: auto;
-}
