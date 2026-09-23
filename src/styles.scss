@@ -12,8 +12,8 @@ html {
   // Tema base do Angular Material para estrutura de componentes e tipografia
   @include mat.theme((
     color: (
-      primary: mat.$blue-palette,
-      tertiary: mat.$blue-palette,
+      primary: mat.$azure-palette,
+      tertiary: mat.$azure-palette,
     ),
     typography: (
       brand-family: 'Outfit', // Fonte para Títulos / Headings
@@ -114,7 +114,7 @@ mat-form-field mat-spinner {
 // Customização da cor dos Títulos / Headings
 h1, h2, h3, h4, h5, h6,
 .mat-headline-large, .mat-headline-medium, .mat-headline-small,
-.mat-title-large, .mat-title-medium, .mat-title-small, .title-header, .title-header mat-icon {
+.mat-title-large, .mat-title-medium, .mat-title-small, .title-header, mat-card-subtitle {
   color: var(--md-sys-color-primary) !important; // Usa o Azul Royal do tema
   font-family: 'Outfit', sans-serif !important;
   // Ou defina uma cor fixa em RGB/Hex se preferir:

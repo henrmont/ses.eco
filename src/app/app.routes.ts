@@ -4,9 +4,10 @@ import { loggedGuard } from './core/guards/logged-guard';
 import { CoreLayout } from './core/layouts/core-layout/core.layout';
 import { authResolver } from './core/resolvers/auth-resolver';
 import { authGuard } from './core/guards/auth-guard';
-import { TfdLayout } from './tfd/layouts/tfd-layout/tfd.layout';
+import { TfdLayout } from './tfd/layout/tfd.layout';
 import { AvaliableModules } from './core/enums/avaliable-modules';
 import { DatasusLayout } from './datasus/layouts/datasus-layout/datasus.layout';
+import { userResolver } from './tfd/resolvers/user-resolver';
 
 export const routes: Routes = [
     {
@@ -38,6 +39,7 @@ export const routes: Routes = [
             {
                 path: 'tfd',
                 component: TfdLayout,
+                resolve: {user: userResolver},
                 canActivateChild: [authGuard.checkAccess()],
                 loadChildren: () => import('./tfd/routes/tfd.routes').then(m => m.tfdRoutes)
             },
