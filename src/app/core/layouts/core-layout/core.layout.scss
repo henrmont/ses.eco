@@ -1,99 +1,137 @@
+@use 'variables' as *;
+
+:host {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+mat-drawer-container {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
 mat-drawer {
-    height: 100vh !important; 
-    position: fixed !important;
+  height: 100vh;
+  position: fixed;
+  width: 320px;
+  overflow: hidden;
 }
 
 section.menu {
-    display: flex; 
-    flex-direction: column; 
-    justify-content: flex-start; 
-    align-items: center; 
-    height: 100vh; 
-    background-color: rgb(240,240,240);
-}
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  height: 100vh;
+  background-color: var(--md-sys-color-surface);
+  overflow: hidden;
 
-section.menu div.banner {
-    width: 100%; 
-    height: 100px; 
-    background-color: rgb(200,200,200);
-}
-
-section.menu div.profile {
-    width: 100%; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 10px; 
-    padding-bottom: 10px; 
-    align-items: center; 
-    margin-top: -75px;
-}
-
-section.menu div.avatar {
-    width: 150px; 
-    height: 150px;  
-    background-image: url(https://ionicframework.com/docs/img/demos/avatar.svg);
-    background-size: contain; 
-    background-repeat: no-repeat; 
-    border-radius: 100%; 
-    box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px; 
-    display: flex; 
-    justify-content: flex-end; 
-    align-items: flex-end;
-}
-
-section.menu div.info {
-    width: 80%; 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center;
-}
-
-section.menu mat-list, section.menu mat-action-list {
+  div.banner {
     width: 100%;
-}
+    height: 100px;
+    background-color: var(--md-sys-color-surface-variant);
+    flex-shrink: 0;
+  }
 
-section.menu div.list-button {
-    display: flex; 
+  div.profile {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+    padding-bottom: $spacing-md;
     align-items: center;
+    margin-top: -75px;
+    flex-shrink: 0;
+  }
+
+  div.avatar {
+    width: 150px;
+    height: 150px;
+    background-image: url('https://ionicframework.com/docs/img/demos/avatar.svg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 50%;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-end;
+  }
+
+  div.info {
+    width: 80%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    h2 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    h4 {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--md-sys-color-outline);
+      font-weight: normal;
+    }
+  }
+
+  mat-list,
+  mat-action-list {
+    width: 100%;
+  }
+
+  div.list-button {
+    display: flex;
+    align-items: center;
+
+    mat-icon {
+      margin-right: $spacing-md;
+    }
+  }
 }
 
-section.menu div.list-button mat-icon {
-    margin-right: 10px;
-}
+.content {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
 
-.content mat-toolbar {
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    position: fixed; 
+  mat-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
     z-index: 100;
-}
+  }
 
-.content .pages {
-    display: flex; 
-    align-items: center; 
-}
-
-.content .resources {
-    display: flex; 
-}
-
-.content .pages button, .content .resources button {
-    margin: 0 10px;
-}
-
-.content .resources mat-menu {
-    width: 300px !important;
-}
-
-.content .resources mat-menu .notifications-link {
-    display: flex; 
-    justify-content: center; 
+  .pages {
+    display: flex;
     align-items: center;
-}
+    gap: $spacing-sm;
+  }
 
-.content .container {
-    min-height: calc(100vh - 80px); 
-    width: 100%; 
-    margin-top: 80px;
+  .resources {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  .container {
+    height: calc(100vh - 64px);
+    width: 100%;
+    margin-top: 64px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding-top: 10px;
+  }
 }

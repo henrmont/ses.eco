@@ -1,21 +1,33 @@
-<mat-drawer-container hasBackdrop="true">
+<mat-drawer-container [hasBackdrop]="true">
   <mat-drawer #drawer mode="push" position="end">
     <section class="menu">
       <div class="banner"></div>
+      
       <div class="profile">
-        <div class="avatar" [style.background-image]="user().image ? 'url(' + user().image + ')' : null">
-          <input type="file" class="file-input" (change)="onFileSelected($event)" #fileUpload style="display: none;">
-          <button mat-mini-fab color="primary" (click)="fileUpload.click()">
+        <div 
+          class="avatar" 
+          [style.background-image]="user().image ? 'url(' + user().image + ')' : null"
+        >
+          <input 
+            #fileUpload 
+            type="file" 
+            class="file-input" 
+            accept="image/*"
+            (change)="onFileSelected($event)" 
+            style="display: none;"
+          >
+          <button mat-mini-fab color="primary" type="button" (click)="fileUpload.click()">
             <mat-icon>edit</mat-icon>
           </button>
         </div>
+
         <div class="info">
           <div>
             <h2>{{ user().name }}</h2>
             <h4>{{ user().email }}</h4>
           </div>
           <div>
-            <button mat-icon-button (click)="changeProfileInfo()">
+            <button mat-icon-button type="button" (click)="changeProfileInfo()">
               <mat-icon>edit</mat-icon>
             </button>
           </div>
@@ -26,19 +38,22 @@
 
       <mat-action-list>
         <div mat-subheader>Sistema</div>
-        <button mat-list-item (click)="changeProfileModule(); drawer.toggle()">
+
+        <button mat-list-item type="button" (click)="changeProfileModule(); drawer.toggle()">
           <div class="list-button">
             <mat-icon>app_registration</mat-icon>
             <div>Selecionar módulo</div>
           </div>
         </button>
-        <button mat-list-item (click)="openAboutBox(); drawer.toggle()">
+
+        <button mat-list-item type="button" (click)="openAboutBox(); drawer.toggle()">
           <div class="list-button">
             <mat-icon>info</mat-icon>
             <div>Sobre</div>
           </div>
         </button>
-        <button mat-list-item (click)="logout()">
+
+        <button mat-list-item type="button" (click)="logout()">
           <div class="list-button">
             <mat-icon>logout</mat-icon>
             <div>Sair</div>
@@ -51,40 +66,41 @@
   <mat-drawer-content class="content">
     <mat-toolbar>
       <div class="pages">
-        <button mat-icon-button [routerLink]="['dashboard']">
+        <button mat-icon-button type="button" [routerLink]="['dashboard']">
           <mat-icon>dashboard</mat-icon>
         </button>
 
-        <!-- Exibição ajustada para o sinal module() contendo a Chave do Enum diretamente -->
         @if (module()) {
-          <button mat-fab extended [routerLink]="[module()]">
+          <button mat-fab extended type="button" [routerLink]="[module()]">
             <mat-icon>web_asset</mat-icon>
             {{ moduleKey }}
           </button>
         } @else {
-          <button mat-icon-button disabled>
+          <button mat-icon-button type="button" disabled>
             <mat-icon>web_asset_off</mat-icon>
           </button>
         }
       </div>
 
       <div class="resources">
-        <button mat-icon-button [matMenuTriggerFor]="menu" disabled>
+        <button mat-icon-button type="button" [matMenuTriggerFor]="menu" disabled>
           <mat-icon>notifications</mat-icon>
         </button>
         
         <mat-menu #menu="matMenu">
           <mat-list></mat-list>
           <div class="notifications-link">
-            <button mat-button [routerLink]="['notifications']" disabled>Ver todas as notificações</button>
+            <button mat-button type="button" [routerLink]="['notifications']" disabled>
+              Ver todas as notificações
+            </button>
           </div>
         </mat-menu>
 
-        <button mat-icon-button [routerLink]="['messages']" disabled>
+        <button mat-icon-button type="button" [routerLink]="['messages']" disabled>
           <mat-icon>forum</mat-icon>
         </button>
 
-        <button mat-icon-button (click)="drawer.toggle()">
+        <button mat-icon-button type="button" (click)="drawer.toggle()">
           <mat-icon>menu</mat-icon>
         </button>
       </div>

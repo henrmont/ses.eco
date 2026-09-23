@@ -1,0 +1,47 @@
+@use 'variables' as *;
+
+:host {
+  @include dialog-base;
+}
+
+mat-dialog-content {
+  @include dialog-content;
+  padding: 0 !important;
+  padding-bottom: $spacing-md !important; // 15px/16px
+}
+
+mat-action-list {
+  width: 100%;
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+
+  .item-info {
+    display: flex;
+    align-items: center;
+
+    mat-icon {
+      margin-right: $spacing-sm; // 10px
+    }
+
+    span {
+      text-transform: capitalize;
+    }
+  }
+
+  .item-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.empty-state {
+  padding: $spacing-lg;
+  text-align: center;
+  color: var(--mat-sys-outline, #757575);
+}

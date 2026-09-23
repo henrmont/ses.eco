@@ -9,21 +9,20 @@ $color-text-muted: var(--mdc-theme-on-surface-variant, #79747e);
 $color-text-label-fallback: rgba(0, 0, 0, 0.6);
 
 $color-primary: var(--mdc-theme-primary, #6750a4);
+$color-primary-eco: #1b5e20;             // ✨ Verde institucional Eco Saúde MT
+$color-accent-eco: #81c784;              // ✨ Destaque ecológico
 $color-expansion-border: #BBBBBB;
 
 // Cores de Tabela e Estruturais
 $color-table-header-bg: #f1f5f9;  
 $color-table-header-text: #334155;
-$color-table-text-muted: #64748b;     // ✨ Adicionado para textos secundários e descrições
-$color-table-hover: #f8fafc;          // ✨ Adicionado para hover de linhas zebradas
-$color-table-empty-text: #94a3b8;     // ✨ Adicionado para textos vazios/itálico
+$color-table-text-muted: #64748b;        // ✨ Adicionado para textos secundários e descrições
+$color-table-hover: #f8fafc;             // ✨ Adicionado para hover de linhas zebradas
+$color-table-empty-text: #94a3b8;        // ✨ Adicionado para textos vazios/itálico
 $color-divider: #e5e7eb; 
 $color-border-divider: rgba(0, 0, 0, 0.1);
 $color-border-subtle: rgba(0, 0, 0, 0.08); // ✨ Adicionado
 $color-hover-overlay: rgba(0, 0, 0, 0.02);  // ✨ Adicionado
-
-
-
 
 // Cores Semânticas de Status
 $color-success: #16a34a; 
@@ -36,13 +35,16 @@ $color-moon: #2c3e50;
 $font-size-xs: 12px;
 $font-size-sm: 13px; 
 $font-size-md: 14px;
-$font-size-body: 0.95rem;  // ✨ Adicionado
-$font-size-title: 1.1rem;   // ✨ Adicionado
+$font-size-body: 0.95rem;     // ✨ Adicionado
+$font-size-title: 1.1rem;      // ✨ Adicionado
 $font-size-lg: 16px;
+$font-size-xl: 20px;           // ✨ Adicionado para subtítulos de destaque
+$font-size-xxl: 32px;          // ✨ Adicionado para títulos principais de telas/branding
 
 // 🔤 Pesos de Fonte
-$font-weight-medium: 500;   // ✨ Adicionado
+$font-weight-medium: 500;      // ✨ Adicionado
 $font-weight-semibold: 600;
+$font-weight-bold: 700;        // ✨ Adicionado
 $line-height-min-item: 48px;
 
 // 📐 Espaçamentos e Dimensões Base
@@ -54,9 +56,9 @@ $spacing-lg: 16px;
 $spacing-xl: 20px;
 $spacing-xxl: 24px;
 
-$width-label-aligned: 180px;      // ✨ Adicionado
-$min-height-state-container: 150px; // ✨ Adicionado
-$icon-size-lg: 3rem;              // ✨ Adicionado
+$width-label-aligned: 180px;         // ✨ Adicionado
+$min-height-state-container: 150px;    // ✨ Adicionado
+$icon-size-lg: 3rem;                 // ✨ Adicionado
 
 // 🏛️ Tokens de Layout e Modais
 $card-max-width: 800px;
@@ -77,11 +79,11 @@ $shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
               0 2px 4px -2px rgba(0, 0, 0, 0.03);
 
 // ⚡ Transições
-$transition-fast: 0.2s ease; // ✨ Adicionado
+$transition-fast: 0.2s ease;           // ✨ Adicionado
 $transition-default: 0.2s ease-in-out;
 
 // 👁️ Opacidades e Estados
-$opacity-muted: 0.5;    // ✨ Adicionado
+$opacity-muted: 0.5;       // ✨ Adicionado
 $opacity-disabled: 0.5;
 
 // 🏛️ Tokens de Layout de Páginas

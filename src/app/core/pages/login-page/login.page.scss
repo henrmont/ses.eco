@@ -1,0 +1,34 @@
+@use 'variables' as *;
+
+:host {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.login-page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: $spacing-md;
+  overflow: hidden;
+}
+
+.mobile-government-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: $spacing-lg;
+
+  .ses-logo-mobile {
+    max-width: 60%;
+    height: auto;
+  }
+
+  @media (min-width: 960px) {
+    display: none;
+  }
+}

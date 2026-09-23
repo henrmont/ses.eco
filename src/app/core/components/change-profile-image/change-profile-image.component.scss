@@ -1,0 +1,31 @@
+@use 'variables' as *;
+
+:host {
+  display: block;
+  overflow: hidden;
+}
+
+// Remove o padding interno padrão do conteúdo do diálogo
+::ng-deep mat-dialog-content.cropper-content {
+  padding: 0 !important;
+  margin: 0 !important;
+  max-height: none !important;
+  overflow: hidden !important;
+}
+
+// Ajuste e limitação de tamanho para o componente cropper
+.cropper {
+  width: 100%;
+  max-width: 600px;
+  display: block;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+// Alinhamento do spinner e texto no botão
+.waiting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+}

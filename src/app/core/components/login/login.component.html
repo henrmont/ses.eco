@@ -1,0 +1,70 @@
+<mat-card class="login-card" appearance="raised">
+  <mat-card-header>
+    <div class="card-header-wrapper">
+      <mat-card-subtitle>ACESSO AO SISTEMA</mat-card-subtitle>
+    </div>
+  </mat-card-header>
+
+  <mat-card-content>
+    <form [formGroup]="authForm" (ngSubmit)="onAuthSubmit()">
+      
+      <mat-form-field appearance="outline">
+        <mat-label>E-mail institucional</mat-label>
+        <input matInput type="email" formControlName="email" placeholder="nome@saude.mt.gov.br">
+        <mat-icon matSuffix>alternate_email</mat-icon>
+        @for (item of errorMessages['email']; track $index) {
+          <mat-error [hidden]="!authForm.get('email')?.hasError(item.type)">
+            {{ item.message }}
+          </mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Senha</mat-label>
+        <input 
+          matInput 
+          [type]="hidePassword() ? 'password' : 'text'" 
+          formControlName="password"
+        >
+        <button 
+          mat-icon-button 
+          matSuffix 
+          type="button" 
+          (click)="togglePasswordVisibility()" 
+          [attr.aria-label]="'Ocultar senha'" 
+          [attr.aria-pressed]="hidePassword()"
+        >
+          <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+        @for (item of errorMessages['password']; track $index) {
+          <mat-error [hidden]="!authForm.get('password')?.hasError(item.type)">
+            {{ item.message }}
+          </mat-error>
+        }
+      </mat-form-field>
+
+      <button 
+        mat-flat-button 
+        color="primary" 
+        type="submit" 
+        class="submit-button"
+        [disabled]="authForm.invalid || isSubmitting()"
+      >
+        <div class="waiting">
+          @if (isSubmitting()) {
+            <mat-spinner [diameter]="20"></mat-spinner>
+          }
+          <span>Entrar no Sistema</span>
+        </div>
+      </button>
+
+      <p class="forgot-password">
+        Esqueceu a senha? 
+        <button mat-button type="button" (click)="onForgotPassword()" [disabled]="isSubmitting()">
+          Clique aqui
+        </button>
+      </p>
+
+    </form>
+  </mat-card-content>
+</mat-card>

@@ -1,12 +1,12 @@
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-index-layout',
-  imports: [RouterModule],
+  standalone: true,
+  imports: [RouterModule, MatIconModule],
   templateUrl: './index.layout.html',
   styleUrl: './index.layout.scss',
 })
-export class IndexLayout {
-
-}
+export class IndexLayout {}

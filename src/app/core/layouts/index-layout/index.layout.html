@@ -1,3 +1,39 @@
-<main>
+<div class="index-layout-wrapper">
+  <!-- Coluna da Esquerda: Branding Institucional (Fixo no Layout) -->
+  <aside class="branding-container">
+    <div class="branding-content">
+      
+      <!-- Marca Principal Eco Saúde MT -->
+      <div class="brand-logo">
+        <mat-icon class="brand-icon">eco</mat-icon>
+        <div class="brand-title">
+          <h1>Eco Saúde <span>MT</span></h1>
+          <p>Governo do Estado de Mato Grosso</p>
+        </div>
+      </div>
+
+      <!-- Descrição do Sistema -->
+      <div class="brand-description">
+        <h2>Gestão Inteligente & Integrada da Saúde Pública</h2>
+        <p>Acompanhamento, regulação e controle dos serviços de saúde mato-grossenses em uma única plataforma.</p>
+      </div>
+
+      <!-- Rodapé Informativo com Sinalização de Segurança -->
+      <div class="brand-footer">
+        <mat-icon>verified_user</mat-icon>
+        <span>Sistema de Acesso Restrito a Servidores Credenciados</span>
+      </div>
+
+      <!-- Logo Oficial da SES-MT no Final do Branding (Tamanho Natural) -->
+      <div class="government-logo">
+        <img src="images/logo_ses.png" alt="Secretaria de Estado de Saúde de Mato Grosso" class="ses-logo" />
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- Coluna da Direita: Ocupa a metade da tela e carrega as rotas filhas (LoginPage, etc.) -->
+  <main class="page-container">
     <router-outlet />
-</main>
+  </main>
+</div>

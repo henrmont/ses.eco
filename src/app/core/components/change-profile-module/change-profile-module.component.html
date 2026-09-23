@@ -1,0 +1,43 @@
+<h2 mat-dialog-title>Selecionar módulo</h2>
+
+<mat-dialog-content>
+  <mat-action-list>
+    @for (item of filteredModules(); track item.id) {
+      <button 
+        mat-list-item 
+        [disabled]="checkModule(item.id) || isSubmitting()"
+        (click)="changeProfileModule(item.id)"
+      >
+        <div class="list-item">
+          <div class="item-info">
+            <mat-icon matListItemIcon>view_module</mat-icon>
+            <span>{{ item.name }}</span>
+          </div>
+
+          <div class="item-actions">
+            @if (isSubmitting() && selectedModuleId() === item.id) {
+              <mat-spinner [diameter]="20"></mat-spinner>
+            } @else if (checkModule(item.id)) {
+              <mat-icon color="primary">check</mat-icon>
+            }
+          </div>
+        </div>
+      </button>
+    } @empty {
+      <div class="empty-state">
+        Nenhum módulo disponível para este sistema.
+      </div>
+    }
+  </mat-action-list>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button 
+    mat-button 
+    type="button" 
+    [mat-dialog-close]="false" 
+    [disabled]="isSubmitting()"
+  >
+    Fechar
+  </button>
+</mat-dialog-actions>

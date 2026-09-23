@@ -1,6 +1,156 @@
-main {
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    height: 100vh;
+@use 'variables' as *;
+
+:host {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden; // Impede barra de rolagem geral
+}
+
+.index-layout-wrapper {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  background-color: var(--mat-sys-background, #f4f7f6);
+  overflow: hidden; // Garante que nenhum elemento filho estoure a tela
+}
+
+// ─── COLUNA DA ESQUERDA: BRANDING (50% DA TELA) ──────────────────────────────
+.branding-container {
+  flex: 1;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  padding: $spacing-xxl;
+  background: linear-gradient(135deg, #0d47a1 0%, #1b5e20 100%);
+  color: #ffffff;
+  position: relative;
+  overflow: hidden; // Trava o círculo de fundo e o conteúdo
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -20%;
+    right: -20%;
+    width: 600px;
+    height: 600px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  @media (min-width: 960px) {
+    display: flex;
+  }
+}
+
+.branding-content {
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: $spacing-xl;
+  z-index: 1;
+  height: 100%;
+  justify-content: center;
+  overflow: hidden;
+}
+
+// Marca Principal
+.brand-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-sm;
+
+  .brand-icon {
+    font-size: 56px;
+    height: 56px;
+    width: 56px;
+    color: $color-accent-eco;
+  }
+
+  .brand-title {
+    h1 {
+      margin: 0;
+      font-size: $font-size-xxl;
+      font-weight: $font-weight-bold;
+      line-height: 1.1;
+      letter-spacing: -0.5px;
+
+      span {
+        color: $color-accent-eco;
+      }
+    }
+
+    p {
+      margin: $spacing-xs 0 0 0;
+      font-size: $font-size-md;
+      opacity: 0.85;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+  }
+}
+
+.brand-description {
+  h2 {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-semibold;
+    margin-bottom: $spacing-sm;
+    line-height: 1.3;
+  }
+
+  p {
+    font-size: $font-size-body;
+    opacity: 0.9;
+    line-height: 1.6;
+    margin: 0;
+  }
+}
+
+.brand-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
+  font-size: $font-size-sm;
+  opacity: 0.75;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: $spacing-md;
+  width: 100%;
+
+  mat-icon {
+    font-size: 20px;
+    height: 20px;
+    width: 20px;
+  }
+}
+
+// Logo no rodapé (reduzida para 60% e com margem superior)
+.government-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: $spacing-xxl;
+  width: 100%;
+
+  .ses-logo {
+    width: 60%;
+    height: auto;
+    object-fit: contain;
+  }
+}
+
+// ─── COLUNA DA DIREITA: ÁREA DAS PÁGINAS (50% DA TELA) ──────────────────────
+.page-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;    // Impede o flexbox de expandir verticalmente além do pai
+  overflow: hidden; // Sem barras de rolagem no contêiner da página
 }
