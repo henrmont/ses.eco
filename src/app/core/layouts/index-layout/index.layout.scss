@@ -12,7 +12,7 @@
   width: 100%;
   height: 100%;
   background-color: var(--mat-sys-background, #f4f7f6);
-  overflow: hidden; // Garante que nenhum elemento filho estoure a tela
+  overflow: hidden;
 }
 
 // ─── COLUNA DA ESQUERDA: BRANDING (50% DA TELA) ──────────────────────────────
@@ -22,10 +22,11 @@
   flex-direction: column;
   justify-content: center;
   padding: $spacing-xxl;
-  background: linear-gradient(135deg, #0d47a1 0%, #1b5e20 100%);
+  // Gradiente com paleta CODEMSI/SES-MT: Azul Saúde Institucional -> Azul Escuro -> Toque Verde Governo
+  background: linear-gradient(135deg, #124075 0%, #1e5ba8 45%, #38ef7d 100%);
   color: #ffffff;
   position: relative;
-  overflow: hidden; // Trava o círculo de fundo e o conteúdo
+  overflow: hidden;
 
   &::before {
     content: '';
@@ -34,7 +35,7 @@
     right: -20%;
     width: 600px;
     height: 600px;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.04);
     border-radius: 50%;
     pointer-events: none;
   }
@@ -45,7 +46,7 @@
 }
 
 .branding-content {
-  max-width: 520px;
+  max-width: 620px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -69,7 +70,7 @@
     font-size: 56px;
     height: 56px;
     width: 56px;
-    color: $color-accent-eco;
+    color: #4ed8a5; // Verde claro de alta visibilidade/contraste
   }
 
   .brand-title {
@@ -79,16 +80,17 @@
       font-weight: $font-weight-bold;
       line-height: 1.1;
       letter-spacing: -0.5px;
+      color: #ffffff;
 
       span {
-        color: $color-accent-eco;
+        color: #4ed8a5;
       }
     }
 
     p {
       margin: $spacing-xs 0 0 0;
       font-size: $font-size-md;
-      opacity: 0.85;
+      color: #d1e8ff; // Texto secundário em tom suave com bom contraste
       text-transform: uppercase;
       letter-spacing: 1px;
     }
@@ -101,11 +103,12 @@
     font-weight: $font-weight-semibold;
     margin-bottom: $spacing-sm;
     line-height: 1.3;
+    color: #ffffff;
   }
 
   p {
     font-size: $font-size-body;
-    opacity: 0.9;
+    color: #e2f1ff;
     line-height: 1.6;
     margin: 0;
   }
@@ -117,7 +120,7 @@
   justify-content: center;
   gap: $spacing-xs;
   font-size: $font-size-sm;
-  opacity: 0.75;
+  color: #b3d7ff;
   border-top: 1px solid rgba(255, 255, 255, 0.15);
   padding-top: $spacing-md;
   width: 100%;
@@ -126,21 +129,28 @@
     font-size: 20px;
     height: 20px;
     width: 20px;
+    color: #4ed8a5;
   }
 }
 
-// Logo no rodapé (reduzida para 60% e com margem superior)
-.government-logo {
+// Logos no rodapé (SES-MT + CODEMSI lado a lado)
+.government-logos {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: $spacing-xxl;
+  gap: $spacing-lg;
+  margin-top: $spacing-xl;
   width: 100%;
 
-  .ses-logo {
-    width: 60%;
-    height: auto;
+  .brand-footer-logo {
+    display: flex;
+    align-self: flex-end;
+    max-height: auto;
+    width: auto;
+    max-width: 45%;
     object-fit: contain;
+    // Filtro opcional para suavizar logos com fundo escuro caso sejam transparentes
+    filter: drop-shadow(0px 4px 8px rgba(0, 0, 0, 0.4));
   }
 }
 
@@ -151,6 +161,6 @@
   flex-direction: column;
   width: 100%;
   height: 100%;
-  min-height: 0;    // Impede o flexbox de expandir verticalmente além do pai
-  overflow: hidden; // Sem barras de rolagem no contêiner da página
+  min-height: 0;
+  overflow: hidden;
 }
