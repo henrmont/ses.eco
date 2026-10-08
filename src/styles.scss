@@ -2,7 +2,7 @@
 @use 'variables' as *;
 
 // 1. Importa o arquivo CSS baixado do Theme Builder
-@use 'styles/theme.scss' as *; 
+@use 'styles/red-rose.scss' as *; 
 
 // 2. Aplica a classe .light no html e mapeia os tokens M3
 html {
@@ -12,8 +12,8 @@ html {
   // Tema base do Angular Material para estrutura de componentes e tipografia
   @include mat.theme((
     color: (
-      primary: mat.$azure-palette,
-      tertiary: mat.$azure-palette,
+      primary: mat.$red-palette,
+      tertiary: mat.$red-palette,
     ),
     typography: (
       brand-family: 'Outfit', // Fonte para Títulos / Headings
