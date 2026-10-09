@@ -5,4 +5,5 @@ export const environment = {
     apiDatasusUrl: '/api/datasus',
     apiStorageUrl: '/api/storage',
     apiTfdUrl: '/api/tfd',
+    apiSislicUrl: '/api/sislic',
 };

@@ -5,4 +5,5 @@ export const environment = {
     apiStorageUrl: 'http://10.14.34.143:8002/api/storage',
     apiTfdUrl: 'http://10.14.34.143:9001/api/tfd',
     apiDatasusUrl: 'http://10.14.34.143:9002/api/datasus',
+    apiSislicUrl: 'http://10.14.34.143:9003/api/sislic',
 };

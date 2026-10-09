@@ -9,6 +9,8 @@ import { AvaliableModules } from './core/enums/avaliable-modules';
 import { DatasusLayout } from './datasus/layout/datasus.layout';
 import { tfdUserResolver } from './tfd/resolvers/tfd-user-resolver';
 import { datasusUserResolver } from './datasus/resolvers/datasus-user-resolver';
+import { SislicLayout } from './sislic/layout/sislic.layout';
+import { sislicUserResolver } from './sislic/resolvers/sislic-user-resolver';
 
 export const routes: Routes = [
     {
@@ -50,6 +52,13 @@ export const routes: Routes = [
                 resolve: {user: datasusUserResolver},
                 canActivateChild: [authGuard.checkAccess()],
                 loadChildren: () => import('./datasus/routes/datasus.routes').then(m => m.datasusRoutes)
+            },
+            {
+                path: 'sislic',
+                component: SislicLayout,
+                resolve: {user: sislicUserResolver},
+                canActivateChild: [authGuard.checkAccess()],
+                loadChildren: () => import('./sislic/routes/sislic.routes').then(m => m.sislicRoutes)
             },
         ]
     }
