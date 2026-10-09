@@ -43,6 +43,7 @@ export const routes: Routes = [
                 path: 'tfd',
                 component: TfdLayout,
                 resolve: {user: tfdUserResolver},
+                data: { module: 'tfd' },
                 canActivateChild: [authGuard.checkAccess()],
                 loadChildren: () => import('./tfd/routes/tfd.routes').then(m => m.tfdRoutes)
             },
@@ -50,6 +51,7 @@ export const routes: Routes = [
                 path: 'datasus',
                 component: DatasusLayout,
                 resolve: {user: datasusUserResolver},
+                data: { module: 'datasus' },
                 canActivateChild: [authGuard.checkAccess()],
                 loadChildren: () => import('./datasus/routes/datasus.routes').then(m => m.datasusRoutes)
             },
@@ -57,6 +59,7 @@ export const routes: Routes = [
                 path: 'sislic',
                 component: SislicLayout,
                 resolve: {user: sislicUserResolver},
+                data: { module: 'sislic' },
                 canActivateChild: [authGuard.checkAccess()],
                 loadChildren: () => import('./sislic/routes/sislic.routes').then(m => m.sislicRoutes)
             },
