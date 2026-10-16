@@ -7,11 +7,12 @@ import { authGuard } from './core/guards/auth-guard';
 import { TfdLayout } from './tfd/layout/tfd.layout';
 import { AvaliableModules } from './core/enums/avaliable-modules';
 import { DatasusLayout } from './datasus/layout/datasus.layout';
-import { tfdUserResolver } from './tfd/resolvers/tfd-user-resolver';
-import { datasusUserResolver } from './datasus/resolvers/datasus-user-resolver';
 import { SislicLayout } from './sislic/layout/sislic.layout';
-import { sislicUserResolver } from './sislic/resolvers/sislic-user-resolver';
+import { tfdGuard } from './tfd/guards/tfd.guard';
+import { datasusGuard } from './datasus/guards/datasus.guard';
+import { sislicGuard } from './sislic/guards/sislic.guard';
 
+// app.routes.ts
 export const routes: Routes = [
     {
         path: '',
@@ -27,7 +28,6 @@ export const routes: Routes = [
     {
         path: 'principal',
         component: CoreLayout,
-        resolve: {user: authResolver},
         canActivateChild: [authGuard.checkModule(Object.values(AvaliableModules) as AvaliableModules[])],
         children: [
             {
@@ -39,30 +39,52 @@ export const routes: Routes = [
                 path: 'dashboard',
                 loadComponent: () => import('./core/pages/dashboard-page/dashboard-page').then( m => m.DashboardPage)
             },
+            
+            // ==========================================
+            // MÓDULO TFD (Estruturado em 2 níveis)
+            // ==========================================
             {
                 path: 'tfd',
                 component: TfdLayout,
-                resolve: {user: tfdUserResolver},
                 data: { module: 'tfd' },
+                canActivate: [tfdGuard],
                 canActivateChild: [authGuard.checkAccess()],
                 loadChildren: () => import('./tfd/routes/tfd.routes').then(m => m.tfdRoutes)
             },
+
+            // ==========================================
+            // MÓDULO DATASUS (Estruturado em 2 níveis)
+            // ==========================================
             {
                 path: 'datasus',
                 component: DatasusLayout,
-                resolve: {user: datasusUserResolver},
                 data: { module: 'datasus' },
+                canActivate: [datasusGuard],
                 canActivateChild: [authGuard.checkAccess()],
                 loadChildren: () => import('./datasus/routes/datasus.routes').then(m => m.datasusRoutes)
             },
+
+            // ==========================================
+            // MÓDULO SISLIC (Estruturado em 2 níveis)
+            // ==========================================
             {
                 path: 'sislic',
                 component: SislicLayout,
-                resolve: {user: sislicUserResolver},
                 data: { module: 'sislic' },
+                canActivate: [sislicGuard],
                 canActivateChild: [authGuard.checkAccess()],
                 loadChildren: () => import('./sislic/routes/sislic.routes').then(m => m.sislicRoutes)
             },
+            {
+                path: '**',
+                redirectTo: 'dashboard',
+                pathMatch: 'full'
+            }
         ]
+    },
+    {
+        path: '**',
+        redirectTo: 'principal',
+        pathMatch: 'full'
     }
 ];

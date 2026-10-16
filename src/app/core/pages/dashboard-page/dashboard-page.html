@@ -1,6 +1,6 @@
 @if (module()) {
     <section>
-        @if (module() == 'tfd') {
+        @if (module() === AvaliableModules.TFD) {
             <div>
                 <app-literal-data></app-literal-data>
             </div>
@@ -13,7 +13,7 @@
                 <app-specialist-care-data></app-specialist-care-data>
             </div>
         }
-        @if (module() == 'homecare') {
+        @if (module() === AvaliableModules.DATASUS) {
             <div>
                 <app-homecare-literal-data></app-homecare-literal-data>
             </div>
@@ -22,7 +22,7 @@
                 <app-operational-efficiency-data></app-operational-efficiency-data>
             </div>
         }
-        @if (module() == 'transplante') {
+        @if (module() === AvaliableModules.SISLIC) {
             <div class="mid-graph">
                 <app-specialist-transplant-data></app-specialist-transplant-data>
                 <app-judicialized-data></app-judicialized-data>

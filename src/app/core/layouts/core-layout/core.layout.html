@@ -6,7 +6,7 @@
       <div class="profile">
         <div 
           class="avatar" 
-          [style.background-image]="user().image ? 'url(' + user().image + ')' : null"
+          [style.background-image]="currentUser()?.image ? 'url(' + currentUser()?.image + ')' : null"
         >
           <input 
             #fileUpload 
@@ -23,8 +23,8 @@
 
         <div class="info">
           <div>
-            <h2>{{ user().name }}</h2>
-            <h4>{{ user().email }}</h4>
+            <h2>{{ currentUser()?.name }}</h2>
+            <h4>{{ currentUser()?.email }}</h4>
           </div>
           <div>
             <button mat-icon-button type="button" (click)="changeProfileInfo()">
@@ -73,7 +73,7 @@
         @if (module()) {
           <button mat-fab extended type="button" [routerLink]="[module()]">
             <mat-icon>web_asset</mat-icon>
-            {{ moduleKey }}
+            {{ moduleKey() }}
           </button>
         } @else {
           <button mat-icon-button type="button" disabled>

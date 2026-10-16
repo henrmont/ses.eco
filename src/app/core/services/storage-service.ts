@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 // 🌍 Importação corrigida para o environment geral (sem o .development)
-import { Archive } from '../models/archive';
+import { Archive } from '../models/archive.model';
 import { environment } from '../../../environments/environment';
 
 @Injectable({

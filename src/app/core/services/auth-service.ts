@@ -1,7 +1,9 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+// core/services/auth-service.ts
+import { HttpClient } from '@angular/common/http';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { User } from '../models/user.model';
 
 @Injectable({
   providedIn: 'root',
@@ -9,30 +11,50 @@ import { environment } from '../../../environments/environment';
 export class AuthService {
   private readonly http = inject(HttpClient);
 
-  /**
-   * Auxiliar privado para ler o token atualizado do localStorage a cada requisição
-   */
-  private getHeaders(): HttpHeaders {
-    const token = window.localStorage.getItem('token') || '';
-    return new HttpHeaders({
-      'Authorization': `Bearer ${token}`
-    });
+  // Permite guardar o User base ou qualquer extensão (ex: TfdUser)
+  private readonly _currentUser = signal<User | null>(null);
+  
+  readonly currentUser = this._currentUser.asReadonly();
+  readonly isAuthenticated = computed(() => !!this._currentUser());
+
+  // Getter auxiliar genérico para obter o usuário já tipado no módulo periférico
+  getCurrentUser<T extends User>(): T | null {
+    return (this._currentUser() as T) || null;
+  }
+
+  // Aceita TfdUser ou qualquer outro subtipo de User
+  setCurrentUser<T extends User>(user: T | null): void {
+    this._currentUser.set(user);
+  }
+
+  clearSession(): void {
+    window.localStorage.removeItem('token');
+    this._currentUser.set(null);
   }
 
   login(data: any): Observable<any> {
-    return this.http.post<any>(`${environment.apiAuthUrl}/login`, data);
+    return this.http.post<any>(`${environment.apiAuthUrl}/login`, data).pipe(
+      tap((response) => {
+        if (response?.access_token || response?.token) {
+          window.localStorage.setItem('token', response.access_token || response.token);
+        }
+      })
+    );
   }
 
   logout(): Observable<any> {
-    // 🌟 CORREÇÃO: Cabeçalhos gerados dinamicamente no momento do clique/chamada
-    return this.http.get<any>(`${environment.apiAuthUrl}/logout`, { headers: this.getHeaders() });
+    return this.http.get<any>(`${environment.apiAuthUrl}/logout`).pipe(
+      tap(() => this.clearSession())
+    );
   }
 
-  me(): Observable<any> {
-    return this.http.get<any>(`${environment.apiAuthUrl}/me`, { headers: this.getHeaders() });
+  me<T extends User = User>(): Observable<T> {
+    return this.http.get<T>(`${environment.apiAuthUrl}/me`).pipe(
+      tap((user) => this.setCurrentUser(user))
+    );
   }
 
   refresh(): Observable<any> {
-    return this.http.get<any>(`${environment.apiAuthUrl}/refresh`, { headers: this.getHeaders() });
+    return this.http.get<any>(`${environment.apiAuthUrl}/refresh`);
   }
 }

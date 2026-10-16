@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 // Angular Material
@@ -14,7 +14,7 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 
 // Core & Models
-import { User } from '../../models/user';
+import { User } from '../../models/user.model';
 import { AuthService } from '../../services/auth-service';
 import { AvaliableModules } from '../../enums/avaliable-modules';
 
@@ -44,45 +44,36 @@ export type ModuleKey = keyof typeof AvaliableModules;
   styleUrl: './core.layout.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class CoreLayout implements OnInit {
+export class CoreLayout {
   // ==========================================
   // Injeção de Dependências
   // ==========================================
-  private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
 
   // ==========================================
-  // Propriedades e Estado Reativo
-  // ==========================================
-  protected readonly user = signal<User>({} as User);
-  protected readonly module = signal<string | undefined>(undefined);
-
-  // ==========================================
-  // Ciclo de Vida (Hooks)
-  // ==========================================
-  ngOnInit(): void {
-    const userData = this.route.snapshot.data['user'];
-    if (userData) {
-      this.user.set(userData);
-    }
-
-    if (userData?.module) {
-      const moduleValue = this.getModuleValue(userData.module);
-      this.module.set(moduleValue);
-    }
-  }
-
-  // ==========================================
-  // Getters & Propriedades Computadas
+  // ESTADO REATIVO DERIVADO DO AUTH SERVICE
   // ==========================================
 
   /**
-   * Retorna a CHAVE do Enum correspondente ao valor do sinal
+   * Obtém o usuário atual reativamente a partir do AuthService
+   */
+  protected readonly currentUser = computed(() => this.authService.currentUser());
+
+  /**
+   * Extrai o valor do módulo a partir do usuário logado
+   */
+  protected readonly module = computed(() => {
+    const user = this.currentUser();
+    return this.getModuleValue(user?.module);
+  });
+
+  /**
+   * Retorna a CHAVE do Enum correspondente ao valor do módulo atual
    * Exemplo: 'licitacao' -> 'LICITAÇÃO'
    */
-  protected get moduleKey(): string | undefined {
+  protected readonly moduleKey = computed(() => {
     const val = this.module();
     if (!val) return undefined;
 
@@ -91,18 +82,16 @@ export class CoreLayout implements OnInit {
     );
 
     return entry ? entry[0] : val.toUpperCase();
-  }
+  });
 
   // ==========================================
   // Métodos Acessíveis pelo Template (Protected)
   // ==========================================
+
   protected logout(): void {
     this.authService.logout()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => {
-          window.localStorage.clear();
-        },
         complete: () => {
           window.location.reload();
         }
@@ -115,7 +104,7 @@ export class CoreLayout implements OnInit {
       disableClose: true,
       autoFocus: false,
       data: {
-        user: this.user()
+        user: this.currentUser()
       }
     });
   }
@@ -136,18 +125,19 @@ export class CoreLayout implements OnInit {
       disableClose: true,
       autoFocus: false,
       data: {
-        user: this.user(),
+        user: this.currentUser(),
         event
       }
     }).afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((newImageBase64: string | undefined) => {
-        if (newImageBase64) {
-          // Atualiza o signal criando um novo objeto do usuário
-          this.user.update(user => ({
-            ...user,
+        const currentUser = this.currentUser();
+        if (newImageBase64 && currentUser) {
+          // Atualiza diretamente o estado global no AuthService
+          this.authService.setCurrentUser({
+            ...currentUser,
             image: newImageBase64
-          }));
+          });
         }
       });
   }
@@ -158,23 +148,26 @@ export class CoreLayout implements OnInit {
       autoFocus: false,
       width: '400px',
       data: {
-        user: this.user()
+        user: this.currentUser()
       }
     }).afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(result => {
-        if (result?.value) {
-          this.user.update(user => ({
-            ...user,
+        const currentUser = this.currentUser();
+        if (result?.value && currentUser) {
+          // Atualiza diretamente o estado global no AuthService
+          this.authService.setCurrentUser({
+            ...currentUser,
             name: result.value
-          }));
+          });
         }
       });
   }
 
   // ==========================================
-  // Métodos Privados
+  // Métodos Privados Auxiliares
   // ==========================================
+
   private getModuleValue(rawValue: unknown): string | undefined {
     if (!rawValue) return undefined;
 
