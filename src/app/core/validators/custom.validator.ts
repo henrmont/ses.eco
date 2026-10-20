@@ -4,6 +4,53 @@ const moment = (_moment as any).default || _moment;
 
 export class CustomValidators {
 
+  /**
+   * Valida se o campo 'password' e o campo de confirmação ('password_confirmation' por padrão) possuem valores idênticos.
+   * Pode ser aplicado tanto no FormGroup quanto diretamente em um controle.
+   *
+   * @param confirmationFieldName Nome do campo de confirmação (default: 'password_confirmation')
+   * @param passwordFieldName Nome do campo de senha (default: 'password')
+   */
+  static passwordMatch(
+    confirmationFieldName: string = 'password_confirmation',
+    passwordFieldName: string = 'password'
+  ): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      // 1. Aplicação em nível de FormGroup
+      if (control.get(passwordFieldName) || control.get(confirmationFieldName)) {
+        const passwordControl = control.get(passwordFieldName);
+        const confirmControl = control.get(confirmationFieldName);
+
+        if (!passwordControl || !confirmControl) return null;
+
+        if (passwordControl.value !== confirmControl.value) {
+          confirmControl.setErrors({ ...confirmControl.errors, passwordMismatch: true });
+          return { passwordMismatch: true };
+        }
+
+        if (confirmControl.hasError('passwordMismatch')) {
+          const errors = { ...confirmControl.errors };
+          delete errors['passwordMismatch'];
+          confirmControl.setErrors(Object.keys(errors).length ? errors : null);
+        }
+
+        return null;
+      }
+
+      // 2. Aplicação em nível de AbstractControl com acesso ao parent
+      if (control.parent) {
+        const passwordControl = control.parent.get(passwordFieldName);
+        if (!passwordControl) return null;
+
+        if (passwordControl.value !== control.value) {
+          return { passwordMismatch: true };
+        }
+      }
+
+      return null;
+    };
+  }
+
   static cpfOrCnjValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
       const value = control.value?.replace(/\D/g, '');
@@ -86,6 +133,7 @@ export class CustomValidators {
 
   /**
    * Valida se a data do controle é ANTERIOR ou IGUAL a uma data de referência.
+   * 
    * @param target Valor direto da data, função getter, Signal OU nome do controle no FormGroup.
    */
   static dateBeforeValidator(target: any): ValidatorFn {
@@ -96,12 +144,10 @@ export class CustomValidators {
 
       let referenceValue: any;
 
-      // Se for string e houver parent, tenta pegar o valor do controle informado
       if (typeof target === 'string' && control.parent) {
         const targetControl = control.parent.get(target);
         referenceValue = targetControl ? targetControl.value : target;
       } else if (typeof target === 'function') {
-        // Suporta funções/signals: target()
         referenceValue = target();
       } else {
         referenceValue = target;
@@ -124,6 +170,7 @@ export class CustomValidators {
 
   /**
    * Valida se a data do controle é POSTERIOR ou IGUAL a uma data de referência.
+   * 
    * @param target Valor direto da data, função getter, Signal OU nome do controle no FormGroup.
    */
   static dateAfterValidator(target: any): ValidatorFn {
@@ -134,12 +181,10 @@ export class CustomValidators {
 
       let referenceValue: any;
 
-      // Se for string e houver parent, tenta pegar o valor do controle informado
       if (typeof target === 'string' && control.parent) {
         const targetControl = control.parent.get(target);
         referenceValue = targetControl ? targetControl.value : target;
       } else if (typeof target === 'function') {
-        // Suporta funções/signals: target()
         referenceValue = target();
       } else {
         referenceValue = target;
@@ -162,16 +207,11 @@ export class CustomValidators {
 
   // --- MÉTODOS AUXILIARES PRIVADOS ---
 
-  /**
-   * Converte qualquer formato de data recebido (inclusive "YYYY-MM-DD HH:mm:ss")
-   * para um objeto Moment e zera a hora para comparação exata de dia.
-   */
   private static parseToMoment(value: any): _moment.Moment | null {
     if (!value) return null;
     if (moment.isMoment(value)) return value.clone().startOf('day');
     if (value instanceof Date) return moment(value).startOf('day');
 
-    // Lista de formatos aceitos (incluindo o espaço com hora)
     const formats = [
       'YYYY-MM-DD HH:mm:ss',
       'YYYY-MM-DD',
@@ -179,15 +219,12 @@ export class CustomValidators {
       'YYYY-MM-DDTHH:mm:ss'
     ];
 
-    // Tenta fazer o parse estrito com a lista de formatos
     let parsed = moment(value, formats, true);
 
-    // Se falhar no estrito, tenta o parse legados/ISO como fallback
     if (!parsed.isValid()) {
       parsed = moment(value);
     }
 
-    // Normaliza para o início do dia (00:00:00) para ignorar diferenças de horário
     return parsed.isValid() ? parsed.startOf('day') : null;
   }
 

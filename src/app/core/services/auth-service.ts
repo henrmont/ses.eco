@@ -57,4 +57,15 @@ export class AuthService {
   refresh(): Observable<any> {
     return this.http.get<any>(`${environment.apiAuthUrl}/refresh`);
   }
+
+  // Solicitar envio do e-mail com link
+  forgotPassword(payload: { email: string }): Observable<any> {
+    return this.http.post<any>(`${environment.apiAuthUrl}/forgot-password`, payload);
+  }
+
+  // Redefinir a senha com o token recebido
+  resetPassword(payload: { token: string; email: string; password: string; password_confirmation: string }): Observable<any> {
+    return this.http.post<any>(`${environment.apiAuthUrl}/reset-password`, payload);
+  }
+
 }

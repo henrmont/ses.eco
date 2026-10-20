@@ -60,7 +60,7 @@
 
       <p class="forgot-password">
         Esqueceu a senha? 
-        <button mat-button type="button" (click)="onForgotPassword()" [disabled]="isSubmitting()">
+        <button mat-button type="button" [routerLink]="['recuperar-senha']" [disabled]="isSubmitting()">
           Clique aqui
         </button>
       </p>

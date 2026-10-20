@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, Injector, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 // Angular Material
@@ -27,8 +27,9 @@ import { MessageService } from '../../services/message-service';
     MatIconModule,
     MatInputModule,
     MatProgressSpinnerModule,
-    ReactiveFormsModule
-  ],
+    ReactiveFormsModule,
+    RouterLink
+],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -102,10 +103,6 @@ export class LoginComponent implements OnInit {
           this.messageService.showMessage(err?.error?.message || fallbackError);
         }
       });
-  }
-
-  protected onForgotPassword(): void {
-    this.messageService.showMessage('Funcionalidade de recuperação de senha em desenvolvimento.');
   }
 
   // ==========================================

@@ -23,6 +23,14 @@ export const routes: Routes = [
                 path: '',
                 loadComponent: () => import('./core/pages/login-page/login.page').then( m => m.LoginPage)
             },
+            {
+                path: 'recuperar-senha',
+                loadComponent: () => import('./core/pages/forgot-password-page/forgot-password.page').then( m => m.ForgotPasswordPage)
+            },
+            {
+                path: 'resetar-senha/:token',
+                loadComponent: () => import('./core/pages/reset-password-page/reset-password.page').then( m => m.ResetPasswordPage)
+            },
         ]
     },
     {
