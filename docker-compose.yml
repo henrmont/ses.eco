@@ -1,0 +1,175 @@
+version: '3.8'
+
+services:
+
+  eco:
+    build:
+      context: ./eco
+      dockerfile: Dockerfile
+      network: host
+    container_name: eco
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      api-auth:
+        condition: service_healthy
+      api-core:
+        condition: service_healthy
+      api-datasus:
+        condition: service_healthy
+      api-storage:
+        condition: service_healthy
+      api-tfd:
+        condition: service_healthy
+    networks:
+      - eco_network
+    
+  api-auth:
+    build: ./api.auth
+    container_name: api_auth
+    restart: always
+    extra_hosts:
+      - "host.postgres:host-gateway"
+    ports:
+      - "8000:80"
+    healthcheck:
+      test: ["CMD-SHELL", "php artisan db:monitor && service nginx status || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - ./docker-config/php-conf.ini:/usr/local/etc/php/conf.d/php-conf.ini
+      - ./docker-config/cacert.pem:/etc/ssl/certs/cacert.pem
+    networks:
+      - eco_network
+
+  api-core:
+    build: ./api.core
+    container_name: api_core
+    restart: always
+    extra_hosts:
+      - "host.postgres:host-gateway"
+    ports:
+      - "8001:80"
+    depends_on:
+      api-auth:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php artisan db:monitor && service nginx status || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - ./docker-config/php-conf.ini:/usr/local/etc/php/conf.d/php-conf.ini
+      - ./docker-config/cacert.pem:/etc/ssl/certs/cacert.pem
+    networks:
+      - eco_network
+
+  api-storage:
+    build: ./api.storage
+    container_name: api_storage
+    restart: always
+    extra_hosts:
+      - "host.postgres:host-gateway"
+    ports:
+      - "8002:80"
+    depends_on:
+      api-auth:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php artisan db:monitor && service nginx status || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - ./docker-config/php-conf.ini:/usr/local/etc/php/conf.d/php-conf.ini
+      - ./docker-config/cacert.pem:/etc/ssl/certs/cacert.pem
+    networks:
+      - eco_network
+
+  api-tfd:
+    build: ./api.tfd
+    container_name: api_tfd
+    restart: always
+    extra_hosts:
+      - "host.postgres:host-gateway"
+    ports:
+      - "9001:80"
+    depends_on:
+      api-auth:
+        condition: service_healthy
+      api-core:
+        condition: service_healthy
+      api-datasus:
+        condition: service_healthy
+      api-storage:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php artisan db:monitor && service nginx status || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - ./docker-config/php-conf.ini:/usr/local/etc/php/conf.d/php-conf.ini
+      - ./docker-config/cacert.pem:/etc/ssl/certs/cacert.pem
+    networks:
+      - eco_network
+
+  api-datasus:
+    build: ./api.datasus
+    container_name: api_datasus
+    restart: always
+    extra_hosts:
+      - "host.postgres:host-gateway"
+    ports:
+      - "9002:80"
+    depends_on:
+      api-auth:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php artisan db:monitor && service nginx status || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - ./docker-config/php-conf.ini:/usr/local/etc/php/conf.d/php-conf.ini
+      - ./docker-config/cacert.pem:/etc/ssl/certs/cacert.pem
+    networks:
+      - eco_network
+  
+  api-sislic:
+    build: ./api.sislic
+    container_name: api_sislic
+    restart: always
+    extra_hosts:
+      - "host.postgres:host-gateway"
+    ports:
+      - "9003:80"
+    depends_on:
+      api-auth:
+        condition: service_healthy
+      api-datasus:
+        condition: service_healthy
+      api-storage:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php artisan db:monitor && service nginx status || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - ./docker-config/php-conf.ini:/usr/local/etc/php/conf.d/php-conf.ini
+      - ./docker-config/cacert.pem:/etc/ssl/certs/cacert.pem
+    networks:
+      - eco_network
+
+networks:
+  eco_network:
+    driver: bridge
