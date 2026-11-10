@@ -11,6 +11,8 @@ import { SislicLayout } from './sislic/layout/sislic.layout';
 import { tfdGuard } from './tfd/guards/tfd.guard';
 import { datasusGuard } from './datasus/guards/datasus.guard';
 import { sislicGuard } from './sislic/guards/sislic.guard';
+import { SistfdLayout } from './sistfd/layout/sistfd.layout';
+import { sistfdGuard } from './sistfd/guards/sistfd.guard';
 
 // app.routes.ts
 export const routes: Routes = [
@@ -83,6 +85,19 @@ export const routes: Routes = [
                 canActivateChild: [authGuard.checkAccess()],
                 loadChildren: () => import('./sislic/routes/sislic.routes').then(m => m.sislicRoutes)
             },
+
+            // ==========================================
+            // MÓDULO SISTFD (Estruturado em 2 níveis)
+            // ==========================================
+            {
+                path: 'sistfd',
+                component: SistfdLayout,
+                data: { module: 'sistfd' },
+                canActivate: [sistfdGuard],
+                canActivateChild: [authGuard.checkAccess()],
+                loadChildren: () => import('./sistfd/routes/sistfd.routes').then(m => m.sistfdRoutes)
+            },
+            
             {
                 path: '**',
                 redirectTo: 'dashboard',

@@ -6,4 +6,5 @@ export const environment = {
     apiTfdUrl: 'http://10.15.229.95:9001/api/tfd',
     apiDatasusUrl: 'http://10.15.229.95:9002/api/datasus',
     apiSislicUrl: 'http://10.15.229.95:9003/api/sislic',
+    apiSistfdUrl: 'http://10.15.229.95:9004/api/sistfd',
 };
