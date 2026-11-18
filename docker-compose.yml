@@ -22,6 +22,8 @@ services:
         condition: service_healthy
       api-tfd:
         condition: service_healthy
+      api-homecare:
+        condition: service_healthy
     networks:
       - eco_network
     
@@ -153,6 +155,35 @@ services:
       - "9003:80"
     depends_on:
       api-auth:
+        condition: service_healthy
+      api-datasus:
+        condition: service_healthy
+      api-storage:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php artisan db:monitor && service nginx status || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - ./docker-config/php-conf.ini:/usr/local/etc/php/conf.d/php-conf.ini
+      - ./docker-config/cacert.pem:/etc/ssl/certs/cacert.pem
+    networks:
+      - eco_network
+
+  api-homecare:
+    build: ./api.homecare
+    container_name: api_homecare
+    restart: always
+    extra_hosts:
+      - "host.postgres:host-gateway"
+    ports:
+      - "9004:80"
+    depends_on:
+      api-auth:
+        condition: service_healthy
+      api-core:
         condition: service_healthy
       api-datasus:
         condition: service_healthy

@@ -11,8 +11,8 @@ import { SislicLayout } from './sislic/layout/sislic.layout';
 import { tfdGuard } from './tfd/guards/tfd.guard';
 import { datasusGuard } from './datasus/guards/datasus.guard';
 import { sislicGuard } from './sislic/guards/sislic.guard';
-import { SistfdLayout } from './sistfd/layout/sistfd.layout';
-import { sistfdGuard } from './sistfd/guards/sistfd.guard';
+import { HomecareLayout } from './homecare/layout/homecare.layout';
+import { homecareGuard } from './homecare/guards/homecare.guard';
 
 // app.routes.ts
 export const routes: Routes = [
@@ -87,17 +87,16 @@ export const routes: Routes = [
             },
 
             // ==========================================
-            // MÓDULO SISTFD (Estruturado em 2 níveis)
+            // MÓDULO HOMECARE (Estruturado em 2 níveis)
             // ==========================================
             {
-                path: 'sistfd',
-                component: SistfdLayout,
-                data: { module: 'sistfd' },
-                canActivate: [sistfdGuard],
+                path: 'homecare',
+                loadComponent: () => import('./homecare/layout/homecare.layout').then(m => m.HomecareLayout),
+                data: { module: 'homecare' },
+                canActivate: [homecareGuard],
                 canActivateChild: [authGuard.checkAccess()],
-                loadChildren: () => import('./sistfd/routes/sistfd.routes').then(m => m.sistfdRoutes)
+                loadChildren: () => import('./homecare/routes/homecare.routes').then(m => m.homecareRoutes)
             },
-            
             {
                 path: '**',
                 redirectTo: 'dashboard',

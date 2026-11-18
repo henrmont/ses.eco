@@ -6,5 +6,5 @@ export const environment = {
     apiStorageUrl: '/api/storage',
     apiTfdUrl: '/api/tfd',
     apiSislicUrl: '/api/sislic',
-    apiSistfdUrl: '/api/sistfd',
+    apiHomecareUrl: '/api/homecare',
 };
